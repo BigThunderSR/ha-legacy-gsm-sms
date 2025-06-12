@@ -38,7 +38,7 @@ This integration allows you to send SMS messages using a GSM modem connected to 
 
 ### Through the UI
 
-1. Go to Configuration > Integrations 
+1. Go to Configuration > Integrations
 2. Click the "+" button to add a new integration
 3. Search for "Legacy GSM SMS"
 4. Enter the device path to your modem (e.g., `/dev/ttyUSB0`, `/dev/ttyACM0`, etc.)

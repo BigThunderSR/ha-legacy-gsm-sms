@@ -1,6 +1,6 @@
 {
   "name": "Legacy GSM SMS",
   "render_readme": true,
-  "domains": ["legacy_gsm_sms", "notify", "sensor"],
+  "domain": "legacy_gsm_sms",
   "homeassistant": "2023.8.0"
 }

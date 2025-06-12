@@ -1,0 +1,21 @@
+<!-- This is a placeholder SVG logo for the Legacy GSM SMS integration -->
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="#41BDF5" />
+  
+  <!-- Phone icon -->
+  <path d="M65,45 L135,45 C140,45 145,50 145,55 L145,145 C145,150 140,155 135,155 L65,155 C60,155 55,150 55,145 L55,55 C55,50 60,45 65,45 Z" fill="white" />
+  
+  <!-- SMS Text bubble -->
+  <path d="M70,70 L130,70 C135,70 140,75 140,80 L140,100 C140,105 135,110 130,110 L110,110 L100,120 L90,110 L70,110 C65,110 60,105 60,100 L60,80 C60,75 65,70 70,70 Z" fill="#41BDF5" />
+  
+  <!-- SMS Text lines -->
+  <line x1="75" y1="85" x2="125" y2="85" stroke="white" stroke-width="3" />
+  <line x1="75" y1="95" x2="115" y2="95" stroke="white" stroke-width="3" />
+  
+  <!-- Signal bars -->
+  <rect x="75" y="130" width="10" height="10" fill="#41BDF5" />
+  <rect x="90" y="125" width="10" height="15" fill="#41BDF5" />
+  <rect x="105" y="120" width="10" height="20" fill="#41BDF5" />
+  <rect x="120" y="115" width="10" height="25" fill="#41BDF5" />
+</svg>

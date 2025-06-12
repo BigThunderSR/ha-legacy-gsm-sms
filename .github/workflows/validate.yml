@@ -1,20 +1,21 @@
 name: Validate
 
 on:
+  workflow_dispatch:
   push:
   pull_request:
   schedule:
     - cron: "0 0 * * *"
 
 jobs:
-  validate:
-    runs-on: "ubuntu-latest"
-    steps:
-      - uses: "actions/checkout@v3"
-      - name: HACS validation
-        uses: "hacs/action@main"
-        with:
-          category: "integration"
+  #validate:
+  #  runs-on: "ubuntu-latest"
+  #  steps:
+  #    - uses: "actions/checkout@v3"
+  #    - name: HACS validation
+  #      uses: "hacs/action@main"
+  #      with:
+  #        category: "integration"
           
   hassfest:
     runs-on: "ubuntu-latest"

@@ -10,9 +10,9 @@ from datetime import datetime
 import requests
 import gammu
 
-# Set up logging
+# Set up logging - Debug level for development
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout)
@@ -23,6 +23,14 @@ logging.basicConfig(
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 _LOGGER = logging.getLogger("gsm_sms_service")
+
+# Print startup diagnostic information
+_LOGGER.debug("====== GSM SMS Service Debug Information ======")
+_LOGGER.debug(f"Python version: {sys.version}")
+_LOGGER.debug(f"Current working directory: {os.getcwd()}")
+_LOGGER.debug(f"Current user: {os.getuid()}")
+_LOGGER.debug(f"Environment variables: {os.environ}")
+_LOGGER.debug("============================================")
 
 class GSMSMSService:
     """Service to handle SMS via GSM modem."""

@@ -1,10 +1,20 @@
 #!/command/with-contenv bashio
-set -e
+set -x  # Enable debug mode - prints each command before execution
+
+# Log detailed debugging info 
+bashio::log.info "====== GSM SMS SERVICE STARTING ======"
+bashio::log.info "Current directory: $(pwd)"
+bashio::log.info "Process ID: $$"
+bashio::log.info "Parent Process ID: $PPID"
+bashio::log.info "Running as user: $(whoami)"
 
 # Set the PYTHONUNBUFFERED env var
-export PYTHONUNBUFFERED=1
+export PYTHONUNBUFFERED=1 
 
 CONFIG_PATH=/data/options.json
+bashio::log.info "Reading configuration from: $CONFIG_PATH"
+
+# Try to read config values with error handling
 MODEM_DEVICE=$(bashio::config 'device' 2>/dev/null || echo "/dev/ttyUSB0")
 BAUD_SPEED=$(bashio::config 'baud_speed' 2>/dev/null || echo "0")
 UNICODE=$(bashio::config 'unicode' 2>/dev/null || echo "false")

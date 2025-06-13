@@ -21,11 +21,14 @@ WORKDIR /app
 COPY gsm_sms_service.py /app/
 COPY send_sms.sh /app/
 COPY run.sh /
-RUN chmod a+x /run.sh
-RUN chmod a+x /app/gsm_sms_service.py
-RUN chmod a+x /app/send_sms.sh
-RUN chmod a+x /etc/services.d/gsm_sms/run
-RUN chmod a+x /etc/services.d/gsm_sms/finish
+
+# Set permissions for scripts and services
+RUN chmod a+x /run.sh \
+    && chmod a+x /app/gsm_sms_service.py \
+    && chmod a+x /app/send_sms.sh \
+    && chmod a+x /etc/services.d/gsm_sms/run \
+    && chmod a+x /etc/services.d/gsm_sms/finish \
+    && chmod a+x /etc/cont-init.d/*.sh
 
 # Install required Python packages and tools
 RUN apk add --no-cache jq curl
@@ -39,5 +42,5 @@ LABEL \
     io.hass.type="addon" \
     io.hass.arch="armhf|aarch64|i386|amd64|armv7"
 
-# Use our entrypoint script to handle setup then pass control to s6-overlay
-ENTRYPOINT ["/entrypoint.sh"]
+# Let s6-overlay handle startup as PID 1
+# No custom entrypoint needed

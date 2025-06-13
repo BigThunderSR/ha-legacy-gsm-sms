@@ -28,6 +28,20 @@ cat > /data/gsm_sms/config.json << EOL
 }
 EOL
 
-# Execute the Python service directly
+# Check if modem exists before starting service
+if [ ! -e "$MODEM_DEVICE" ]; then
+  bashio::log.warning "GSM modem device not found: $MODEM_DEVICE"
+  bashio::log.info "Available devices:"
+  ls -la /dev/tty*
+  
+  # We'll continue anyway, as the device might appear later
+  bashio::log.info "Will continue trying to connect..."
+fi
+
+bashio::log.info "Starting GSM SMS Service with device: $MODEM_DEVICE"
+
+# Execute the Python service directly with proper environment
 cd /app
+export PYTHONUNBUFFERED=1
+export S6_KEEP_ENV=1
 exec python3 /app/gsm_sms_service.py

@@ -1,7 +1,7 @@
 name: "Legacy GSM SMS"
 description: "Send and receive SMS messages using a GSM modem"
 codenotary: bigthundersr@outlook.com
-version: 0.0.1
+version: 0.0.1a
 slug: "legacy_gsm_sms"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"

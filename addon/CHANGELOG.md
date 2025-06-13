@@ -1,4 +1,4 @@
-# ![brand_icon](png/logo-128x128.png) Changelog
+# Changelog
 
 Currently in development and NOT yet released or usable.
 

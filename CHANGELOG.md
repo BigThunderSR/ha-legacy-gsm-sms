@@ -1,4 +1,4 @@
-# Changelog
+# ![brand_icon](png/logo-64x64.png) Changelog
 
 All notable changes to this project will be documented in this file.
 

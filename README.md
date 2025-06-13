@@ -1,4 +1,4 @@
-# Legacy GSM SMS for Home Assistant
+# ![brand_icon](png/logo-64x64.png) Legacy GSM SMS for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 

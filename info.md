@@ -1,4 +1,4 @@
-# Legacy GSM SMS
+# ![brand_icon](png/logo-64x64.png) Legacy GSM SMS
 
 This integration allows you to send and receive SMS messages using a GSM modem connected to your Home Assistant instance.
 

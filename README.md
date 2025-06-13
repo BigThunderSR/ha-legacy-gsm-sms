@@ -2,6 +2,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![GitHub version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/BigThunderSR/ha-legacy-gsm-sms/releases)
+[![Home Assistant Addon](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
 
 This integration allows you to send SMS messages using a GSM modem connected to your Home Assistant instance. It also provides sensors for monitoring signal strength and network status.
 
@@ -21,7 +22,17 @@ This integration allows you to send SMS messages using a GSM modem connected to 
 
 ## Installation
 
-### HACS (Recommended)
+### As a Home Assistant Addon (Recommended for Home Assistant OS)
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
+
+1. Add this repository to your Home Assistant instance as a custom repository using the button above
+2. Install the "Legacy GSM SMS" add-on from the add-on store
+3. Configure the add-on with your GSM modem device path and settings
+4. Start the add-on
+5. Add the integration through the UI as described below
+
+### HACS (Alternative for Home Assistant Core/Container)
 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=BigThunderSR&repository=ha-legacy-gsm-sms&category=integration)
 

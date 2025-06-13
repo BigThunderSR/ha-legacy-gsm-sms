@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
 
 # Wait for initialization to complete
 sleep 2
@@ -41,7 +41,6 @@ fi
 bashio::log.info "Starting GSM SMS Service with device: $MODEM_DEVICE"
 
 # Execute the Python service directly with proper environment
-cd /app
 export PYTHONUNBUFFERED=1
 export S6_KEEP_ENV=1
-exec python3 /app/gsm_sms_service.py
+exec python3 /usr/bin/gsm_sms_service.py

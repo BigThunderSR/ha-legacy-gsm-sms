@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
 
 # Setup sensor entities in Home Assistant
 

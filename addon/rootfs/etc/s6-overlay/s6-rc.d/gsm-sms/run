@@ -1,0 +1,8 @@
+#!/command/execlineb -P
+with-contenv
+backtick -n DEVICE { bashio::config "device" }
+backtick -n BAUD { bashio::config "baud_speed" }
+backtick -n SCAN { bashio::config "scan_interval" }
+backtick -n SERVICE { bashio::config "service_name" }
+foreground { mkdir -p /data/gsm_sms }
+foreground { python3 /usr/bin/gsm_sms_service.py }

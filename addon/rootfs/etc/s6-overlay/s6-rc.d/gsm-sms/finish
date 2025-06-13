@@ -1,0 +1,7 @@
+#!/command/execlineb -S0
+
+# Take down the S6 supervision tree when gsm-sms fails
+if -n { s6-test ${1} -ne 0 }
+if -n { s6-test ${1} -ne 256 }
+
+s6-svscanctl -t /run/service

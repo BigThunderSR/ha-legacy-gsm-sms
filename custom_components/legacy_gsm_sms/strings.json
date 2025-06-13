@@ -21,25 +21,25 @@
   "entity": {
     "sensor": {
       "bit_error_rate": {
-        "name": "Bit error rate"
+        "name": "Bit Error Rate"
       },
       "cid": {
         "name": "Cell ID"
       },
       "lac": {
-        "name": "Local area code"
+        "name": "Local Area Code"
       },
       "network_code": {
-        "name": "GSM network code"
+        "name": "GSM Network Code"
       },
       "network_name": {
-        "name": "Network name"
+        "name": "Network Name"
       },
       "signal_percent": {
-        "name": "Signal percent"
+        "name": "Signal Percent"
       },
       "state": {
-        "name": "Network status"
+        "name": "Network Status"
       }
     }
   }

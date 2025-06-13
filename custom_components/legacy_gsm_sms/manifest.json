@@ -1,7 +1,7 @@
 {
   "domain": "legacy_gsm_sms",
   "name": "Legacy GSM SMS notifications via GSM-modem",
-  "codeowners": ["@ocalvo", "@BigThunderSR"],
+  "codeowners": ["@BigThunderSR", "@ocalvo"],
   "config_flow": true,
   "documentation": "https://github.com/BigThunderSR/ha-legacy-gsm-sms",
   "iot_class": "local_polling",

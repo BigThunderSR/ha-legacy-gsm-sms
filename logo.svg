@@ -1,19 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- Background circle with gradient -->
-  <defs>
-    <linearGradient id="backgroundGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3880ff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#4dabf7;stop-opacity:1" />
-    </linearGradient>
-    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#000000" flood-opacity="0.25" />
-    </filter>
-  </defs>
-  
-  <!-- Main background circle -->
-  <circle cx="512" cy="512" r="460" fill="url(#backgroundGradient)" />
-  <circle cx="512" cy="512" r="420" fill="white" filter="url(#dropShadow)" />
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with solid fill -->
+  <circle cx="512" cy="512" r="460" fill="#3880ff" />
+  <circle cx="512" cy="512" r="420" fill="white" />
   
   <!-- Phone body -->
   <rect x="312" y="212" width="400" height="600" rx="40" ry="40" fill="#f0f0f0" stroke="#e0e0e0" stroke-width="5" />
@@ -46,6 +34,6 @@
   <circle cx="512" cy="762" r="30" stroke="#cccccc" stroke-width="4" fill="#f5f5f5" />
   
   <!-- Small details on phone -->
-  <rect x="482" y="232" width="60" height="10" rx="5" ry="5" fill="#555555" /> <!-- Camera -->
-  <circle cx="512" cy="762" r="25" fill="transparent" stroke="#e0e0e0" stroke-width="1" /> <!-- Inner home button circle -->
+  <rect x="482" y="232" width="60" height="10" rx="5" ry="5" fill="#555555" />
+  <circle cx="512" cy="762" r="25" fill="transparent" stroke="#e0e0e0" stroke-width="1" />
 </svg>

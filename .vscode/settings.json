@@ -1,9 +1,14 @@
 {
     "cSpell.words": [
+        "automations",
         "codeowners",
+        "dialout",
         "gammu",
         "HACS",
         "ocalvo",
-        "pipenv"
+        "pipenv",
+        "pycache",
+        "sdist",
+        "venv"
     ]
 }

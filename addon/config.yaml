@@ -11,11 +11,11 @@ arch:
   - armhf
   - armv7
   - i386
-startup: application
-init: true
+#startup: application
+#init: true
 uart: true
 usb: true
-boot: auto
+#boot: auto
 map:
   - share:rw
 options:

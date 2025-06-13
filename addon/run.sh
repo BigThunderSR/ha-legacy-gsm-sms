@@ -5,32 +5,22 @@ MODEM_DEVICE=$(bashio::config 'device')
 BAUD_SPEED=$(bashio::config 'baud_speed')
 UNICODE=$(bashio::config 'unicode')
 SCAN_INTERVAL=$(bashio::config 'scan_interval')
+SERVICE_NAME=$(bashio::config 'service_name')
 
-# Create required directories
-mkdir -p /config/custom_components/legacy_gsm_sms
-mkdir -p /config/custom_components/legacy_gsm_sms/brand
+# Set up the GSM SMS service directly, without using the HACS integration
+bashio::log.info "Setting up Legacy GSM SMS service..."
 
-# Copy the integration files to the Home Assistant config directory
-cp /app/*.py /config/custom_components/legacy_gsm_sms/
-
-# Create or update manifest.json
-cat > /config/custom_components/legacy_gsm_sms/manifest.json << EOL
+# Create configuration for the SMS service
+mkdir -p /data/gsm_sms
+cat > /data/gsm_sms/config.json << EOL
 {
-  "domain": "legacy_gsm_sms",
-  "name": "Legacy GSM SMS notifications via GSM-modem",
-  "codeowners": ["@BigThunderSR", "@ocalvo"],
-  "config_flow": true,
-  "documentation": "https://github.com/BigThunderSR/ha-legacy-gsm-sms",
-  "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/BigThunderSR/ha-legacy-gsm-sms/issues",
-  "loggers": ["gammu"],
-  "requirements": ["python-gammu==3.2.4"],
-  "version": "1.0.0"
+  "device": "${MODEM_DEVICE}",
+  "baud_speed": "${BAUD_SPEED}",
+  "unicode": ${UNICODE},
+  "scan_interval": ${SCAN_INTERVAL},
+  "service_name": "${SERVICE_NAME}"
 }
 EOL
-
-# Copy brand icon and logo
-cp -R /app/brand /config/custom_components/legacy_gsm_sms/
 
 # Check if modem device exists
 if [ ! -e "$MODEM_DEVICE" ]; then
@@ -44,14 +34,38 @@ bashio::log.info "Modem device: $MODEM_DEVICE"
 bashio::log.info "Baud speed: $BAUD_SPEED"
 bashio::log.info "Unicode: $UNICODE"
 bashio::log.info "Scan interval: $SCAN_INTERVAL"
+bashio::log.info "Service name: $SERVICE_NAME"
 
-# Keep the addon running
-while true; do
-  sleep 30
-  # Check if modem is still accessible
-  if [ -e "$MODEM_DEVICE" ]; then
-    bashio::log.debug "Modem device is accessible: $MODEM_DEVICE"
+# Create sensor entities
+bashio::log.info "Setting up sensor entities..."
+for entity in "${SERVICE_NAME}_signal_strength" "${SERVICE_NAME}_network_name"; do
+  bashio::log.info "Creating sensor entity: $entity"
+  
+  # Determine friendly name and unit based on entity type
+  if [[ "$entity" == *"signal_strength"* ]]; then
+    FRIENDLY_NAME="GSM Signal Strength"
+    UNIT="%"
   else
-    bashio::log.warning "Modem device not found: $MODEM_DEVICE"
+    FRIENDLY_NAME="GSM Network"
+    UNIT=""
   fi
+  
+  # Create entity JSON
+  if [[ -n "$UNIT" ]]; then
+    ENTITY_JSON="{\"state\": \"unknown\", \"attributes\": {\"friendly_name\": \"$FRIENDLY_NAME\", \"unit_of_measurement\": \"$UNIT\"}}"
+  else
+    ENTITY_JSON="{\"state\": \"unknown\", \"attributes\": {\"friendly_name\": \"$FRIENDLY_NAME\"}}"
+  fi
+  
+  # Send request to Home Assistant API
+  curl -s -X POST \
+    -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "$ENTITY_JSON" \
+    "http://supervisor/core/api/states/sensor.${entity}" \
+    || bashio::log.warning "Failed to create sensor entity: ${entity}"
 done
+
+# Start the GSM SMS service
+bashio::log.info "Starting GSM SMS service..."
+python3 /app/gsm_sms_service.py

@@ -28,6 +28,7 @@ device: /dev/ttyUSB0
 baud_speed: 0
 unicode: false
 scan_interval: 30
+service_name: legacy_gsm_sms
 ```
 
 #### Options
@@ -36,16 +37,13 @@ scan_interval: 30
 - **baud_speed** (required): The baud rate for the modem. Use `0` for auto-detection.
 - **unicode** (optional): Set to `true` to enable unicode support for SMS messages. Default: `false`.
 - **scan_interval** (optional): The interval in seconds to scan for new messages and update sensors. Default: `30`.
+- **service_name** (optional): The name of the service to create in Home Assistant. Default: `legacy_gsm_sms`.
 
 ## How to use
 
 After installing and starting the add-on:
 
-1. Add the Legacy GSM SMS integration in Home Assistant:
-   - Go to **Configuration** > **Integrations**
-   - Add a new integration
-   - Search for "Legacy GSM SMS"
-   - Follow the setup wizard
+1. The addon will automatically create the necessary services and sensors.
 
 2. Send an SMS:
 
@@ -55,6 +53,29 @@ After installing and starting the add-on:
      message: "Hello from Home Assistant!"
      target: "+1234567890"
    ```
+
+3. When an SMS is received, an event will be fired:
+
+   ```yaml
+   legacy_gsm_sms.incoming_sms
+   ```
+
+4. You can use this event in your automations:
+
+   ```yaml
+   trigger:
+     platform: event
+     event_type: legacy_gsm_sms.incoming_sms
+   action:
+     service: persistent_notification.create
+     data:
+       message: "SMS from {{ trigger.event.data.phone }}: {{ trigger.event.data.text }}"
+       title: "SMS Received"
+   ```
+
+5. The addon also provides these sensors:
+   - `sensor.legacy_gsm_sms_signal_strength`: Signal strength as percentage
+   - `sensor.legacy_gsm_sms_network_name`: Network name
 
 ## Troubleshooting
 

@@ -30,7 +30,10 @@ This integration allows you to send SMS messages using a GSM modem connected to 
 2. Install the "Legacy GSM SMS" add-on from the add-on store
 3. Configure the add-on with your GSM modem device path and settings
 4. Start the add-on
-5. Add the integration through the UI as described below
+5. The addon automatically registers the following:
+   - A notify service called `notify.legacy_gsm_sms` (or your custom service name)
+   - Sensors for signal strength and network name
+   - Event handlers for incoming SMS
 
 ### HACS (Alternative for Home Assistant Core/Container)
 

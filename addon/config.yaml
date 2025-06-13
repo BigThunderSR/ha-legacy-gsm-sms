@@ -21,9 +21,11 @@ options:
   baud_speed: "0"
   unicode: false
   scan_interval: 30
+  service_name: "legacy_gsm_sms"
 schema:
   device: str
   baud_speed: list(0|50|75|110|134|150|200|300|600|1200|1800|2400|4800|9600|19200|28800|38400|57600|76800|115200)
   unicode: bool
   scan_interval: int(10,600)
+  service_name: str
 homeassistant_api: true

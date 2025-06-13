@@ -4,11 +4,9 @@ echo "Setting up Legacy GSM SMS as a Home Assistant Addon..."
 
 # Create directories if they don't exist
 mkdir -p ~/.homeassistant/addons/legacy_gsm_sms
-mkdir -p ~/.homeassistant/addons/legacy_gsm_sms/legacy_gsm_sms
 
 # Copy addon files
 cp -r addon/* ~/.homeassistant/addons/legacy_gsm_sms/
-cp -r custom_components/legacy_gsm_sms/* ~/.homeassistant/addons/legacy_gsm_sms/legacy_gsm_sms/
 cp repository.yaml ~/.homeassistant/addons/
 
 echo "Setup complete!"

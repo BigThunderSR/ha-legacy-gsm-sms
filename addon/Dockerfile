@@ -12,14 +12,18 @@ RUN apk add --no-cache \
     musl-dev \
     python3-dev
 
-# Copy the integration files
+# Copy the service files
 WORKDIR /app
-COPY custom_components/legacy_gsm_sms/*.py /app/
+COPY gsm_sms_service.py /app/
+COPY send_sms.sh /app/
 COPY run.sh /
 RUN chmod a+x /run.sh
+RUN chmod a+x /app/gsm_sms_service.py
+RUN chmod a+x /app/send_sms.sh
 
-# Install required Python packages
-RUN pip3 install --no-cache-dir python-gammu==3.2.4
+# Install required Python packages and tools
+RUN apk add --no-cache jq curl
+RUN pip3 install --no-cache-dir python-gammu==3.2.4 requests
 
 # Labels
 LABEL \

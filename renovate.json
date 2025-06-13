@@ -3,7 +3,7 @@
   "extends": [
     "config:recommended"
   ],
-  "enabledManagers": ["pip-requirements", "pip-setup", "pipenv", "poetry"],
+  "enabledManagers": ["pipenv", "poetry"],
   "python": {
     "enabled": true
   }

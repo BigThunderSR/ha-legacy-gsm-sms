@@ -1,6 +1,6 @@
 name: "Legacy GSM SMS"
 description: "Send and receive SMS messages using a GSM modem"
-version: "1.0.0"
+version: 1.0.0
 slug: "legacy_gsm_sms"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 arch:

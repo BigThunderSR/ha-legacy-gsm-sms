@@ -10,7 +10,11 @@ RUN apk add --no-cache \
     bluez-libs \
     gcc \
     musl-dev \
-    python3-dev
+    python3-dev \
+    bash
+
+# Copy S6-Overlay configuration
+COPY rootfs /
 
 # Copy the service files
 WORKDIR /app
@@ -20,6 +24,8 @@ COPY run.sh /
 RUN chmod a+x /run.sh
 RUN chmod a+x /app/gsm_sms_service.py
 RUN chmod a+x /app/send_sms.sh
+RUN chmod a+x /etc/services.d/gsm_sms/run
+RUN chmod a+x /etc/services.d/gsm_sms/finish
 
 # Install required Python packages and tools
 RUN apk add --no-cache jq curl
@@ -33,4 +39,4 @@ LABEL \
     io.hass.type="addon" \
     io.hass.arch="armhf|aarch64|i386|amd64|armv7"
 
-ENTRYPOINT ["/run.sh"]
+# S6 will automatically start our service

@@ -1,0 +1,6 @@
+#!/usr/bin/with-contenv bashio
+
+bashio::log.info "Starting GSM SMS Service..."
+
+# Execute script
+exec /run.sh

@@ -48,6 +48,18 @@ class GSMSMSService:
         _LOGGER.info("Setting up GSM modem: %s", self.device)
         
         try:
+            # Wait for the device to be available
+            if not os.path.exists(self.device):
+                _LOGGER.warning("Device %s does not exist, checking available devices", self.device)
+                
+                # List available devices
+                tty_devices = [d for d in os.listdir("/dev") if d.startswith("tty")]
+                _LOGGER.info("Available tty devices: %s", ", ".join(tty_devices))
+                
+                # Wait and retry
+                _LOGGER.info("Waiting for device to become available...")
+                return False
+            
             # Gammu configuration
             gammu_config = {
                 "Device": self.device,
@@ -71,6 +83,10 @@ class GSMSMSService:
             return False
         except gammu.GSMError as e:
             _LOGGER.error("Failed to initialize modem: %s", str(e))
+            self.connected = False
+            return False
+        except Exception as e:
+            _LOGGER.error("Unexpected error initializing modem: %s", str(e))
             self.connected = False
             return False
 
@@ -114,17 +130,21 @@ class GSMSMSService:
             if remain > 0:
                 # Get all sms
                 sms = []
-                start = True
+                entry = None
                 
+                # Get first message
                 try:
-                    while True:
-                        if start:
-                            entry = self.sm.GetNextSMS(Start=True, Folder=0)
-                            start = False
-                        else:
-                            entry = self.sm.GetNextSMS(Location=entry[0]["Location"], Folder=0)
-                        
+                    entry = self.sm.GetNextSMS(Start=True, Folder=0)
+                    if entry:
                         sms.append(entry)
+                        
+                    # Get remaining messages
+                    while entry and len(entry) > 0:
+                        last_location = entry[0].get("Location", 0)
+                        entry = self.sm.GetNextSMS(Location=last_location, Folder=0)
+                        if entry:
+                            sms.append(entry)
+                        
                 except gammu.ERR_EMPTY:
                     # This is expected, means we've read all messages
                     pass
@@ -139,6 +159,10 @@ class GSMSMSService:
 
     def _process_sms_message(self, message):
         """Process received SMS message."""
+        if not self.sm or not self.connected:
+            _LOGGER.warning("Cannot process SMS: modem not connected")
+            return
+            
         for single in message:
             # Only process unread messages
             if single["State"] == "UnRead":
@@ -147,21 +171,26 @@ class GSMSMSService:
                     self.sm.DeleteSMS(0, single["Location"])
                 except gammu.GSMError as ex:
                     _LOGGER.error("Failed to mark SMS as read: %s", str(ex))
+                except Exception as ex:
+                    _LOGGER.error("Unexpected error marking SMS as read: %s", str(ex))
                 
-                decoded_message = {
-                    "phone": single["Number"],
-                    "date": single["DateTime"].strftime("%Y-%m-%d %H:%M:%S"),
-                    "text": single["Text"],
-                }
-                
-                _LOGGER.info(
-                    "Received SMS from %s: %s",
-                    decoded_message["phone"],
-                    decoded_message["text"]
-                )
-                
-                # Fire event in Home Assistant
-                self._fire_ha_event(f"{self.service_name}.incoming_sms", decoded_message)
+                try:
+                    decoded_message = {
+                        "phone": single["Number"],
+                        "date": single["DateTime"].strftime("%Y-%m-%d %H:%M:%S"),
+                        "text": single["Text"],
+                    }
+                    
+                    _LOGGER.info(
+                        "Received SMS from %s: %s",
+                        decoded_message["phone"],
+                        decoded_message["text"]
+                    )
+                    
+                    # Fire event in Home Assistant
+                    self._fire_ha_event(f"{self.service_name}.incoming_sms", decoded_message)
+                except Exception as ex:
+                    _LOGGER.error("Error processing SMS content: %s", str(ex))
 
     def send_sms(self, to, message):
         """Send SMS message."""
@@ -343,19 +372,44 @@ class GSMSMSService:
 
 
 if __name__ == "__main__":
-    try:
-        # Load configuration
-        with open('/data/gsm_sms/config.json', 'r') as f:
-            config = json.load(f)
+    retry_count = 0
+    max_retries = 5
+    
+    while retry_count < max_retries:
+        try:
+            # Load configuration
+            try:
+                with open('/data/gsm_sms/config.json', 'r') as f:
+                    config = json.load(f)
+            except FileNotFoundError:
+                _LOGGER.error("Config file not found. Waiting for 10 seconds...")
+                time.sleep(10)
+                retry_count += 1
+                continue
+            except json.JSONDecodeError:
+                _LOGGER.error("Invalid JSON in config file. Waiting for 10 seconds...")
+                time.sleep(10)
+                retry_count += 1
+                continue
+                
+            # Create and run service
+            service = GSMSMSService(config)
             
-        # Create and run service
-        service = GSMSMSService(config)
-        
-        # Give Home Assistant time to start up if needed
-        time.sleep(10)
-        
-        # Run the service
-        service.run()
-    except Exception as e:
-        _LOGGER.error("Service error: %s", str(e))
+            # Give Home Assistant time to start up if needed
+            _LOGGER.info("Waiting for Home Assistant to be ready...")
+            time.sleep(10)
+            
+            # Run the service
+            _LOGGER.info("Starting GSM SMS service main loop...")
+            service.run()
+            break
+            
+        except Exception as e:
+            _LOGGER.error("Service error: %s", str(e))
+            _LOGGER.info("Retrying in 30 seconds... (Attempt %d of %d)", retry_count + 1, max_retries)
+            time.sleep(30)
+            retry_count += 1
+    
+    if retry_count >= max_retries:
+        _LOGGER.error("Maximum retry attempts reached. Exiting...")
         sys.exit(1)

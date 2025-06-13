@@ -1,0 +1,8 @@
+#!/command/with-contenv bashio
+
+# This hook is called during S6 initialization
+# We'll use it to add any needed environment variables or setup
+
+bashio::log.info "Setting up environment for Legacy GSM SMS service..."
+
+# No special initialization needed for now

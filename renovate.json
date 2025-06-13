@@ -5,13 +5,18 @@
   ],
   "enabledManagers": [
     "pipenv",
-    "poetry"
+    "poetry",
+    "github-actions"
   ],
   "packageRules": [
     {
       "matchCategories": [
         "python"
       ],
+      "enabled": true
+    },
+    {
+      "matchManagers": ["github-actions"],
       "enabled": true
     }
   ]

@@ -19,6 +19,9 @@ logging.basicConfig(
     ]
 )
 
+# For s6-overlay compatibility
+os.environ['S6_KEEP_ENV'] = '1'
+
 _LOGGER = logging.getLogger("gsm_sms_service")
 
 class GSMSMSService:

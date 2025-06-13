@@ -39,4 +39,5 @@ LABEL \
     io.hass.type="addon" \
     io.hass.arch="armhf|aarch64|i386|amd64|armv7"
 
-# S6 will automatically start our service
+# Use our entrypoint script to handle setup then pass control to s6-overlay
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,6 +1,33 @@
 #!/usr/bin/with-contenv bashio
 
+# Wait for initialization to complete
+sleep 2
+
 bashio::log.info "Starting GSM SMS Service..."
 
-# Execute script
-exec /run.sh
+# Load configuration
+CONFIG_PATH=/data/options.json
+MODEM_DEVICE=$(bashio::config 'device')
+BAUD_SPEED=$(bashio::config 'baud_speed')
+UNICODE=$(bashio::config 'unicode')
+SCAN_INTERVAL=$(bashio::config 'scan_interval')
+SERVICE_NAME=$(bashio::config 'service_name')
+
+# Set up the GSM SMS service
+bashio::log.info "Setting up Legacy GSM SMS service..."
+
+# Create configuration for the SMS service
+mkdir -p /data/gsm_sms
+cat > /data/gsm_sms/config.json << EOL
+{
+  "device": "${MODEM_DEVICE}",
+  "baud_speed": "${BAUD_SPEED}",
+  "unicode": ${UNICODE},
+  "scan_interval": ${SCAN_INTERVAL},
+  "service_name": "${SERVICE_NAME}"
+}
+EOL
+
+# Execute the Python service directly
+cd /app
+exec python3 /app/gsm_sms_service.py

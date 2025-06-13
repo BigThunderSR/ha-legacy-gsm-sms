@@ -3,6 +3,7 @@ description: "Send and receive SMS messages using a GSM modem"
 version: 1.0.0
 slug: "legacy_gsm_sms"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
+image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
 arch:
   - aarch64
   - amd64

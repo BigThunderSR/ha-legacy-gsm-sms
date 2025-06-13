@@ -1,7 +1,7 @@
 # ![brand_icon](png/logo-64x64.png) Legacy GSM SMS for Home Assistant
 
-[![GitHub version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/BigThunderSR/ha-legacy-gsm-sms/releases)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![GitHub version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/BigThunderSR/ha-legacy-gsm-sms/releases)
 
 This integration allows you to send SMS messages using a GSM modem connected to your Home Assistant instance. It also provides sensors for monitoring signal strength and network status.
 

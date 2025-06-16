@@ -76,6 +76,11 @@ class GSMSMSService:
         self.service_name = config.get("service_name", "legacy_gsm_sms")
         self.sm = None
         
+        # Device information - will be populated when modem connects
+        self.device_manufacturer = None
+        self.device_model = None
+        self.device_imei = None
+        
         # Get Home Assistant connection details from environment
         self.ha_url = os.environ.get("SUPERVISOR_API") or "http://supervisor/core"
         self.ha_token = os.environ.get("SUPERVISOR_TOKEN", "")
@@ -126,6 +131,10 @@ class GSMSMSService:
             
             _LOGGER.info("Modem initialized successfully")
             self.connected = True
+            
+            # Get device information from the modem
+            self.get_device_info()
+            
             return True
         except gammu.ERR_DEVICENOTEXIST:
             _LOGGER.error("Device %s does not exist", self.device)
@@ -161,6 +170,9 @@ class GSMSMSService:
             # Update the Home Assistant sensor states
             self._update_ha_sensor(f"sensor.{self.service_name}_signal_strength", self.signal_strength, "%")
             self._update_ha_sensor(f"sensor.{self.service_name}_network_name", self.network_name)
+            
+            # Add a last_update sensor to track when data was last refreshed
+            self._update_ha_sensor(f"sensor.{self.service_name}_last_update", datetime.now().isoformat())
         except gammu.GSMError as ex:
             _LOGGER.error("Failed to update signal info: %s", str(ex))
             self.connected = False
@@ -279,10 +291,63 @@ class GSMSMSService:
     def _update_ha_sensor(self, entity_id, state, unit=None):
         """Update a sensor state in Home Assistant."""
         try:
+            # Extract the sensor name from entity_id (removing the sensor. prefix)
+            sensor_name = entity_id.replace('sensor.', '')
+            
+            # Create a unique_id based on the entity_id but without the domain prefix
+            unique_id = f"gsm_sms_{sensor_name}"
+            
+            # Prepare attributes and metadata based on sensor type
+            attributes = {
+                "friendly_name": sensor_name.replace('_', ' ').title(),
+            }
+            
+            # Set specific metadata based on sensor type
+            if "signal_strength" in entity_id:
+                attributes["device_class"] = "signal_strength"
+                attributes["state_class"] = "measurement"
+                attributes["icon"] = "mdi:signal"
+            elif "network_name" in entity_id:
+                attributes["icon"] = "mdi:network"
+            elif "manufacturer" in entity_id:
+                attributes["icon"] = "mdi:factory"
+            elif "model" in entity_id:
+                attributes["icon"] = "mdi:cellphone"
+            elif "last_update" in entity_id:
+                attributes["device_class"] = "timestamp"
+                attributes["icon"] = "mdi:clock-outline"
+            
             data = {
                 "state": state,
-                "attributes": {}
+                "attributes": attributes
             }
+            
+            # Add unique_id to make the entity persistent
+            data["unique_id"] = unique_id
+            
+            # Add device info to group all entities under one device in the UI
+            device_info = {
+                "identifiers": [f"gsm_sms_{self.service_name}"],
+                "name": f"GSM SMS {self.service_name}",
+                "sw_version": "0.0.1g"  # Match the addon version
+            }
+            
+            # Use real device info if available
+            if self.device_manufacturer:
+                device_info["manufacturer"] = self.device_manufacturer
+            else:
+                device_info["manufacturer"] = "Home Assistant Add-on"
+                
+            if self.device_model:
+                device_info["model"] = self.device_model
+            else:
+                device_info["model"] = "GSM Modem"
+                
+            if self.device_imei:
+                # Add IMEI as a secondary identifier
+                device_info["identifiers"].append(f"imei_{self.device_imei}")
+                
+            data["device"] = device_info
             
             if unit:
                 data["attributes"]["unit_of_measurement"] = unit
@@ -466,6 +531,28 @@ class GSMSMSService:
             # Sleep for the configured scan interval
             time.sleep(self.scan_interval)
 
+    def get_device_info(self):
+        """Get device information from the modem."""
+        if not self.sm or not self.connected:
+            return
+            
+        try:
+            # Get device information
+            self.device_manufacturer = self.sm.GetManufacturer()
+            _LOGGER.debug(f"Manufacturer: {self.device_manufacturer}")
+            
+            self.device_model = self.sm.GetModel()[0]
+            _LOGGER.debug(f"Model: {self.device_model}")
+            
+            self.device_imei = self.sm.GetIMEI()
+            _LOGGER.debug(f"IMEI: {self.device_imei}")
+            
+            # Report device information to Home Assistant
+            self._update_ha_sensor(f"sensor.{self.service_name}_manufacturer", self.device_manufacturer)
+            self._update_ha_sensor(f"sensor.{self.service_name}_model", self.device_model)
+            
+        except Exception as e:
+            _LOGGER.error(f"Error getting device information: {e}")
 
 if __name__ == "__main__":
     retry_count = 0

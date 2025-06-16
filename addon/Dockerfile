@@ -25,9 +25,10 @@ COPY rootfs /
 # Set permissions for scripts
 RUN chmod a+x /usr/bin/gsm_sms_service.py \
     && chmod a+x /usr/bin/send_sms.sh \
-    && chmod a+x /etc/services.d/gsm_sms/run \
-    && chmod a+x /etc/services.d/gsm_sms/finish \
-    && chmod a+x /etc/cont-init.d/*.sh
+    && chmod a+x /etc/cont-init.d/*.sh \
+    && chmod a+x /etc/s6-overlay/s6-rc.d/gsm-sms/run \
+    && chmod a+x /etc/s6-overlay/s6-rc.d/gsm-sms/finish \
+    && chmod a+x /etc/s6-overlay/s6-rc.d/init-gsm-config/up
 
 # Install required Python packages
 RUN pip3 install --no-cache-dir python-gammu==3.2.4 requests

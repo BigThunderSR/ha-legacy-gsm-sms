@@ -1,7 +1,7 @@
 name: "Legacy GSM SMS"
 description: "Send and receive SMS messages using a GSM modem"
 codenotary: bigthundersr@outlook.com
-version: 0.0.1h
+version: 0.0.1i
 slug: "legacy_gsm_sms"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 #image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
@@ -22,6 +22,7 @@ homeassistant_api: true
 auth_api: true
 init: false
 host_dbus: true
+s6_overlay_stage: 3
 #boot: auto
 map:
   - share:rw

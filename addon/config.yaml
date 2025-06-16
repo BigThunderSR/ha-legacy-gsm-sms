@@ -22,7 +22,6 @@ homeassistant_api: true
 auth_api: true
 init: false
 host_dbus: true
-s6_overlay_stage: 3
 #boot: auto
 map:
   - share:rw

@@ -39,7 +39,6 @@ schema:
   scan_interval: int(10,600)
   service_name: str
   log_level: list(trace|debug|info|notice|warning|error|fatal)
-homeassistant_api: true
 devices:
   - /dev/ttyUSB[0-9]*
   - /dev/ttyACM[0-9]*

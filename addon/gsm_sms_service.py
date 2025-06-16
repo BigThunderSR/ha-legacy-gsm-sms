@@ -75,8 +75,15 @@ class GSMSMSService:
         self.scan_interval = config.get("scan_interval", 30)
         self.service_name = config.get("service_name", "legacy_gsm_sms")
         self.sm = None
+        
+        # Get Home Assistant connection details from environment
         self.ha_url = os.environ.get("SUPERVISOR_API") or "http://supervisor/core"
         self.ha_token = os.environ.get("SUPERVISOR_TOKEN", "")
+        
+        # Log connection details (redact token for security)
+        _LOGGER.info(f"Home Assistant URL: {self.ha_url}")
+        _LOGGER.debug(f"Home Assistant token available: {bool(self.ha_token)}")
+        
         self.headers = {
             "Authorization": f"Bearer {self.ha_token}",
             "Content-Type": "application/json",
@@ -280,27 +287,54 @@ class GSMSMSService:
             if unit:
                 data["attributes"]["unit_of_measurement"] = unit
                 
+            # Skip if no token
+            if not self.ha_token:
+                _LOGGER.debug(f"No Home Assistant token, skipping sensor update for {entity_id}")
+                return
+                
             url = f"{self.ha_url}/api/states/{entity_id}"
-            response = requests.post(url, headers=self.headers, json=data)
-            
-            if response.status_code not in (200, 201):
-                _LOGGER.error("Failed to update sensor %s: %s", entity_id, response.text)
+            try:
+                response = requests.post(url, headers=self.headers, json=data, timeout=10)
+                
+                if response.status_code not in (200, 201):
+                    _LOGGER.error(f"Failed to update sensor {entity_id}: HTTP {response.status_code} - {response.text}")
+                else:
+                    _LOGGER.debug(f"Successfully updated sensor {entity_id}")
+            except requests.exceptions.RequestException as e:
+                _LOGGER.error(f"Error connecting to Home Assistant: {str(e)}")
         except Exception as ex:
             _LOGGER.error("Error updating sensor: %s", str(ex))
 
     def _fire_ha_event(self, event_type, event_data):
         """Fire an event in Home Assistant."""
         try:
+            # Skip if no token
+            if not self.ha_token:
+                _LOGGER.debug(f"No Home Assistant token, skipping event {event_type}")
+                return
+                
             url = f"{self.ha_url}/api/events/{event_type}"
-            response = requests.post(url, headers=self.headers, json=event_data)
             
-            if response.status_code != 200:
-                _LOGGER.error("Failed to fire event %s: %s", event_type, response.text)
+            try:
+                response = requests.post(url, headers=self.headers, json=event_data, timeout=10)
+                
+                if response.status_code != 200:
+                    _LOGGER.error(f"Failed to fire event {event_type}: HTTP {response.status_code} - {response.text}")
+                else:
+                    _LOGGER.debug(f"Successfully fired event {event_type}")
+            except requests.exceptions.RequestException as e:
+                _LOGGER.error(f"Error connecting to Home Assistant: {str(e)}")
         except Exception as ex:
             _LOGGER.error("Error firing event: %s", str(ex))
             
     def register_service(self):
         """Register the notify service in Home Assistant."""
+        
+        # Skip registration if token is empty
+        if not self.ha_token:
+            _LOGGER.warning("No Home Assistant token provided, skipping service registration")
+            return
+            
         try:
             # Create a service for sending SMS
             service_data = {
@@ -315,12 +349,20 @@ class GSMSMSService:
                 }
             }
             
-            url = f"{self.ha_url}/api/services/notify/{self.service_name}"
-            response = requests.post(url, headers=self.headers, json=service_data)
+            _LOGGER.info(f"Registering notify service with Home Assistant at {self.ha_url}")
             
-            if response.status_code not in (200, 201):
-                _LOGGER.error("Failed to register notify service: %s", response.text)
-            else:
+            url = f"{self.ha_url}/api/services/notify/{self.service_name}"
+            
+            try:
+                response = requests.post(url, headers=self.headers, json=service_data, timeout=10)
+                
+                if response.status_code not in (200, 201):
+                    _LOGGER.error(f"Failed to register notify service: HTTP {response.status_code} - {response.text}")
+                else:
+                    _LOGGER.info("Successfully registered notify service")
+            except requests.exceptions.RequestException as e:
+                _LOGGER.error(f"Error connecting to Home Assistant: {str(e)}")
+                return
                 _LOGGER.info("Notify service registered successfully")
         except Exception as ex:
             _LOGGER.error("Error registering service: %s", str(ex))
@@ -330,6 +372,11 @@ class GSMSMSService:
         import threading
         import time
         import json
+        
+        # Don't start listener if no HA token
+        if not self.ha_token:
+            _LOGGER.warning("No Home Assistant token, service call listener not started")
+            return
 
         def listener():
             _LOGGER.info(f"Starting service call listener for notify.{self.service_name}")
@@ -342,11 +389,17 @@ class GSMSMSService:
             while True:
                 try:
                     # Poll for new service calls
-                    response = requests.get(
-                        url, 
-                        headers=self.headers,
-                        params={"since": last_check_time}
-                    )
+                    try:
+                        response = requests.get(
+                            url, 
+                            headers=self.headers,
+                            params={"since": last_check_time},
+                            timeout=10
+                        )
+                    except requests.exceptions.RequestException as e:
+                        _LOGGER.error(f"Error connecting to Home Assistant: {str(e)}")
+                        time.sleep(30)  # Wait longer before retrying
+                        continue
                     
                     if response.status_code == 200:
                         service_calls = response.json()

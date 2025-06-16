@@ -3,17 +3,16 @@
 # This script creates compatibility symlinks if needed
 bashio::log.info "Setting up compatibility symlinks..."
 
-# Create services.d directory if it doesn't exist
-if [ ! -d "/run/service" ]; then
-    bashio::log.info "Creating /run/service directory"
-    mkdir -p /run/service
-fi
-
-# Create s6 services directory if it doesn't exist
-if [ ! -d "/run/s6/services" ]; then
-    bashio::log.info "Creating /run/s6/services directory"
-    mkdir -p /run/s6/services
-fi
+# Create all required S6 directories
+mkdir -p /run/service
+mkdir -p /run/s6/services
+mkdir -p /var/run/s6/services
+mkdir -p /run/s6/legacy-services
+mkdir -p /run/s6-rc/servicedirs
+mkdir -p /run/s6-rc/compiled
+mkdir -p /run/s6-rc/source
+mkdir -p /var/run/s6/etc
+mkdir -p /etc/s6-overlay/scripts
 
 # Create symlink for compatibility
 if [ ! -L "/run/s6/services/gsm-sms" ]; then

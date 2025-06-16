@@ -19,6 +19,15 @@ RUN apk add --no-cache \
 COPY gsm_sms_service.py /usr/bin/
 COPY send_sms.sh /usr/bin/
 
+# Create required S6-overlay directories
+RUN mkdir -p /etc/services.d \
+    && mkdir -p /etc/cont-init.d \
+    && mkdir -p /etc/cont-finish.d \
+    && mkdir -p /etc/s6-overlay/s6-rc.d/gsm-sms \
+    && mkdir -p /etc/s6-overlay/s6-rc.d/init-gsm-config \
+    && mkdir -p /etc/s6-overlay/s6-rc.d/gsm-bundle/contents.d \
+    && mkdir -p /etc/s6-overlay/s6-rc.d/user/contents.d
+
 # Copy root filesystem
 COPY rootfs /
 
@@ -26,12 +35,23 @@ COPY rootfs /
 RUN chmod a+x /usr/bin/gsm_sms_service.py \
     && chmod a+x /usr/bin/send_sms.sh \
     && chmod a+x /etc/cont-init.d/*.sh \
-    && chmod a+x /etc/s6-overlay/s6-rc.d/gsm-sms/run \
-    && chmod a+x /etc/s6-overlay/s6-rc.d/gsm-sms/finish \
+    && chmod +x /etc/s6-overlay/s6-rc.d/gsm-sms/run \
+    && chmod +x /etc/s6-overlay/s6-rc.d/gsm-sms/finish \
+    && chmod +x /etc/s6-overlay/s6-rc.d/init-gsm-config/up \
     && chmod a+x /etc/s6-overlay/s6-rc.d/init-gsm-config/up
 
 # Set permissions for all S6 service scripts
-RUN find /etc/s6-overlay/s6-rc.d/ -type f \( -name "run" -o -name "up" -o -name "finish" \) -exec chmod +x {} \;
+RUN find /etc/s6-overlay/s6-rc.d/ -type f \( -name "run" -o -name "up" -o -name "finish" -o -name "notification-fd" \) -exec chmod +x {} \;
+
+# Create essential S6 files if missing
+RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/gsm-sms/type \
+    && echo "oneshot" > /etc/s6-overlay/s6-rc.d/init-gsm-config/type \
+    && echo "bundle" > /etc/s6-overlay/s6-rc.d/gsm-bundle/type \
+    && echo "gsm-sms" > /etc/s6-overlay/s6-rc.d/gsm-bundle/contents.d/gsm-sms \
+    && echo "init-gsm-config" > /etc/s6-overlay/s6-rc.d/gsm-bundle/contents.d/init-gsm-config \
+    && echo "gsm-bundle" > /etc/s6-overlay/s6-rc.d/user/contents.d/gsm-bundle \
+    && mkdir -p /etc/s6-overlay/s6-rc.d/gsm-sms/dependencies.d \
+    && touch /etc/s6-overlay/s6-rc.d/gsm-sms/dependencies.d/init-gsm-config
 
 # Install required Python packages
 RUN pip3 install --no-cache-dir python-gammu==3.2.4 requests

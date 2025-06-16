@@ -23,13 +23,21 @@ ls -la /etc/s6-overlay/s6-rc.d/gsm-sms/
 bashio::log.debug "user/contents.d files:"
 ls -la /etc/s6-overlay/s6-rc.d/user/contents.d/
 
-# Check the gsm-services bundle
-bashio::log.debug "gsm-services bundle:"
-ls -la /etc/s6-overlay/s6-rc.d/gsm-services/
+# Check the gsm-bundle bundle
+bashio::log.debug "gsm-bundle bundle:"
+if [ -d "/etc/s6-overlay/s6-rc.d/gsm-bundle" ]; then
+    ls -la /etc/s6-overlay/s6-rc.d/gsm-bundle/ || true
+else
+    echo "gsm-bundle directory not found"
+fi
 
 # Check bundle contents
-bashio::log.debug "gsm-services contents.d files:"
-ls -la /etc/s6-overlay/s6-rc.d/gsm-services/contents.d/
+bashio::log.debug "gsm-bundle contents.d files:"
+if [ -d "/etc/s6-overlay/s6-rc.d/gsm-bundle/contents.d" ]; then
+    ls -la /etc/s6-overlay/s6-rc.d/gsm-bundle/contents.d/ || true
+else
+    echo "gsm-bundle/contents.d directory not found"
+fi
 
 # Check all uncaught logs
 bashio::log.debug "=== UNCAUGHT LOGS ==="

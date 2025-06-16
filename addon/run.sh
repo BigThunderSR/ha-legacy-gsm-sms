@@ -4,20 +4,33 @@
 # ==============================================================================
 bashio::log.info "Starting GSM SMS service using run.sh..."
 
-# First, let's make sure our directories exist
+# Get log level
+LOG_LEVEL=$(bashio::config 'log_level')
+bashio::log.level "${LOG_LEVEL}"
+
+# Try two approaches to start the service:
+# 1. Use S6-overlay (preferred)
+# 2. Direct execution (fallback)
+
+# Set up trap for proper shutdown
+trap 'bashio::log.info "Received shutdown signal, stopping service..."; exit 0' TERM INT
+
+# Create all required runtime directories
 mkdir -p /run/service
 mkdir -p /run/s6/services
+mkdir -p /var/run/s6/services
+mkdir -p /run/s6-rc/servicedirs
+mkdir -p /var/run/s6/etc
+mkdir -p /data/gsm_sms
 
-# Debug information about S6 environment
-if [ "$LOG_LEVEL" == "debug" ]; then
-  bashio::log.debug "S6 Runtime Environment:"
-  bashio::log.debug "S6_BEHAVIOUR_IF_STAGE2_FAILS=${S6_BEHAVIOUR_IF_STAGE2_FAILS}"
-  bashio::log.debug "S6_CMD_WAIT_FOR_SERVICES=${S6_CMD_WAIT_FOR_SERVICES}"
-  
-  # Check for required directories
-  bashio::log.debug "Checking for S6 directories:"
-  find /etc/s6-overlay -type d | sort | bashio::log.debug
-fi
+# Debug information
+bashio::log.debug "==== ENVIRONMENT INFORMATION ===="
+bashio::log.debug "Current directory: $(pwd)"
+bashio::log.debug "S6_BEHAVIOUR_IF_STAGE2_FAILS=${S6_BEHAVIOUR_IF_STAGE2_FAILS}"
+bashio::log.debug "S6_CMD_WAIT_FOR_SERVICES=${S6_CMD_WAIT_FOR_SERVICES}"
+bashio::log.debug "Checking S6 directories:"
+find /etc/s6-overlay -type d | sort | bashio::log.debug
+bashio::log.debug "==== END ENVIRONMENT INFORMATION ===="
 
 # Create config if needed
 bashio::log.info "Setting up configuration..."
@@ -45,6 +58,26 @@ EOL
 # Set up logging
 bashio::log.level "${LOG_LEVEL}"
 
-# Start the python service as a foreground process
-bashio::log.info "Starting GSM SMS Python service..."
-exec python3 /usr/bin/gsm_sms_service.py
+# Make sure init scripts are executed (in case S6 doesn't run them)
+if [ -d "/etc/cont-init.d" ]; then
+    for init in /etc/cont-init.d/*.sh; do
+        if [ -f "$init" ]; then
+            bashio::log.info "Running initialization script: $init"
+            $init
+        fi
+    done
+fi
+
+# Signal to Home Assistant that services are up
+mkdir -p /var/run/s6/etc
+touch /var/run/s6/etc/services-up
+
+# Try to exec into S6 supervisor if available
+if command -v s6-svscan > /dev/null && [ -d "/etc/s6-overlay/s6-rc.d" ]; then
+    bashio::log.info "Starting with S6 supervisor..."
+    exec s6-svscan -t0 /run/service
+else
+    # Fallback to directly starting the Python service
+    bashio::log.warning "S6 supervisor not available, starting service directly..."
+    exec python3 /usr/bin/gsm_sms_service.py
+fi

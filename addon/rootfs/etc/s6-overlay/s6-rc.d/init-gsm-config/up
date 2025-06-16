@@ -1,4 +1,13 @@
 #!/command/with-contenv bashio
+# S6 oneshot service to create the GSM SMS configuration
+
+# Notify S6 when we're done (this is important for oneshot services)
+S6_NOTIFICATION_FD=3
+if [ -f "/var/run/s6/container_environment/S6_NOTIFICATION_FD" ]; then
+    S6_NOTIFICATION_FD=$(cat /var/run/s6/container_environment/S6_NOTIFICATION_FD)
+fi
+
+bashio::log.info "Running GSM configuration setup (S6_NOTIFICATION_FD=${S6_NOTIFICATION_FD})..."
 
 # Create configuration file for GSM SMS service
 CONFIG_PATH=/data/options.json
@@ -38,4 +47,10 @@ if [ -f "/data/gsm_sms/config.json" ]; then
     cat /data/gsm_sms/config.json
 else
     bashio::log.error "Failed to create GSM SMS configuration"
+fi
+
+# Notify S6 that we're done with this oneshot service
+if [ -n "$S6_NOTIFICATION_FD" ]; then
+    bashio::log.debug "Notifying S6 that config initialization is complete"
+    exec {S6_NOTIFICATION_FD}>&-
 fi

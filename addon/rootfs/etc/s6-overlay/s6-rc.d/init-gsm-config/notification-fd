@@ -1,0 +1,8 @@
+#!/bin/sh
+# Notification FD for S6 services
+if [ -d /var/run/s6/container_environment ]; then
+  # S6 Overlay v3 behavior
+  echo "3"
+else 
+  echo "1"
+fi

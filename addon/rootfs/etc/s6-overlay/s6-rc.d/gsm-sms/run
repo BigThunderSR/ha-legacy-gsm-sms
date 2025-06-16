@@ -4,7 +4,13 @@
 LOG_LEVEL=$(bashio::config 'log_level')
 bashio::log.level "${LOG_LEVEL}"
 
-bashio::log.info "Starting GSM SMS service..."
+# S6 Service Ready Notification FD
+S6_NOTIFICATION_FD=3
+if [ -f "/var/run/s6/container_environment/S6_NOTIFICATION_FD" ]; then
+    S6_NOTIFICATION_FD=$(cat /var/run/s6/container_environment/S6_NOTIFICATION_FD)
+fi
+
+bashio::log.info "Starting GSM SMS service (S6_NOTIFICATION_FD=${S6_NOTIFICATION_FD})..."
 
 # Debug info (only shown if log level is debug)
 bashio::log.debug "Current directory: $(pwd)"
@@ -29,6 +35,19 @@ else
     bashio::log.error "Config file not found at /data/gsm_sms/config.json"
 fi
 
+# Ready notification for S6-overlay
+bashio::log.info "Ready to start GSM SMS service"
+
+# Notify service manager that we're ready to start the service
+if [ -n "$S6_NOTIFICATION_FD" ]; then
+    exec {S6_NOTIFICATION_FD}>&- || true
+fi
+
 # Start the Python service
 bashio::log.info "Launching GSM SMS service Python script"
+
+# Set up a trap for SIGTERM to handle it gracefully
+trap 'bashio::log.info "Received signal to stop, shutting down..."; exit 0' TERM INT
+
+# Execute Python service in the foreground
 exec python3 /usr/bin/gsm_sms_service.py

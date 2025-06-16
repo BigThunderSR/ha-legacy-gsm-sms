@@ -31,12 +31,35 @@ ls -la /etc/s6-overlay/s6-rc.d/gsm-services/
 bashio::log.debug "gsm-services contents.d files:"
 ls -la /etc/s6-overlay/s6-rc.d/gsm-services/contents.d/
 
-# Check the uncaught logs
+# Check all uncaught logs
+bashio::log.debug "=== UNCAUGHT LOGS ==="
 if [ -f "/run/uncaught-logs/current" ]; then
-    bashio::log.debug "=== UNCAUGHT LOGS ==="
     cat /run/uncaught-logs/current
-    bashio::log.debug "=== END OF UNCAUGHT LOGS ==="
+elif [ -d "/run/uncaught-logs/" ]; then
+    find /run/uncaught-logs -type f -exec cat {} \;
+else
+    echo "No uncaught logs found at /run/uncaught-logs/"
 fi
+
+# Also check service startup errors
+if [ -d "/run/s6/services" ]; then
+    for service_dir in /run/s6/services/*; do
+        if [ -d "$service_dir" ] && [ -f "$service_dir/notification-fd" ]; then
+            bashio::log.debug "=== SERVICE $(basename $service_dir) NOTIFICATION-FD ==="
+            cat "$service_dir/notification-fd"
+        fi
+        if [ -d "$service_dir" ] && [ -f "$service_dir/event" ]; then
+            bashio::log.debug "=== SERVICE $(basename $service_dir) EVENT ==="
+            cat "$service_dir/event" || echo "No event file or empty"
+        fi
+    done
+fi
+
+if [ -d "/run/s6-rc" ]; then
+    bashio::log.debug "=== S6-RC SERVICE STATES ==="
+    find /run/s6-rc -name "state" -type f -exec cat {} \; 2>/dev/null || echo "No state files found"
+fi
+bashio::log.debug "=== END OF UNCAUGHT LOGS ==="
 
 # Check specific service failures
 bashio::log.debug "=== S6-RC COMPILED DATABASE ==="

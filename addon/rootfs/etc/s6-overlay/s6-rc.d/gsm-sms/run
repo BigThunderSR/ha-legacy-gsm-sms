@@ -1,8 +1,34 @@
-#!/command/execlineb -P
-with-contenv
-backtick -n DEVICE { bashio::config "device" }
-backtick -n BAUD { bashio::config "baud_speed" }
-backtick -n SCAN { bashio::config "scan_interval" }
-backtick -n SERVICE { bashio::config "service_name" }
-foreground { mkdir -p /data/gsm_sms }
-foreground { python3 /usr/bin/gsm_sms_service.py }
+#!/command/with-contenv bashio
+
+# Get log level from config
+LOG_LEVEL=$(bashio::config 'log_level')
+bashio::log.level "${LOG_LEVEL}"
+
+bashio::log.info "Starting GSM SMS service..."
+
+# Debug info (only shown if log level is debug)
+bashio::log.debug "Current directory: $(pwd)"
+bashio::log.debug "Config exists: $(test -f /data/gsm_sms/config.json && echo 'Yes' || echo 'No')"
+bashio::log.debug "Python executable: $(which python3)"
+bashio::log.debug "Service script exists: $(test -f /usr/bin/gsm_sms_service.py && echo 'Yes' || echo 'No')"
+
+# Ensure the data directory exists
+mkdir -p /data/gsm_sms
+
+# Check if config file exists and is valid JSON
+if [ -f "/data/gsm_sms/config.json" ]; then
+    bashio::log.info "Found configuration file, validating..."
+    if jq empty /data/gsm_sms/config.json 2>/dev/null; then
+        bashio::log.info "Configuration is valid"
+        bashio::log.debug "Configuration contents:"
+        cat /data/gsm_sms/config.json | bashio::log.debug
+    else
+        bashio::log.error "Invalid JSON configuration found"
+    fi
+else
+    bashio::log.error "Config file not found at /data/gsm_sms/config.json"
+fi
+
+# Start the Python service
+bashio::log.info "Launching GSM SMS service Python script"
+exec python3 /usr/bin/gsm_sms_service.py

@@ -10,9 +10,9 @@ from datetime import datetime
 import requests
 import gammu
 
-# Set up logging - Debug level for development
+# Default to INFO level until we load the config
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout)
@@ -23,6 +23,38 @@ logging.basicConfig(
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 _LOGGER = logging.getLogger("gsm_sms_service")
+
+# Function to set log level from string
+def set_log_level(level_str):
+    """Set the log level based on a string value from config."""
+    log_levels = {
+        "trace": logging.DEBUG,  # Treat trace as debug for Python
+        "debug": logging.DEBUG,
+        "info": logging.INFO, 
+        "notice": logging.INFO,  # Treat notice as info for Python
+        "warning": logging.WARNING,
+        "error": logging.ERROR,
+        "fatal": logging.CRITICAL
+    }
+    
+    # Default to INFO if the level is not recognized
+    level = log_levels.get(level_str.lower(), logging.INFO)
+    _LOGGER.setLevel(level)
+    
+    # Also set the root logger
+    logging.getLogger().setLevel(level)
+    
+    # Log the change
+    _LOGGER.info(f"Log level set to: {level_str} ({logging.getLevelName(level)})")
+    
+    # Special case for debug level - print extra information
+    if level == logging.DEBUG:
+        _LOGGER.debug("====== GSM SMS Service Debug Information ======")
+        _LOGGER.debug(f"Python version: {sys.version}")
+        _LOGGER.debug(f"Current working directory: {os.getcwd()}")
+        _LOGGER.debug(f"Current user: {os.getuid()}")
+        _LOGGER.debug(f"Environment variables: {os.environ}")
+        _LOGGER.debug("=============================================")
 
 # Print startup diagnostic information
 _LOGGER.debug("====== GSM SMS Service Debug Information ======")
@@ -392,6 +424,11 @@ if __name__ == "__main__":
             try:
                 with open('/data/gsm_sms/config.json', 'r') as f:
                     config = json.load(f)
+                
+                # Set log level from configuration
+                log_level = config.get("log_level", "info")
+                set_log_level(log_level)
+                
             except FileNotFoundError:
                 _LOGGER.error("Config file not found. Waiting for 10 seconds...")
                 time.sleep(10)

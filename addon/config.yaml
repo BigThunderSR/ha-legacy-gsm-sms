@@ -1,7 +1,7 @@
 name: "Legacy GSM SMS"
 description: "Send and receive SMS messages using a GSM modem"
 codenotary: bigthundersr@outlook.com
-version: 0.0.1e
+version: 0.0.1f
 slug: "legacy_gsm_sms"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 #image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
@@ -31,12 +31,14 @@ options:
   unicode: false
   scan_interval: 30
   service_name: "legacy_gsm_sms"
+  log_level: "info"
 schema:
   device: str
   baud_speed: list(0|50|75|110|134|150|200|300|600|1200|1800|2400|4800|9600|19200|28800|38400|57600|76800|115200)
   unicode: bool
   scan_interval: int(10,600)
   service_name: str
+  log_level: list(trace|debug|info|notice|warning|error|fatal)
 homeassistant_api: true
 devices:
   - /dev/ttyUSB[0-9]*

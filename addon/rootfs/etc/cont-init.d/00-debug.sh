@@ -2,12 +2,16 @@
 
 # This script is executed at container startup to help debug s6-overlay issues
 
+# Get log level from config
+LOG_LEVEL=$(bashio::config 'log_level')
+bashio::log.level "${LOG_LEVEL}"
+
 # Log system information
-echo "====== DEBUG INFORMATION ======"
-echo "Current date: $(date)"
-echo "Current user: $(whoami)"
-echo "Current directory: $(pwd)"
-echo "Process ID: $$"
+bashio::log.debug "====== DEBUG INFORMATION ======"
+bashio::log.debug "Current date: $(date)"
+bashio::log.debug "Current user: $(whoami)"
+bashio::log.debug "Current directory: $(pwd)"
+bashio::log.debug "Process ID: $$"
 echo "Parent Process ID: $PPID"
 echo "Environment variables:"
 env | sort

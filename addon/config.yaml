@@ -1,10 +1,10 @@
 name: "Legacy GSM SMS"
 description: "Send and receive SMS messages using a GSM modem"
 codenotary: bigthundersr@outlook.com
-version: 0.0.1d
+version: 0.0.1e
 slug: "legacy_gsm_sms"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
-image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
+#image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
 arch:
   - aarch64
   - amd64
@@ -12,9 +12,16 @@ arch:
   - armv7
   - i386
 #startup: application
-#init: true
-uart: true
 usb: true
+uart: true
+privileged:
+  - SYS_RAWIO
+  - SYS_ADMIN
+  - DAC_READ_SEARCH
+homeassistant_api: true
+auth_api: true
+init: false
+host_dbus: true
 #boot: auto
 map:
   - share:rw
@@ -31,3 +38,7 @@ schema:
   scan_interval: int(10,600)
   service_name: str
 homeassistant_api: true
+devices:
+  - /dev/ttyUSB[0-9]*
+  - /dev/ttyACM[0-9]*
+  - /dev/serial/by-id/*

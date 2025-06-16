@@ -30,6 +30,9 @@ RUN chmod a+x /usr/bin/gsm_sms_service.py \
     && chmod a+x /etc/s6-overlay/s6-rc.d/gsm-sms/finish \
     && chmod a+x /etc/s6-overlay/s6-rc.d/init-gsm-config/up
 
+# Set permissions for all S6 service scripts
+RUN find /etc/s6-overlay/s6-rc.d/ -type f \( -name "run" -o -name "up" -o -name "finish" \) -exec chmod +x {} \;
+
 # Install required Python packages
 RUN pip3 install --no-cache-dir python-gammu==3.2.4 requests
 

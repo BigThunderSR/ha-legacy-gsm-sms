@@ -23,5 +23,28 @@ ls -la /etc/s6-overlay/s6-rc.d/gsm-sms/
 bashio::log.debug "user/contents.d files:"
 ls -la /etc/s6-overlay/s6-rc.d/user/contents.d/
 
+# Check the gsm-services bundle
+bashio::log.debug "gsm-services bundle:"
+ls -la /etc/s6-overlay/s6-rc.d/gsm-services/
+
+# Check bundle contents
+bashio::log.debug "gsm-services contents.d files:"
+ls -la /etc/s6-overlay/s6-rc.d/gsm-services/contents.d/
+
+# Check the uncaught logs
+if [ -f "/run/uncaught-logs/current" ]; then
+    bashio::log.debug "=== UNCAUGHT LOGS ==="
+    cat /run/uncaught-logs/current
+    bashio::log.debug "=== END OF UNCAUGHT LOGS ==="
+fi
+
+# Check specific service failures
+bashio::log.debug "=== S6-RC COMPILED DATABASE ==="
+if [ -d "/run/s6/db" ]; then
+    ls -la /run/s6/db
+    bashio::log.debug "=== COMPILED SERVICE STATES ==="
+    find /run/s6/db -type f -name "*gsm*" -exec cat {} \;
+fi
+
 # Create a visual marker to easily spot this information in logs
 bashio::log.info "======= END OF S6-RC DEBUG INFO ======="

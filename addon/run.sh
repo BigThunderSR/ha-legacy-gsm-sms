@@ -8,6 +8,17 @@ bashio::log.info "Starting GSM SMS service using run.sh..."
 mkdir -p /run/service
 mkdir -p /run/s6/services
 
+# Debug information about S6 environment
+if [ "$LOG_LEVEL" == "debug" ]; then
+  bashio::log.debug "S6 Runtime Environment:"
+  bashio::log.debug "S6_BEHAVIOUR_IF_STAGE2_FAILS=${S6_BEHAVIOUR_IF_STAGE2_FAILS}"
+  bashio::log.debug "S6_CMD_WAIT_FOR_SERVICES=${S6_CMD_WAIT_FOR_SERVICES}"
+  
+  # Check for required directories
+  bashio::log.debug "Checking for S6 directories:"
+  find /etc/s6-overlay -type d | sort | bashio::log.debug
+fi
+
 # Create config if needed
 bashio::log.info "Setting up configuration..."
 CONFIG_PATH=/data/options.json

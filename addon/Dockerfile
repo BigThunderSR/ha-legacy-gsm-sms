@@ -18,6 +18,7 @@ RUN apk add --no-cache \
 # Copy the service files
 COPY gsm_sms_service.py /usr/bin/
 COPY send_sms.sh /usr/bin/
+COPY queue_sms.sh /usr/bin/
 
 # Create required S6-overlay directories
 RUN mkdir -p /etc/services.d \
@@ -34,6 +35,7 @@ COPY rootfs /
 # Set permissions for scripts
 RUN chmod a+x /usr/bin/gsm_sms_service.py \
     && chmod a+x /usr/bin/send_sms.sh \
+    && chmod a+x /usr/bin/queue_sms.sh \
     && chmod a+x /etc/cont-init.d/*.sh \
     && chmod +x /etc/s6-overlay/s6-rc.d/gsm-sms/run \
     && chmod +x /etc/s6-overlay/s6-rc.d/gsm-sms/finish \

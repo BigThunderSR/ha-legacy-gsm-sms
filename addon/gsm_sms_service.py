@@ -122,7 +122,8 @@ class GSMSMSService:
             }
             
             if self.baud_speed != "0":
-                gammu_config["Baudrate"] = self.baud_speed
+                gammu_config["Speed"] = self.baud_speed
+                # Note: Do not use "Baudrate" as it's not recognized by Gammu
             
             # Initialize Gammu state machine
             self.sm = gammu.StateMachine()
@@ -444,54 +445,70 @@ class GSMSMSService:
             return
 
         def listener():
+            """Monitor for SMS requests through files."""
             _LOGGER.info(f"Starting service call listener for notify.{self.service_name}")
             
-            # Define the endpoint to poll for service calls
-            url = f"{self.ha_url}/api/services/notify/{self.service_name}/history"
+            # Instead of polling Home Assistant API, we'll use a file-based approach
+            # This avoids issues with non-existent API endpoints like /core/api/services/notify/{service_name}/history
+            sms_dir = "/data/gsm_sms/pending"
+            os.makedirs(sms_dir, exist_ok=True)
             
-            last_check_time = datetime.now().isoformat()
+            _LOGGER.info(f"Monitoring directory for SMS requests: {sms_dir}")
             
             while True:
                 try:
-                    # Poll for new service calls
-                    try:
-                        response = requests.get(
-                            url, 
-                            headers=self.headers,
-                            params={"since": last_check_time},
-                            timeout=10
-                        )
-                    except requests.exceptions.RequestException as e:
-                        _LOGGER.error(f"Error connecting to Home Assistant: {str(e)}")
-                        time.sleep(30)  # Wait longer before retrying
-                        continue
+                    # Look for pending SMS files
+                    sms_files = [f for f in os.listdir(sms_dir) if f.endswith('.sms')]
                     
-                    if response.status_code == 200:
-                        service_calls = response.json()
-                        for call in service_calls:
-                            try:
-                                # Process the service call
-                                _LOGGER.info(f"Received service call: {call}")
-                                
-                                data = call.get("data", {})
-                                message = data.get("message", "")
-                                targets = data.get("target", [])
-                                
-                                if isinstance(targets, str):
-                                    targets = [targets]
-                                
-                                # Send SMS to each target
-                                for target in targets:
-                                    self.send_sms(target, message)
-                                    
-                            except Exception as ex:
-                                _LOGGER.error(f"Error processing service call: {ex}")
+                    for sms_file in sms_files:
+                        file_path = os.path.join(sms_dir, sms_file)
+                        _LOGGER.debug(f"Found SMS request file: {sms_file}")
                         
-                        last_check_time = datetime.now().isoformat()
-                except Exception as ex:
-                    _LOGGER.error(f"Error polling for service calls: {ex}")
+                        try:
+                            # Read the SMS data from file
+                            with open(file_path, 'r') as f:
+                                sms_data = json.load(f)
+                            
+                            # Process the SMS data
+                            message = sms_data.get("message", "")
+                            targets = sms_data.get("target", [])
+                            
+                            if not message:
+                                _LOGGER.warning(f"Empty message in SMS request file: {sms_file}")
+                            
+                            if not targets:
+                                _LOGGER.warning(f"No targets in SMS request file: {sms_file}")
+                            
+                            if isinstance(targets, str):
+                                targets = [targets]
+                            
+                            # Send SMS to each target
+                            for target in targets:
+                                _LOGGER.info(f"Sending SMS to {target}: {message}")
+                                self.send_sms(target, message)
+                            
+                            # Delete the file after processing
+                            os.remove(file_path)
+                            _LOGGER.debug(f"Processed and removed SMS file: {sms_file}")
+                            
+                        except Exception as ex:
+                            _LOGGER.error(f"Error processing SMS file {sms_file}: {ex}")
+                            # Move the file to an error directory
+                            error_dir = os.path.join(sms_dir, "errors")
+                            os.makedirs(error_dir, exist_ok=True)
+                            try:
+                                os.rename(file_path, os.path.join(error_dir, sms_file))
+                            except:
+                                # If moving fails, just try to delete it
+                                try:
+                                    os.remove(file_path)
+                                except:
+                                    pass
                 
-                # Sleep for a short period before polling again
+                except Exception as ex:
+                    _LOGGER.error(f"Error in service call listener: {ex}")
+                
+                # Sleep for a short period before checking again
                 time.sleep(5)
                 
         # Start the listener thread

@@ -115,15 +115,61 @@ class GSMSMSService:
                 _LOGGER.info("Waiting for device to become available...")
                 return False
             
-            # Gammu configuration
-            gammu_config = {
-                "Device": self.device,
-                "Connection": "at",
-            }
+            # Gammu configuration - Get verbose about what we're doing
+            _LOGGER.info(f"Setting up Gammu configuration for device: {self.device}")
             
-            if self.baud_speed != "0":
-                gammu_config["Speed"] = self.baud_speed
-                # Note: Do not use "Baudrate" as it's not recognized by Gammu
+            # We'll try multiple configurations in sequence until one works
+            configurations = [
+                # Config 1: Basic AT connection (most common)
+                {
+                    "Device": self.device,
+                    "Connection": "at"
+                },
+                # Config 2: AT with specific baud rate in connection string
+                {
+                    "Device": self.device,
+                    "Connection": f"at{self.baud_speed}" if self.baud_speed != "0" else "at19200"
+                },
+                # Config 3: Auto detection
+                {
+                    "Device": self.device,
+                    "Connection": "auto"
+                }
+            ]
+            
+            # Try configurations in sequence
+            connection_error = None
+            gammu_config = configurations[0]  # Default to first config if all fail
+            
+            for i, config in enumerate(configurations):
+                try:
+                    _LOGGER.info(f"Trying configuration {i+1}/{len(configurations)}: {config}")
+                    # Use this configuration
+                    gammu_config = config
+                    
+                    # Initialize Gammu state machine with this config
+                    self.sm = gammu.StateMachine()
+                    self.sm.SetConfig(0, gammu_config)
+                    self.sm.Init()
+                    
+                    # If we get here, the configuration worked!
+                    _LOGGER.info(f"Successfully connected to modem with config: {gammu_config}")
+                    self.connected = True
+                    
+                    # Get device information
+                    self.get_device_info()
+                    
+                    return True
+                    
+                except Exception as e:
+                    _LOGGER.warning(f"Configuration {i+1} failed: {str(e)}")
+                    connection_error = e
+                    self.connected = False
+                    # Continue to next configuration
+            
+            # If we get here, all configurations failed
+            if connection_error:
+                raise connection_error  # Re-raise the last error
             
             # Initialize Gammu state machine
             self.sm = gammu.StateMachine()

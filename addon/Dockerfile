@@ -36,6 +36,7 @@ COPY rootfs /
 RUN chmod a+x /usr/bin/gsm_sms_service.py \
     && chmod a+x /usr/bin/send_sms.sh \
     && chmod a+x /usr/bin/queue_sms.sh \
+    && chmod +x /etc/cont-init.d/25-test-gammu.sh \
     && chmod a+x /etc/cont-init.d/*.sh \
     && chmod +x /etc/s6-overlay/s6-rc.d/gsm-sms/run \
     && chmod +x /etc/s6-overlay/s6-rc.d/gsm-sms/finish \
@@ -43,7 +44,8 @@ RUN chmod a+x /usr/bin/gsm_sms_service.py \
     && chmod a+x /etc/s6-overlay/s6-rc.d/init-gsm-config/up
 
 # Set permissions for all S6 service scripts
-RUN find /etc/s6-overlay/s6-rc.d/ -type f \( -name "run" -o -name "up" -o -name "finish" -o -name "notification-fd" \) -exec chmod +x {} \;
+RUN find /etc/s6-overlay/s6-rc.d/ -type f \( -name "run" -o -name "up" -o -name "finish" -o -name "notification-fd" \) -exec chmod +x {} \; \
+    && find /etc/cont-init.d/ -type f -exec chmod +x {} \;
 
 # Create essential S6 files if missing
 RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/gsm-sms/type \

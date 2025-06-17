@@ -49,5 +49,15 @@ bashio::log.info "Launching GSM SMS service Python script"
 # Set up a trap for SIGTERM to handle it gracefully
 trap 'bashio::log.info "Received signal to stop, shutting down..."; exit 0' TERM INT
 
-# Execute Python service in the foreground
-exec python3 /usr/bin/gsm_sms_service.py
+# Try to start the Python service, with better error handling
+if [ -f "/usr/bin/gsm_sms_service.py" ]; then
+    bashio::log.info "Starting GSM SMS service Python script..."
+    
+    # Execute Python service in the foreground with error logging
+    exec 2>&1
+    exec python3 -u /usr/bin/gsm_sms_service.py
+else
+    bashio::log.error "GSM SMS service script not found at /usr/bin/gsm_sms_service.py!"
+    # Exit with error to trigger a restart
+    exit 1
+fi

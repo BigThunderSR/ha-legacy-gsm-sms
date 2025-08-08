@@ -1,23 +1,27 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:base"
   ],
-  "enabledManagers": [
-    "pipenv",
-    "poetry",
-    "github-actions"
+  "labels": [
+    "Renovate",
+    "dependencies"
   ],
   "packageRules": [
     {
-      "matchCategories": [
-        "python"
-      ],
-      "enabled": true
+      "matchManagers": ["pip_requirements", "pip_setup", "pipenv", "poetry"],
+      "labels": ["python"]
     },
     {
       "matchManagers": ["github-actions"],
-      "enabled": true
+      "labels": ["github_actions"]
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "labels": ["dockerfile"]
+    },
+    {
+      "matchManagers": ["npm", "yarn", "pnpm", "nvm"],
+      "labels": ["javascript", "nvm"]
     }
   ]
 }

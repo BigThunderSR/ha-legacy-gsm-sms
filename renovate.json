@@ -1,6 +1,6 @@
 {
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "labels": [
     "Renovate",
@@ -8,20 +8,43 @@
   ],
   "packageRules": [
     {
-      "matchManagers": ["pip_requirements", "pip_setup", "pipenv", "poetry"],
-      "labels": ["python"]
+      "matchManagers": [
+        "pip_requirements",
+        "pip_setup",
+        "pipenv",
+        "poetry"
+      ],
+      "labels": [
+        "python"
+      ]
     },
     {
-      "matchManagers": ["github-actions"],
-      "labels": ["github_actions"]
+      "matchManagers": [
+        "github-actions"
+      ],
+      "labels": [
+        "github_actions"
+      ]
     },
     {
-      "matchManagers": ["dockerfile"],
-      "labels": ["dockerfile"]
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "labels": [
+        "dockerfile"
+      ]
     },
     {
-      "matchManagers": ["npm", "yarn", "pnpm", "nvm"],
-      "labels": ["javascript", "nvm"]
+      "matchManagers": [
+        "npm",
+        "yarn",
+        "pnpm",
+        "nvm"
+      ],
+      "labels": [
+        "javascript",
+        "nvm"
+      ]
     }
   ]
 }

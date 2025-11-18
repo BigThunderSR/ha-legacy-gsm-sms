@@ -518,12 +518,22 @@ class GSMSMSService:
         # Main loop
         _LOGGER.info(f"Entering main loop (scanning every {self.scan_interval} seconds)")
         
+        # Debug: Show available directories
+        _LOGGER.info("Checking available queue file locations:")
+        for path in ['/share', '/data', '/config', '/tmp']:
+            exists = os.path.exists(path)
+            _LOGGER.info(f"  {path}: {'exists' if exists else 'not found'}")
+        
         try:
             last_check = 0
+            check_count = 0
             while True:
                 current_time = time.time()
                 
                 # Check for events and queue (fast check every second)
+                check_count += 1
+                if check_count % 30 == 1:  # Log every 30 seconds
+                    _LOGGER.debug(f"Checking queue file (check #{check_count})")
                 self.check_for_events()
                 
                 # Check for incoming SMS (slower, based on scan_interval)

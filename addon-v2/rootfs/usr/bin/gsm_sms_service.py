@@ -349,8 +349,8 @@ class GSMSMSService:
                 "attributes": attributes or {},
             }
             
-            # Use state API
-            url = f"{self.ha_url}/api/states/sensor.gsm_modem_status"
+            # Use state API - correct URL format
+            url = f"{self.ha_url}/states/sensor.gsm_modem_status"
             response = requests.post(url, headers=self.headers, json=data, timeout=5)
             
             if response.status_code not in [200, 201]:
@@ -421,54 +421,38 @@ class GSMSMSService:
             _LOGGER.error(f"Error checking SMS: {e}")
     
     def register_service(self):
-        """Register the send_sms service with Home Assistant via addon discovery."""
+        """Display service setup instructions."""
         try:
-            # Send discovery info to Home Assistant
-            # This tells HA that we provide a service
-            discovery_data = {
-                "addon": "legacy_gsm_sms_test",
-                "config": {
-                    "device": self.device_path
-                },
-                "service": "legacy_gsm_sms.send_sms"
-            }
-            
-            # Create a persistent marker that tells HA about our service
-            # HA will expose this as a service that other automations can call
-            _LOGGER.info("Service registration: The addon will handle SMS sending via events")
-            _LOGGER.info("To send SMS, fire a 'legacy_gsm_sms_send' event with 'number' and 'message' data")
-            _LOGGER.info("Example: service: event.fire, data: {event_type: legacy_gsm_sms_send, event_data: {number: '+1234567890', message: 'Hello'}}")
+            _LOGGER.info("=" * 60)
+            _LOGGER.info("SMS Sending Service")
+            _LOGGER.info("=" * 60)
+            _LOGGER.info("")
+            _LOGGER.info("Add this to your configuration.yaml:")
+            _LOGGER.info("")
+            _LOGGER.info("shell_command:")
+            _LOGGER.info("  send_sms: >")
+            _LOGGER.info("    echo '{\"action\":\"send_sms\",\"number\":\"{{ number }}\",\"message\":\"{{ message }}\"}' > /tmp/gsm_sms_queue.json")
+            _LOGGER.info("")
+            _LOGGER.info("Then reload shell_command and use in automations:")
+            _LOGGER.info("")
+            _LOGGER.info("  service: shell_command.send_sms")
+            _LOGGER.info("  data:")
+            _LOGGER.info("    number: '+1234567890'")
+            _LOGGER.info("    message: 'Your message here'")
+            _LOGGER.info("")
+            _LOGGER.info("=" * 60)
             
             self.service_registered = True
             return True
                 
         except Exception as e:
-            _LOGGER.error(f"Error in service registration: {e}")
+            _LOGGER.error(f"Error displaying instructions: {e}")
             return False
     
     def check_for_events(self):
-        """Check for legacy_gsm_sms_send events from Home Assistant."""
-        try:
-            # Query recent events from HA
-            url = f"{self.ha_url}/events/legacy_gsm_sms_send"
-            response = requests.get(url, headers=self.ha_headers, timeout=5)
-            
-            if response.status_code == 200:
-                events = response.json()
-                for event in events:
-                    event_data = event.get('data', {})
-                    number = event_data.get('number')
-                    message = event_data.get('message')
-                    
-                    if number and message:
-                        _LOGGER.info(f"Received event to send SMS to {number}")
-                        self.send_sms_message(number, message)
-            
-        except requests.exceptions.RequestException:
-            # Can't connect to HA API, use fallback queue method
-            self.check_queue_fallback()
-        except Exception as e:
-            _LOGGER.debug(f"Error checking events: {e}")
+        """Check for SMS send requests via file queue."""
+        # Use file-based queue as primary method since event polling doesn't work in addons
+        self.check_queue_fallback()
             
     def check_queue_fallback(self):
         """Fallback: Check file-based queue for SMS send requests."""

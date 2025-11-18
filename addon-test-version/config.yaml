@@ -1,6 +1,6 @@
 name: "Legacy GSM SMS (Test)"
 description: "Send and receive SMS messages using a GSM modem"
-version: 0.0.1f
+version: 0.0.1g
 stage: experimental
 slug: "legacy_gsm_sms_test"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"

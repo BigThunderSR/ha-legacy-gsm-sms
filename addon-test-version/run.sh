@@ -20,14 +20,20 @@ echo "[INFO] Log Level: ${LOG_LEVEL}"
 if [ -e "${DEVICE}" ]; then
     echo "[INFO] Device exists: ${DEVICE}"
     ls -la "${DEVICE}"
+    
+    # If it's a symlink, check the actual device too
+    if [ -L "${DEVICE}" ]; then
+        REAL_DEVICE=$(readlink -f "${DEVICE}")
+        echo "[INFO] Real device: ${REAL_DEVICE}"
+        ls -la "${REAL_DEVICE}" 2>/dev/null || echo "[WARNING] Could not stat real device"
+        
+        # Check if real device is in use
+        echo "[INFO] Checking if device is in use..."
+        lsof "${REAL_DEVICE}" 2>/dev/null || echo "[INFO] No processes found using device (or lsof failed)"
+        fuser "${REAL_DEVICE}" 2>/dev/null && echo "[WARNING] Device is in use!" || echo "[INFO] Device appears free"
+    fi
 else
     echo "[WARNING] Device does not exist: ${DEVICE}"
-fi
-
-# Check if device is in use
-if lsof 2>/dev/null | grep -q "${DEVICE}"; then
-    echo "[WARNING] Device may be in use by another process"
-    lsof 2>/dev/null | grep "${DEVICE}" || true
 fi
 
 # Export configuration as environment variables

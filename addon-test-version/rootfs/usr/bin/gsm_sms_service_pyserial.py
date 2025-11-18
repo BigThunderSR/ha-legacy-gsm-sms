@@ -278,29 +278,31 @@ class GSMModem:
 
 
 class GSMSMSService:
-    """Service to handle SMS via GSM modem using pyserial."""
-
-    def __init__(self):
-        """Initialize the service."""
-        # Get configuration from environment
-        self.device = os.environ.get("DEVICE", "/dev/ttyUSB0")
-        self.baud_speed = int(os.environ.get("BAUD_SPEED", "115200")) if os.environ.get("BAUD_SPEED", "0") != "0" else 115200
-        self.scan_interval = int(os.environ.get("SCAN_INTERVAL", "30"))
-        
-        # Home Assistant API
-        self.ha_url = os.environ.get("SUPERVISOR_API", "http://supervisor/core")
-        self.ha_token = os.environ.get("SUPERVISOR_TOKEN", "")
-        self.headers = {
-            "Authorization": f"Bearer {self.ha_token}",
-            "Content-Type": "application/json",
-        }
-        
-        # State
+    """Service that manages GSM SMS operations and Home Assistant integration."""
+    
+    def __init__(self, device_path, baud_speed=115200, scan_interval=30):
+        """Initialize the GSM SMS service."""
+        self.device_path = device_path
+        self.device = device_path  # Alias for compatibility
+        self.baud_speed = baud_speed
+        self.scan_interval = scan_interval
         self.modem = None
         self.connected = False
         self.signal_strength = None
         
-        _LOGGER.info(f"Initialized with device: {self.device}, baud: {self.baud_speed}")
+        # Home Assistant API configuration
+        self.ha_url = "http://supervisor/core/api"
+        self.ha_token = os.environ.get('SUPERVISOR_TOKEN', '')
+        self.ha_headers = {
+            'Authorization': f'Bearer {self.ha_token}',
+            'Content-Type': 'application/json'
+        }
+        self.headers = self.ha_headers  # Alias for compatibility
+        
+        # Service registration status
+        self.service_registered = False
+        
+        _LOGGER.info(f"Initialized with device: {self.device_path}, baud: {self.baud_speed}")
 
     def connect(self):
         """Connect to the GSM modem."""
@@ -369,6 +371,34 @@ class GSMSMSService:
         except Exception as e:
             _LOGGER.debug(f"Could not fire event: {e}")
 
+    def send_sms_message(self, number, message):
+        """Send an SMS message via the modem."""
+        if not self.connected or not self.modem:
+            _LOGGER.error("Cannot send SMS - modem not connected")
+            return False
+        
+        try:
+            result = self.modem.send_sms(number, message)
+            if result:
+                # Fire success event
+                self.fire_event("legacy_gsm_sms_sent", {
+                    "recipient": number,
+                    "message": message,
+                    "timestamp": datetime.now().isoformat(),
+                    "status": "success"
+                })
+            return result
+        except Exception as e:
+            _LOGGER.error(f"Error sending SMS: {e}")
+            self.fire_event("legacy_gsm_sms_sent", {
+                "recipient": number,
+                "message": message,
+                "timestamp": datetime.now().isoformat(),
+                "status": "failed",
+                "error": str(e)
+            })
+            return False
+    
     def check_sms(self):
         """Check for new SMS messages."""
         if not self.connected or not self.modem:
@@ -389,6 +419,87 @@ class GSMSMSService:
                 
         except Exception as e:
             _LOGGER.error(f"Error checking SMS: {e}")
+    
+    def register_service(self):
+        """Register the send_sms service with Home Assistant via addon discovery."""
+        try:
+            # Send discovery info to Home Assistant
+            # This tells HA that we provide a service
+            discovery_data = {
+                "addon": "legacy_gsm_sms_test",
+                "config": {
+                    "device": self.device_path
+                },
+                "service": "legacy_gsm_sms.send_sms"
+            }
+            
+            # Create a persistent marker that tells HA about our service
+            # HA will expose this as a service that other automations can call
+            _LOGGER.info("Service registration: The addon will handle SMS sending via events")
+            _LOGGER.info("To send SMS, fire a 'legacy_gsm_sms_send' event with 'number' and 'message' data")
+            _LOGGER.info("Example: service: event.fire, data: {event_type: legacy_gsm_sms_send, event_data: {number: '+1234567890', message: 'Hello'}}")
+            
+            self.service_registered = True
+            return True
+                
+        except Exception as e:
+            _LOGGER.error(f"Error in service registration: {e}")
+            return False
+    
+    def check_for_events(self):
+        """Check for legacy_gsm_sms_send events from Home Assistant."""
+        try:
+            # Query recent events from HA
+            url = f"{self.ha_url}/events/legacy_gsm_sms_send"
+            response = requests.get(url, headers=self.ha_headers, timeout=5)
+            
+            if response.status_code == 200:
+                events = response.json()
+                for event in events:
+                    event_data = event.get('data', {})
+                    number = event_data.get('number')
+                    message = event_data.get('message')
+                    
+                    if number and message:
+                        _LOGGER.info(f"Received event to send SMS to {number}")
+                        self.send_sms_message(number, message)
+            
+        except requests.exceptions.RequestException:
+            # Can't connect to HA API, use fallback queue method
+            self.check_queue_fallback()
+        except Exception as e:
+            _LOGGER.debug(f"Error checking events: {e}")
+            
+    def check_queue_fallback(self):
+        """Fallback: Check file-based queue for SMS send requests."""
+        queue_file = '/tmp/gsm_sms_queue.json'
+        
+        try:
+            if os.path.exists(queue_file):
+                with open(queue_file, 'r') as f:
+                    command = json.load(f)
+                
+                # Remove the file immediately
+                os.remove(queue_file)
+                
+                if command.get('action') == 'send_sms':
+                    number = command.get('number')
+                    message = command.get('message')
+                    
+                    if number and message:
+                        _LOGGER.info(f"Processing queued SMS send request to {number}")
+                        self.send_sms_message(number, message)
+                    else:
+                        _LOGGER.warning("Invalid SMS command - missing number or message")
+                        
+        except json.JSONDecodeError:
+            _LOGGER.error(f"Invalid JSON in queue file")
+            try:
+                os.remove(queue_file)
+            except:
+                pass
+        except Exception as e:
+            _LOGGER.debug(f"Error checking queue: {e}")
 
     def run(self):
         """Run the service main loop."""
@@ -415,18 +526,27 @@ class GSMSMSService:
         _LOGGER.info(f"Entering main loop (scanning every {self.scan_interval} seconds)")
         
         try:
+            last_check = 0
             while True:
-                # Check for SMS
-                self.check_sms()
+                current_time = time.time()
                 
-                # Update sensor
-                self.update_sensor("connected", {
-                    "signal_strength": self.signal_strength,
-                    "last_check": datetime.now().isoformat(),
-                })
+                # Check for events and queue (fast check every second)
+                self.check_for_events()
                 
-                # Sleep
-                time.sleep(self.scan_interval)
+                # Check for incoming SMS (slower, based on scan_interval)
+                if current_time - last_check >= self.scan_interval:
+                    self.check_sms()
+                    
+                    # Update sensor
+                    self.update_sensor("connected", {
+                        "signal_strength": self.signal_strength,
+                        "last_check": datetime.now().isoformat(),
+                    })
+                    
+                    last_check = current_time
+                
+                # Sleep briefly
+                time.sleep(1)
                 
         except KeyboardInterrupt:
             _LOGGER.info("Service interrupted by user")
@@ -437,5 +557,12 @@ class GSMSMSService:
 
 
 if __name__ == "__main__":
-    service = GSMSMSService()
+    # Get configuration from environment variables
+    device = os.environ.get("DEVICE", "/dev/ttyUSB0")
+    baud_speed = int(os.environ.get("BAUD_SPEED", "115200")) if os.environ.get("BAUD_SPEED", "0") != "0" else 115200
+    scan_interval = int(os.environ.get("SCAN_INTERVAL", "30"))
+    
+    _LOGGER.info(f"Starting GSM SMS Service with device={device}, baud={baud_speed}, interval={scan_interval}")
+    
+    service = GSMSMSService(device, baud_speed, scan_interval)
     service.run()

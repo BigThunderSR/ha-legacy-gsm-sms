@@ -1,22 +1,14 @@
 name: "Legacy GSM SMS (Test)"
 description: "Send and receive SMS messages using a GSM modem"
-version: 0.0.2a
+version: 0.0.3
 stage: experimental
 slug: "legacy_gsm_sms_test"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 arch:
   - aarch64
   - amd64
-usb: true
 uart: true
-privileged:
-  - SYS_RAWIO
-  - SYS_ADMIN
-full_access: true
-apparmor: false
-host_network: true
 homeassistant_api: true
-auth_api: true
 init: false
 options:
   device: "/dev/ttyUSB0"

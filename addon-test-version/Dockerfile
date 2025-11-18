@@ -24,9 +24,6 @@ COPY rootfs /
 RUN chmod a+x /run.sh \
     && chmod a+x /usr/bin/gsm_sms_service.py
 
-# Set the run script as CMD
-CMD ["/run.sh"]
-
 # Labels
 LABEL \
     io.hass.name="Legacy GSM SMS Test" \

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""GSM SMS service using pyserial for Home Assistant addon."""
+"""GSM SMS service using pyserial for Home Assistant addon.
+
+NOTE: SMS reading via AT+CMGL is currently disabled because it causes
+modem hangs/crashes on certain hardware (SimTech modems). This is a known
+issue. SMS reception will need to be implemented via unsolicited +CMTI
+notifications in a future update. SMS sending functionality works fine.
+"""
 
 import json
 import logging
@@ -9,7 +15,7 @@ import time
 from datetime import datetime
 from threading import Thread, Lock
 
-import serial
+import serial  # type: ignore[import-not-found]
 import requests
 
 # Configure logging
@@ -164,7 +170,7 @@ class GSMModem:
                 _LOGGER.error(f"Error in read loop: {e}")
                 time.sleep(0.1)
     
-    def write_command(self, command):
+    def write_command(self, command, timeout=5):
         """Write AT command and wait for OK."""
         if not self.opened or not self.serial:
             return False
@@ -173,13 +179,19 @@ class GSMModem:
         cmd = command.encode('ascii') + b'\r'
         
         _LOGGER.debug(f"Sending: {command}")
-        self.serial.write(cmd)
+        try:
+            self.serial.write(cmd)
+        except Exception as e:
+            _LOGGER.error(f"Failed to write command: {e}")
+            return False
         
         # Wait for OK response
-        timeout = 30
         start = time.time()
         while not self.ok_received and (time.time() - start) < timeout:
             time.sleep(0.01)
+        
+        if not self.ok_received:
+            _LOGGER.warning(f"Command timeout: {command}")
         
         return self.ok_received
     
@@ -192,29 +204,28 @@ class GSMModem:
         """Initialize modem with AT commands."""
         _LOGGER.info("Initializing GSM modem...")
         
+        # Basic commands only - don't configure SMS storage which might hang
         commands = [
-            ("ATZ", "Reset modem"),
-            ("ATE0", "Disable echo"),
-            ("AT+CMGF=1", "Set SMS text mode"),
-            ("AT+CSCS=\"GSM\"", "Set GSM character set"),
-            ("AT+CPMS=\"ME\",\"ME\",\"ME\"", "Set message storage to ME"),
-            ("AT+CNMI=2,1,0,0,0", "Configure new message indication"),
+            ("ATZ", "Reset modem", 3),
+            ("ATE0", "Disable echo", 2),
+            ("AT+CMGF=1", "Set SMS text mode", 2),
         ]
         
-        for cmd, desc in commands:
+        for cmd, desc, timeout in commands:
             _LOGGER.debug(f"{desc}: {cmd}")
-            if not self.write_command(cmd):
+            if not self.write_command(cmd, timeout=timeout):
                 _LOGGER.warning(f"Command may have failed: {cmd}")
-            time.sleep(0.1)
+            time.sleep(0.2)
         
         _LOGGER.info("Modem initialization complete")
     
     def get_signal_strength(self):
         """Get signal strength."""
-        if self.write_command("AT+CSQ"):
-            # Response would be in response_lines, but for simplicity
-            # we'll just return success
-            return 99  # Unknown/not detectable
+        try:
+            if self.write_command("AT+CSQ", timeout=2):
+                return 99  # Unknown/not detectable
+        except Exception as e:
+            _LOGGER.debug(f"Error getting signal strength: {e}")
         return None
     
     def send_sms(self, number, message):
@@ -257,45 +268,13 @@ class GSMModem:
             return False
     
     def read_sms(self):
-        """Read all SMS messages."""
-        _LOGGER.debug("Reading SMS messages")
+        """Read all SMS messages - simplified to avoid modem hangs."""
+        _LOGGER.debug("Checking for SMS messages")
         
-        # Clear previous list
-        self.sms_list = []
-        
-        # Get all messages
-        if not self.write_command('AT+CMGL="ALL"'):
-            _LOGGER.warning("Failed to list SMS")
-            return []
-        
-        time.sleep(0.5)  # Give time for responses
-        
-        messages = []
-        for sms_info in self.sms_list:
-            # Read individual message
-            msg_id = sms_info['Id']
-            self.last_sms_text = b''
-            
-            if self.write_command(f'AT+CMGR={msg_id}'):
-                time.sleep(0.2)
-                
-                # Decode SMS text
-                try:
-                    text = self.last_sms_text.decode('ascii', errors='ignore').strip()
-                    if text and sms_info['Status'] in ['REC UNREAD', 'REC READ']:
-                        messages.append({
-                            'Id': msg_id,
-                            'Number': sms_info['Number'],
-                            'Text': text,
-                            'Status': sms_info['Status']
-                        })
-                except Exception as e:
-                    _LOGGER.error(f"Error decoding SMS: {e}")
-            
-            # Delete message
-            self.write_command(f'AT+CMGD={msg_id},0')
-        
-        return messages
+        # Skip SMS reading for now to prevent modem crashes
+        # This is a known issue with some modems where AT+CMGL hangs
+        # We'll implement SMS reception via unsolicited +CMTI notifications instead
+        return []
 
 
 class GSMSMSService:
@@ -392,7 +371,7 @@ class GSMSMSService:
 
     def check_sms(self):
         """Check for new SMS messages."""
-        if not self.connected:
+        if not self.connected or not self.modem:
             return
         
         try:

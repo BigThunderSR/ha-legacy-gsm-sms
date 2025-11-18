@@ -1,6 +1,0 @@
-#!/usr/bin/with-contenv bashio
-# ==============================================================================
-# Finish/cleanup script for GSM SMS service
-# ==============================================================================
-
-bashio::log.info "GSM SMS service stopped"

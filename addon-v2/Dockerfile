@@ -5,7 +5,6 @@ FROM $BUILD_FROM
 RUN apk add --no-cache \
     python3 \
     py3-pip \
-    bashio \
     jq
 
 # Install Python packages

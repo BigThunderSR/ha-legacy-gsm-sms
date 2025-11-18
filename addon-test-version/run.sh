@@ -3,19 +3,22 @@ set -e
 
 CONFIG_PATH=/data/options.json
 # Get version from addon info - try multiple possible locations
+VERSION=""
 if [ -f "/data/addon_config.json" ]; then
-    VERSION=$(jq --raw-output '.version // empty' /data/addon_config.json 2>/dev/null)
+    VERSION=$(jq --raw-output '.version // empty' /data/addon_config.json 2>/dev/null || echo "")
 fi
 if [ -z "$VERSION" ] && [ -f "/data/addon_info.json" ]; then
-    VERSION=$(jq --raw-output '.version // empty' /data/addon_info.json 2>/dev/null)
+    VERSION=$(jq --raw-output '.version // empty' /data/addon_info.json 2>/dev/null || echo "")
 fi
 if [ -z "$VERSION" ] && [ -f "${CONFIG_PATH}" ]; then
-    VERSION=$(jq --raw-output '.version // empty' ${CONFIG_PATH} 2>/dev/null)
+    VERSION=$(jq --raw-output '.version // empty' ${CONFIG_PATH} 2>/dev/null || echo "")
 fi
 if [ -z "$VERSION" ]; then
     # Last resort - read from config.yaml in the addon directory
     VERSION=$(grep "^version:" /config.yaml 2>/dev/null | awk '{print $2}' || echo "unknown")
 fi
+# Ensure VERSION is never empty
+VERSION=${VERSION:-unknown}
 
 echo "[INFO] =========================================="
 echo "[INFO] Legacy GSM SMS (Test) - Version ${VERSION}"

@@ -1,5 +1,4 @@
-#!/usr/bin/with-contenv bashio
-# shellcheck shell=bash
+#!/usr/bin/env bashio
 set -e
 
 bashio::log.info "Starting GSM SMS Service..."

@@ -22,6 +22,10 @@ RUN pip3 install --break-system-packages --no-cache-dir \
 COPY run.sh /
 COPY rootfs /
 
+# Add root user to audio and dialout groups for device access
+RUN addgroup root audio || true \
+    && addgroup root dialout || true
+
 # Set permissions
 RUN chmod a+x /run.sh \
     && chmod a+x /usr/bin/gsm_sms_service.py

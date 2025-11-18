@@ -2,7 +2,11 @@
 set -e
 
 CONFIG_PATH=/data/options.json
+VERSION=$(jq --raw-output '.version // "unknown"' /data/addon_config.json 2>/dev/null || echo "unknown")
 
+echo "[INFO] =========================================="
+echo "[INFO] Legacy GSM SMS (Test) - Version ${VERSION}"
+echo "[INFO] =========================================="
 echo "[INFO] Starting GSM SMS Service..."
 
 # Get configuration from JSON file directly
@@ -31,6 +35,11 @@ if [ -e "${DEVICE}" ]; then
         echo "[INFO] Checking if device is in use..."
         lsof "${REAL_DEVICE}" 2>/dev/null || echo "[INFO] No processes found using device (or lsof failed)"
         fuser "${REAL_DEVICE}" 2>/dev/null && echo "[WARNING] Device is in use!" || echo "[INFO] Device appears free"
+        
+        # Fix permissions on the real device
+        echo "[INFO] Setting device permissions..."
+        chmod 666 "${REAL_DEVICE}" 2>/dev/null && echo "[INFO] Permissions set successfully" || echo "[WARNING] Could not set permissions"
+        ls -la "${REAL_DEVICE}"
     fi
 else
     echo "[WARNING] Device does not exist: ${DEVICE}"

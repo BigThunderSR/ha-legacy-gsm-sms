@@ -12,10 +12,9 @@ uart: true
 privileged:
   - SYS_RAWIO
   - SYS_ADMIN
-  - SYS_TTY_CONFIG
 full_access: true
 apparmor: false
-docker_api: true
+host_network: true
 homeassistant_api: true
 auth_api: true
 init: false

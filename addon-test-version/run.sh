@@ -1,4 +1,6 @@
 #!/usr/bin/with-contenv bashio
+# shellcheck shell=bash
+set -e
 
 bashio::log.info "Starting GSM SMS Service..."
 
@@ -21,4 +23,5 @@ export LOG_LEVEL
 export PYTHONUNBUFFERED=1
 
 # Start the Python service
-exec python3 /usr/bin/gsm_sms_service.py
+bashio::log.info "Executing Python service..."
+exec python3 /usr/bin/gsm_sms_service.py < /dev/null

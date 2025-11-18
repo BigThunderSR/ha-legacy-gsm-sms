@@ -1,8 +1,8 @@
-name: "Legacy GSM SMS"
+name: "Legacy GSM SMS (Test v2)"
 description: "Send and receive SMS messages using a GSM modem via pyserial"
 version: 1.0.0
 stage: experimental
-slug: "legacy_gsm_sms"
+slug: "legacy_gsm_sms_test_v2"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 arch:
   - aarch64

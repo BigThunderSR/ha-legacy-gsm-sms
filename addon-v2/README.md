@@ -12,18 +12,22 @@ Send and receive SMS messages using a GSM modem with Home Assistant.
 ## Configuration
 
 **device**: Serial device path for your GSM modem (default: `/dev/ttyUSB0`)
+
 - Use `/dev/serial/by-id/...` for stable device names
 - Find your device with: `ls -l /dev/serial/by-id/`
 
 **baud_speed**: Baud rate for serial communication (default: `0` = auto)
+
 - Most modems work with auto-detection (0)
 - Common values: 9600, 19200, 38400, 57600, 115200
 
 **scan_interval**: How often to check for incoming SMS in seconds (default: `30`)
+
 - Range: 10-600 seconds
 - Lower values = faster SMS detection, higher CPU usage
 
 **log_level**: Logging verbosity (default: `info`)
+
 - Options: debug, info, warning, error
 
 ## Usage
@@ -70,12 +74,14 @@ The addon fires these events:
 ### Sensor
 
 Creates `sensor.gsm_modem_status` with attributes:
+
 - `signal_strength` - GSM signal strength (0-31)
 - `last_check` - Last time modem was checked
 
 ## Supported Modems
 
 Tested with:
+
 - SimTech SIM7600 series
 - Huawei modems
 - Most AT-command compatible GSM/3G/4G modems

@@ -1,6 +1,6 @@
-## Changelog
+# Changelog
 
-### 1.0.0 (2025-11-18)
+## 0.0.1
 
 - Complete rewrite using pyserial instead of gammu
 - Proper s6-overlay support with bashio

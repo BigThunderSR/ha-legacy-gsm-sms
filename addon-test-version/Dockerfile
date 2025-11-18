@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     gammu-dev \
     gcc \
     musl-dev \
-    python3-dev
+    python3-dev \
+    jq
 
 # Install Python packages
 RUN pip3 install --break-system-packages --no-cache-dir \

@@ -1,18 +1,20 @@
 #!/usr/bin/env bashio
 set -e
 
-bashio::log.info "Starting GSM SMS Service..."
+CONFIG_PATH=/data/options.json
 
-# Get configuration
-DEVICE=$(bashio::config 'device')
-BAUD_SPEED=$(bashio::config 'baud_speed')
-SCAN_INTERVAL=$(bashio::config 'scan_interval')
-LOG_LEVEL=$(bashio::config 'log_level')
+echo "[INFO] Starting GSM SMS Service..."
 
-bashio::log.info "Device: ${DEVICE}"
-bashio::log.info "Baud Speed: ${BAUD_SPEED}"
-bashio::log.info "Scan Interval: ${SCAN_INTERVAL}"
-bashio::log.info "Log Level: ${LOG_LEVEL}"
+# Get configuration from JSON file directly
+DEVICE=$(jq --raw-output '.device // "/dev/ttyUSB0"' $CONFIG_PATH)
+BAUD_SPEED=$(jq --raw-output '.baud_speed // "0"' $CONFIG_PATH)
+SCAN_INTERVAL=$(jq --raw-output '.scan_interval // "30"' $CONFIG_PATH)
+LOG_LEVEL=$(jq --raw-output '.log_level // "info"' $CONFIG_PATH)
+
+echo "[INFO] Device: ${DEVICE}"
+echo "[INFO] Baud Speed: ${BAUD_SPEED}"
+echo "[INFO] Scan Interval: ${SCAN_INTERVAL}"
+echo "[INFO] Log Level: ${LOG_LEVEL}"
 
 # Export configuration as environment variables
 export DEVICE
@@ -22,5 +24,5 @@ export LOG_LEVEL
 export PYTHONUNBUFFERED=1
 
 # Start the Python service
-bashio::log.info "Executing Python service..."
-exec python3 /usr/bin/gsm_sms_service.py < /dev/null
+echo "[INFO] Executing Python service..."
+exec python3 /usr/bin/gsm_sms_service.py

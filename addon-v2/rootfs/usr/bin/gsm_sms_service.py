@@ -431,7 +431,7 @@ class GSMSMSService:
             _LOGGER.info("")
             _LOGGER.info("shell_command:")
             _LOGGER.info("  send_sms: >")
-            _LOGGER.info("    echo '{\"action\":\"send_sms\",\"number\":\"{{ number }}\",\"message\":\"{{ message }}\"}' > /tmp/gsm_sms_queue.json")
+            _LOGGER.info("    echo '{\"action\":\"send_sms\",\"number\":\"{{ number }}\",\"message\":\"{{ message }}\"}' > /config/share/gsm_sms_queue.json")
             _LOGGER.info("")
             _LOGGER.info("Then reload shell_command and use in automations:")
             _LOGGER.info("")
@@ -440,6 +440,7 @@ class GSMSMSService:
             _LOGGER.info("    number: '+1234567890'")
             _LOGGER.info("    message: 'Your message here'")
             _LOGGER.info("")
+            _LOGGER.info("Note: /config/share is accessible as /share in the addon")
             _LOGGER.info("=" * 60)
             
             self.service_registered = True
@@ -456,7 +457,8 @@ class GSMSMSService:
             
     def check_queue_fallback(self):
         """Fallback: Check file-based queue for SMS send requests."""
-        queue_file = '/tmp/gsm_sms_queue.json'
+        # Use /share which is accessible from both HA and the addon
+        queue_file = '/share/gsm_sms_queue.json'
         
         try:
             if os.path.exists(queue_file):

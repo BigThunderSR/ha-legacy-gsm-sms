@@ -9,6 +9,7 @@ arch:
   - amd64
 uart: true
 homeassistant_api: true
+init: false
 options:
   device: "/dev/ttyUSB0"
   baud_speed: "0"

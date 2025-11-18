@@ -12,11 +12,11 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     pyserial \
     requests
 
-# Copy service script
+# Copy scripts
+COPY run.sh /
 COPY rootfs /
 
 # Make scripts executable
-RUN chmod a+x /etc/services.d/gsm-sms/run \
-    && chmod a+x /etc/services.d/gsm-sms/finish
+RUN chmod a+x /run.sh
 
-CMD []
+CMD [ "/run.sh" ]

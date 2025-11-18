@@ -16,13 +16,16 @@ RUN pip3 install --break-system-packages --no-cache-dir \
     python-gammu==3.2.4 \
     requests
 
-# Copy service files
+# Copy files
+COPY run.sh /
 COPY rootfs /
 
 # Set permissions
-RUN chmod a+x /etc/services.d/gsm_sms/run \
-    && chmod a+x /etc/services.d/gsm_sms/finish \
+RUN chmod a+x /run.sh \
     && chmod a+x /usr/bin/gsm_sms_service.py
+
+# Set the run script as CMD
+CMD ["/run.sh"]
 
 # Labels
 LABEL \

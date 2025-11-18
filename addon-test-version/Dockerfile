@@ -5,17 +5,12 @@ FROM $BUILD_FROM
 RUN apk add --no-cache \
     python3 \
     py3-pip \
-    gammu \
-    gammu-dev \
-    gcc \
-    musl-dev \
-    python3-dev \
     jq \
     lsof
 
 # Install Python packages
 RUN pip3 install --break-system-packages --no-cache-dir \
-    python-gammu==3.2.4 \
+    pyserial \
     requests
 
 # Copy files

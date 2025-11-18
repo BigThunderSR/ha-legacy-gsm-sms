@@ -72,6 +72,6 @@ export SCAN_INTERVAL
 export LOG_LEVEL
 export PYTHONUNBUFFERED=1
 
-# Start the Python service
+# Start the Python service (using pyserial version)
 echo "[INFO] Executing Python service..."
-exec python3 /usr/bin/gsm_sms_service.py
+exec python3 /usr/bin/gsm_sms_service_pyserial.py

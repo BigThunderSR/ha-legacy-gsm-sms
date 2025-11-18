@@ -462,11 +462,16 @@ class GSMSMSService:
         
         try:
             if os.path.exists(queue_file):
+                _LOGGER.info(f"Queue file found: {queue_file}")
+                
                 with open(queue_file, 'r') as f:
-                    command = json.load(f)
+                    content = f.read()
+                    _LOGGER.debug(f"Queue file content: {content}")
+                    command = json.loads(content)
                 
                 # Remove the file immediately
                 os.remove(queue_file)
+                _LOGGER.debug(f"Queue file removed")
                 
                 if command.get('action') == 'send_sms':
                     number = command.get('number')
@@ -476,16 +481,18 @@ class GSMSMSService:
                         _LOGGER.info(f"Processing queued SMS send request to {number}")
                         self.send_sms_message(number, message)
                     else:
-                        _LOGGER.warning("Invalid SMS command - missing number or message")
+                        _LOGGER.warning(f"Invalid SMS command - missing number or message. Got: {command}")
+                else:
+                    _LOGGER.warning(f"Invalid action in queue: {command.get('action')}")
                         
-        except json.JSONDecodeError:
-            _LOGGER.error(f"Invalid JSON in queue file")
+        except json.JSONDecodeError as e:
+            _LOGGER.error(f"Invalid JSON in queue file: {e}")
             try:
                 os.remove(queue_file)
             except:
                 pass
         except Exception as e:
-            _LOGGER.debug(f"Error checking queue: {e}")
+            _LOGGER.error(f"Error checking queue: {e}", exc_info=True)
 
     def run(self):
         """Run the service main loop."""

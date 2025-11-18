@@ -62,6 +62,18 @@ class GSMSMSService:
     def connect(self):
         """Connect to the GSM modem."""
         try:
+            # First, try to open the device file directly to test permissions
+            _LOGGER.info(f"Testing direct access to {self.device}...")
+            try:
+                with open(self.device, 'rb') as f:
+                    _LOGGER.info(f"Successfully opened device file for reading")
+                with open(self.device, 'wb') as f:
+                    _LOGGER.info(f"Successfully opened device file for writing")
+            except Exception as e:
+                _LOGGER.error(f"Cannot access device file directly: {e}")
+                _LOGGER.error(f"This indicates a permissions/security issue at the container level")
+                raise
+            
             self.sm = gammu.StateMachine()
             
             # Configure connection

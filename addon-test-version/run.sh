@@ -2,7 +2,20 @@
 set -e
 
 CONFIG_PATH=/data/options.json
-VERSION=$(jq --raw-output '.version // "unknown"' /data/addon_config.json 2>/dev/null || echo "unknown")
+# Get version from addon info - try multiple possible locations
+if [ -f "/data/addon_config.json" ]; then
+    VERSION=$(jq --raw-output '.version // empty' /data/addon_config.json 2>/dev/null)
+fi
+if [ -z "$VERSION" ] && [ -f "/data/addon_info.json" ]; then
+    VERSION=$(jq --raw-output '.version // empty' /data/addon_info.json 2>/dev/null)
+fi
+if [ -z "$VERSION" ] && [ -f "${CONFIG_PATH}" ]; then
+    VERSION=$(jq --raw-output '.version // empty' ${CONFIG_PATH} 2>/dev/null)
+fi
+if [ -z "$VERSION" ]; then
+    # Last resort - read from config.yaml in the addon directory
+    VERSION=$(grep "^version:" /config.yaml 2>/dev/null | awk '{print $2}' || echo "unknown")
+fi
 
 echo "[INFO] =========================================="
 echo "[INFO] Legacy GSM SMS (Test) - Version ${VERSION}"
@@ -40,6 +53,10 @@ if [ -e "${DEVICE}" ]; then
         echo "[INFO] Setting device permissions..."
         chmod 666 "${REAL_DEVICE}" 2>/dev/null && echo "[INFO] Permissions set successfully" || echo "[WARNING] Could not set permissions"
         ls -la "${REAL_DEVICE}"
+        
+        # Try using the real device path instead of symlink
+        echo "[INFO] Will try using real device path: ${REAL_DEVICE}"
+        DEVICE="${REAL_DEVICE}"
     fi
 else
     echo "[WARNING] Device does not exist: ${DEVICE}"

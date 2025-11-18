@@ -16,6 +16,20 @@ echo "[INFO] Baud Speed: ${BAUD_SPEED}"
 echo "[INFO] Scan Interval: ${SCAN_INTERVAL}"
 echo "[INFO] Log Level: ${LOG_LEVEL}"
 
+# Check if device exists and permissions
+if [ -e "${DEVICE}" ]; then
+    echo "[INFO] Device exists: ${DEVICE}"
+    ls -la "${DEVICE}"
+else
+    echo "[WARNING] Device does not exist: ${DEVICE}"
+fi
+
+# Check if device is in use
+if lsof 2>/dev/null | grep -q "${DEVICE}"; then
+    echo "[WARNING] Device may be in use by another process"
+    lsof 2>/dev/null | grep "${DEVICE}" || true
+fi
+
 # Export configuration as environment variables
 export DEVICE
 export BAUD_SPEED

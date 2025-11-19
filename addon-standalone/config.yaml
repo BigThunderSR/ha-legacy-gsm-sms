@@ -6,7 +6,7 @@ description: |
   Both will try to access the same serial device, causing conflicts.
   Disable/uninstall the HACS integration before using this add-on.
 #codenotary: bigthundersr@outlook.com
-version: "1.0.1"
+version: 1.0.0
 slug: "legacy_gsm_sms_standalone"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"

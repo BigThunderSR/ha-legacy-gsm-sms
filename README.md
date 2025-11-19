@@ -111,7 +111,7 @@ As an alternative to the HACS integration, the add-on provides an HTTP API-based
 
 The add-on automatically creates sensor entities and provides an HTTP API for sending SMS.
 
-**Important:** Do not run both the HACS integration and the add-on simultaneously - they will conflict when accessing the GSM modem's serial device.
+**⚠️ Important:** Do not run both the HACS integration and the add-on simultaneously - they will conflict when accessing the GSM modem's serial device.
 
 ## Troubleshooting (HACS Integration)
 

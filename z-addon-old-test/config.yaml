@@ -20,10 +20,9 @@ host_dbus: true
 stage: experimental
 #boot: auto
 map:
-  - type: homeassistant_config
-    read_only: false
-  - ssl
-  - usb
+  - homeassistant_config:rw
+  - ssl:rw
+  - usb:rw
 options:
   device: "/dev/ttyUSB0"
   baud_speed: "0"

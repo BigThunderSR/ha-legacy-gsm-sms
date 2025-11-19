@@ -22,7 +22,7 @@ stage: experimental
 map:
   - homeassistant_config:rw
   - ssl:rw
-  - usb:rw
+
 options:
   device: "/dev/ttyUSB0"
   baud_speed: "0"

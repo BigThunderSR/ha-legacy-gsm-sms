@@ -12,13 +12,7 @@ url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 arch:
   - aarch64
   - amd64
-#startup: application
-usb: true
-uart: true
-privileged:
-  - SYS_RAWIO
-  - SYS_ADMIN
-  - DAC_READ_SEARCH
+startup: services
 homeassistant_api: true
 auth_api: true
 init: false
@@ -26,7 +20,8 @@ host_dbus: true
 stage: experimental
 #boot: auto
 map:
-  - share:rw
+  - config:rw
+  - ssl
   - usb
 options:
   device: "/dev/ttyUSB0"
@@ -42,7 +37,3 @@ schema:
   scan_interval: int(10,600)
   service_name: str
   log_level: list(trace|debug|info|notice|warning|error|fatal)
-devices:
-  - /dev/ttyUSB[0-9]*
-  - /dev/ttyACM[0-9]*
-  - /dev/serial/by-id/*

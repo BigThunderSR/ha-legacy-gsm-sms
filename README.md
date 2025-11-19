@@ -22,7 +22,7 @@ Send and receive SMS messages using a GSM modem connected to your Home Assistant
 
 ## Installation
 
-Two installation methods are available: **HACS Integration** (with direct device access via notify service) or **Add-on** (with HTTP API for sending SMS).
+Two installation methods are available: **HACS Integration** (provides notify service, sensors, and event-based SMS reception) or **Add-on** (provides HTTP API, sensors, and event-based SMS reception).
 
 ### HACS Integration
 
@@ -145,4 +145,4 @@ This occurs when the GSM modem stops responding after initial connection:
 
 ## Credits
 
-This integration is based on the official Home Assistant SMS integration using python-gammu.
+This project is based on the official Home Assistant SMS integration using python-gammu.

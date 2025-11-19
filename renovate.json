@@ -10,7 +10,9 @@
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
   "pip_requirements": {
-    "fileMatch": ["(^|/)requirements[\\w-]*\\.txt$"]
+    "managerFilePatterns": [
+      "/(^|/)requirements[\\w-]*\\.txt$/"
+    ]
   },
   "packageRules": [
     {

@@ -22,7 +22,10 @@ Send and receive SMS messages using a GSM modem connected to your Home Assistant
 
 ## Installation
 
-Two installation methods are available: **HACS Integration** (provides notify service, sensors, and event-based SMS reception) or **Add-on** (provides HTTP API, sensors, and event-based SMS reception).
+Two installation methods are available:
+
+- **[HACS Integration](#hacs-integration)** (provides notify service, sensors, and event-based SMS reception)
+- **[Add-on](#add-on-installation)** (provides HTTP API, sensors, and event-based SMS reception).
 
 ### HACS Integration
 

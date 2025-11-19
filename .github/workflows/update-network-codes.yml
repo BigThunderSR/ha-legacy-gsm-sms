@@ -1,0 +1,51 @@
+name: Update Network Codes Database
+
+on:
+  schedule:
+    # Run monthly on the 1st at 2am UTC
+    - cron: '0 2 1 * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  update-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 lxml
+          
+      - name: Fetch and update network codes
+        run: |
+          python .github/scripts/update_network_codes.py
+          
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code custom_components/legacy_gsm_sms/network_codes.py || echo "changed=true" >> $GITHUB_OUTPUT
+          
+      - name: Create Pull Request
+        if: steps.git-check.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'Update network operator database'
+          title: 'Update network operator codes database'
+          body: |
+            This automated PR updates the network operator database with latest codes from public sources.
+            
+            **Sources:**
+            - ITU MCC assignments
+            - GSMA MNC registry
+            - Community contributions
+            
+            Please review changes before merging.
+          branch: update-network-codes
+          delete-branch: true

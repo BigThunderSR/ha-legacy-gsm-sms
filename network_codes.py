@@ -1,7 +1,19 @@
-"""Network operator name lookup by MCC+MNC code."""
+"""Network operator name lookup by MCC+MNC code.
+
+This database is automatically updated monthly from public sources and can be
+manually extended by adding entries to the NETWORK_OPERATORS dictionary.
+
+To contribute missing operators:
+1. Find your MCC+MNC code from your modem (it will show in the sensor)
+2. Add an entry: "MCCMNC": "Operator Name"
+3. Submit a PR or create an issue
+
+Sources: ITU, GSMA, community contributions
+Auto-update: Monthly via GitHub Actions
+"""
 
 # Comprehensive database of mobile network operators by MCC+MNC
-# Source: ITU, GSMA, and various telecom databases
+# Format: "MCCMNC": "Operator Name"
 NETWORK_OPERATORS = {
     # United States (MCC 310-316)
     "310030": "AT&T",

@@ -8,6 +8,7 @@ from gammu.asyncworker import GammuAsyncWorker
 from homeassistant.core import callback
 
 from .const import DOMAIN, SMS_STATE_UNREAD
+from .network_codes import get_network_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -170,8 +171,8 @@ class Gateway:
             signal_strength = None
         if signal_percent == -1:
             signal_percent = None
-        # BitErrorRate: 99 means unknown, 0-7 is RXQUAL index
-        if ber == 99:
+        # BitErrorRate: 99 or -1 means unknown, 0-7 is RXQUAL index
+        if ber == 99 or ber == -1 or ber < 0:
             ber = None
         
         return {
@@ -189,9 +190,13 @@ class Gateway:
         network_code = network_info.get("NetworkCode")
         
         # Looks like there is a bug and NetworkName is often empty https://github.com/gammu/python-gammu/issues/31
-        # Try workaround by looking up from numeric code
+        # Try multiple lookup methods
         if not network_name and network_code:
-            network_name = gammu.GSMNetworks.get(network_code)
+            # First try our comprehensive database
+            network_name = get_network_name(network_code)
+            # Fallback to Gammu's database
+            if not network_name:
+                network_name = gammu.GSMNetworks.get(network_code)
         
         # Map Gammu's state to match addon format
         state = network_info.get("State", "Unknown")

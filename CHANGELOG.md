@@ -9,16 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed sensor values not displaying correctly by properly transforming Gammu data
-- Added RSSI to dBm conversion for SignalStrength sensor (matches addon behavior)
-- Added RSSI to percentage conversion for SignalPercent sensor
-- Improved BitErrorRate sensor to handle unknown values (99) correctly
-- Added network state mapping to match addon format (e.g., "Registered (Home)")
-- Ensured all 8 sensor entities return proper values with correct units
+- Added network state mapping to user-friendly format (e.g., "Registered (Home)" instead of "HomeNetwork")
+- Improved handling of unknown sensor values (-1, 99) by converting to None
+
+### Added
+
+- Comprehensive network operator database with 200+ carriers worldwide
+- Network Name lookup for MCC+MNC codes including US, Canada, Europe, Asia, Latin America, and MVNOs
+- Fallback to Gammu's GSMNetworks database when operator not in custom database
 
 ## [1.0.0]
 
-### Added
+### Initial Release
 
 - Initial release
 - Support for sending and receiving SMS messages via Gammu

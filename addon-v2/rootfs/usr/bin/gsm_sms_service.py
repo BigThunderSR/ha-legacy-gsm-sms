@@ -14,6 +14,7 @@ import sys
 import time
 from datetime import datetime
 from threading import Thread, Lock
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import serial  # type: ignore[import-not-found]
 import requests
@@ -277,6 +278,53 @@ class GSMModem:
         return []
 
 
+class SMSRequestHandler(BaseHTTPRequestHandler):
+    """HTTP request handler for SMS sending."""
+    
+    service = None  # Will be set to the GSMSMSService instance
+    
+    def do_POST(self):
+        """Handle POST requests to send SMS."""
+        if self.path == '/send_sms':
+            try:
+                content_length = int(self.headers['Content-Length'])
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                number = data.get('number')
+                message = data.get('message')
+                
+                if not number or not message:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write(b'{"error": "Missing number or message"}')
+                    return
+                
+                _LOGGER.info(f"HTTP API: Received SMS request to {number}")
+                if self.service and self.service.modem:
+                    self.service.send_sms_message(number, message)
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(b'{"status": "sent"}')
+                else:
+                    self.send_response(503)
+                    self.end_headers()
+                    self.wfile.write(b'{"error": "Modem not ready"}')
+                    
+            except Exception as e:
+                _LOGGER.error(f"HTTP API error: {e}", exc_info=True)
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(f'{{"error": "{str(e)}"}}'.encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def log_message(self, format, *args):
+        """Suppress default HTTP logging."""
+        pass
+
+
 class GSMSMSService:
     """Service that manages GSM SMS operations and Home Assistant integration."""
     
@@ -301,6 +349,10 @@ class GSMSMSService:
         
         # Service registration status
         self.service_registered = False
+        
+        # HTTP server for API
+        self.http_server = None
+        self.http_thread = None
         
         _LOGGER.info(f"Initialized with device: {self.device_path}, baud: {self.baud_speed}")
 
@@ -487,6 +539,22 @@ class GSMSMSService:
         except Exception as e:
             _LOGGER.debug(f"Error checking queue: {e}")
 
+    def start_http_server(self):
+        """Start HTTP server for API endpoint."""
+        try:
+            SMSRequestHandler.service = self
+            self.http_server = HTTPServer(('0.0.0.0', 8099), SMSRequestHandler)
+            self.http_thread = Thread(target=self.http_server.serve_forever, daemon=True)
+            self.http_thread.start()
+            _LOGGER.info("HTTP API server started on port 8099")
+            _LOGGER.info("=" * 60)
+            _LOGGER.info("REST API Endpoint:")
+            _LOGGER.info("POST http://<addon-ip>:8099/send_sms")
+            _LOGGER.info('Body: {"number": "+1234567890", "message": "Your message"}')
+            _LOGGER.info("=" * 60)
+        except Exception as e:
+            _LOGGER.error(f"Failed to start HTTP server: {e}", exc_info=True)
+
     def run(self):
         """Run the service main loop."""
         _LOGGER.info("GSM SMS Service starting...")
@@ -507,6 +575,9 @@ class GSMSMSService:
         if not self.connected:
             _LOGGER.error("Failed to connect to modem after all retries. Exiting.")
             return
+        
+        # Start HTTP API server
+        self.start_http_server()
         
         # Main loop
         _LOGGER.info(f"Entering main loop (scanning every {self.scan_interval} seconds)")

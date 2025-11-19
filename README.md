@@ -17,7 +17,7 @@ This integration allows you to send SMS messages using a GSM modem connected to 
 
 ## Requirements
 
-- A supported GSM modem (tested with Huawei and SIM800/SIM900 based modems)
+- A GSM modem with AT command support (tested with SimTech SIM7600 series)
 - Python-gammu package (automatically installed as a dependency)
 - SIM card with SMS capabilities
 

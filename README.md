@@ -22,7 +22,7 @@ Send and receive SMS messages using a GSM modem connected to your Home Assistant
 
 ## Installation
 
-Two installation methods are available: **HACS Integration** (with full configuration control) or **Add-on** (with built-in HTTP API). See [Add-on Installation](#add-on-installation) to skip to add-on instructions.
+Two installation methods are available: **HACS Integration** (with direct device access via notify service) or **Add-on** (with HTTP API for sending SMS).
 
 ### HACS Integration
 
@@ -48,11 +48,11 @@ Alternatively, you can manually install the integration:
 
 ### Through the UI
 
-1. Go to Configuration > Integrations
+1. Go to Settings > Devices & Services > Integrations
 2. Click the "+" button to add a new integration
 3. Search for "Legacy GSM SMS"
-4. Enter the device path to your modem (e.g., `/dev/ttyUSB0`, `/dev/ttyACM0`, etc.)
-5. Select the baud rate (leave as "Auto" if not sure)
+4. Enter the device path to your GSM modem (e.g., `/dev/ttyUSB0`, `/dev/ttyACM0`, etc.)
+5. Select the baud rate (leave as "Auto" if unsure)
 
 ### Using configuration.yaml
 
@@ -100,15 +100,15 @@ action:
 
 [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
 
-As an alternative to the HACS integration, install the add-on version for an HTTP API-based solution:
+As an alternative to the HACS integration, the add-on provides an HTTP API-based solution:
 
 1. Click the button above to add this repository to your Home Assistant instance
-2. Install the "Legacy GSM SMS" add-on from the add-on store
-3. Follow the configuration and usage instructions in the add-on's Documentation tab
+2. Install the "Legacy GSM SMS" add-on from the Add-on Store
+3. Configure and start the add-on (refer to the Documentation tab for configuration and usage instructions)
 
 The add-on automatically creates sensor entities and provides an HTTP API for sending SMS.
 
-**Important:** Do not run both the HACS integration and the add-on simultaneously - they will conflict when accessing the serial device.
+**Important:** Do not run both the HACS integration and the add-on simultaneously - they will conflict when accessing the GSM modem's serial device.
 
 ## Troubleshooting (HACS Integration)
 
@@ -125,7 +125,7 @@ The integration logs `ConfigEntryNotReady` when it cannot connect to the GSM mod
 
 This occurs when the GSM modem stops responding after initial connection:
 
-- Check signal strength sensor - poor signal can cause communication failuresailures
+- Check signal strength sensor - poor signal can cause communication failures
 - Try a different baud rate (or set to "Auto" for auto-detection)
 - Restart Home Assistant to reinitialize the connection
 - Ensure no other application is accessing the GSM modem simultaneously

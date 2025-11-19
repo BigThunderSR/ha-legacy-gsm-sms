@@ -10,10 +10,7 @@ import requests
 
 # Public data sources
 SOURCES = {
-    # MCC list from ITU
-    "mcc": "https://www.itu.int/dms_pub/itu-t/opb/sp/T-SP-E.212B-2017-PDF-E.pdf",
-    
-    # Community-maintained database (example - replace with actual source)
+    # Community-maintained database
     "mcc_mnc_json": "https://raw.githubusercontent.com/musalbas/mcc-mnc-list/master/mcc-mnc-list.json",
 }
 
@@ -29,92 +26,116 @@ def fetch_mcc_mnc_json():
         return []
 
 
-def merge_with_existing(new_codes, existing_file):
-    """Merge new codes with existing database, preserving manual additions."""
-    # Read existing file
-    existing_content = existing_file.read_text()
+def parse_existing_file(existing_file):
+    """Parse existing file preserving all structure, comments, and docstrings."""
+    content = existing_file.read_text()
     
-    # Extract existing NETWORK_OPERATORS dict
-    match = re.search(
-        r'NETWORK_OPERATORS = \{(.*?)\}',
-        existing_content,
+    # Extract the docstring
+    docstring_match = re.match(r'^(""".*?""")', content, re.DOTALL)
+    docstring = docstring_match.group(1) if docstring_match else ''
+    
+    # Find the NETWORK_OPERATORS dictionary
+    dict_match = re.search(
+        r'(NETWORK_OPERATORS\s*=\s*\{)(.*?)(\n\})',
+        content,
         re.DOTALL
     )
     
-    if not match:
+    if not dict_match:
         print("Error: Could not find NETWORK_OPERATORS in existing file")
-        return None
+        return None, None, None
     
-    existing_dict_str = match.group(1)
+    dict_content = dict_match.group(2)
     
-    # Parse existing entries (simple regex approach)
-    existing_codes = {}
-    for line in existing_dict_str.split('\n'):
-        match = re.match(r'\s*"(\d+)":\s*"([^"]+)",?', line)
-        if match:
-            existing_codes[match.group(1)] = match.group(2)
+    # Parse entries while preserving comments and structure
+    entries = {}
+    lines_with_comments = []
     
-    # Merge: new codes override, but keep manual additions
-    merged = existing_codes.copy()
-    merged.update(new_codes)
+    for line in dict_content.split('\n'):
+        # Preserve comment lines
+        if line.strip().startswith('#'):
+            lines_with_comments.append(('comment', line))
+        # Parse code entries
+        else:
+            match = re.match(r'\s*"(\d+)":\s*"([^"]+)",?', line)
+            if match:
+                code, name = match.group(1), match.group(2)
+                entries[code] = name
+                lines_with_comments.append(('entry', code, name))
+            elif line.strip() == '':
+                lines_with_comments.append(('blank', line))
     
-    return merged
+    # Extract function definitions after the dict
+    func_match = re.search(r'(\n\ndef get_network_name.*)', content, re.DOTALL)
+    functions = func_match.group(1) if func_match else ''
+    
+    return docstring, entries, lines_with_comments, functions
 
 
-def generate_network_codes_file(codes_dict, output_file):
-    """Generate the network_codes.py file with updated data."""
+def update_file_preserving_structure(existing_file, new_codes):
+    """Update file while preserving docstrings, comments, and structure."""
     
-    # Group by region for better organization
-    us_codes = {k: v for k, v in sorted(codes_dict.items()) if k.startswith(('310', '311', '312', '313', '316'))}
-    ca_codes = {k: v for k, v in sorted(codes_dict.items()) if k.startswith('302')}
-    other_codes = {k: v for k, v in sorted(codes_dict.items()) if not k.startswith(('310', '311', '312', '313', '316', '302'))}
+    result = parse_existing_file(existing_file)
+    if result[0] is None:
+        return False
     
-    content = '''"""Network operator name lookup by MCC+MNC code."""
-
-# Comprehensive database of mobile network operators by MCC+MNC
-# Auto-updated from public sources with manual additions
-# Last updated: {date}
-
-NETWORK_OPERATORS = {{
-    # United States (MCC 310-316)
-{us_entries}
+    docstring, existing_entries, structure, functions = result
     
-    # Canada (MCC 302)
-{ca_entries}
+    # Merge: existing entries take priority, add only truly new codes
+    updated_entries = existing_entries.copy()
+    added_count = 0
     
-    # International
-{other_entries}
-}}
-
-
-def get_network_name(network_code: str):
-    """Get network operator name from MCC+MNC code.
+    for code, name in new_codes.items():
+        if code not in updated_entries:
+            updated_entries[code] = name
+            added_count += 1
     
-    Args:
-        network_code: MCC+MNC code (e.g., "310260" for T-Mobile USA)
-        
-    Returns:
-        Network operator name or None if not found
-    """
-    if not network_code:
-        return None
-    return NETWORK_OPERATORS.get(network_code)
-'''
+    if added_count == 0:
+        print(f"  No new entries to add to {existing_file.name}")
+        return False
     
-    from datetime import datetime
+    print(f"  Adding {added_count} new network codes to {existing_file.name}")
     
-    def format_entries(codes):
-        return '\n'.join([f'    "{code}": "{name}",' for code, name in codes.items()])
+    # Rebuild the file with updated entries but preserving structure
+    new_content_parts = [docstring, '\n\n']
     
-    final_content = content.format(
-        date=datetime.now().strftime('%Y-%m-%d'),
-        us_entries=format_entries(us_codes),
-        ca_entries=format_entries(ca_codes),
-        other_entries=format_entries(other_codes)
-    )
+    # Add comment about the database
+    new_content_parts.append('# Comprehensive database of mobile network operators by MCC+MNC\n')
+    new_content_parts.append('# Format: "MCCMNC": "Operator Name"\n')
+    new_content_parts.append('NETWORK_OPERATORS = {\n')
     
-    output_file.write_text(final_content)
-    print(f"Updated {output_file}")
+    # Reconstruct with preserved comments and add new entries in appropriate sections
+    current_section_codes = set()
+    
+    for item in structure:
+        if item[0] == 'comment':
+            # Write the comment
+            new_content_parts.append(item[1] + '\n')
+            current_section_codes.clear()
+        elif item[0] == 'entry':
+            code = item[1]
+            # Use updated name if exists
+            name = updated_entries.get(code, item[2])
+            new_content_parts.append(f'    "{code}": "{name}",\n')
+            current_section_codes.add(code)
+        elif item[0] == 'blank':
+            new_content_parts.append('\n')
+    
+    # Add any remaining new codes that don't fit in existing sections
+    remaining_codes = set(updated_entries.keys()) - set(existing_entries.keys())
+    if remaining_codes:
+        new_content_parts.append('\n    # Additional network codes\n')
+        for code in sorted(remaining_codes):
+            new_content_parts.append(f'    "{code}": "{updated_entries[code]}",\n')
+    
+    new_content_parts.append('}\n')
+    
+    # Add function definitions if they exist
+    if functions:
+        new_content_parts.append(functions)
+    
+    existing_file.write_text(''.join(new_content_parts))
+    return True
 
 
 def main():
@@ -141,6 +162,7 @@ def main():
     # Update both files
     repo_root = Path(__file__).parent.parent.parent
     
+    files_updated = False
     for target in [
         repo_root / "custom_components" / "legacy_gsm_sms" / "network_codes.py",
         repo_root / "network_codes.py"
@@ -149,14 +171,14 @@ def main():
             print(f"Warning: {target} does not exist, skipping")
             continue
         
-        # Merge with existing
-        merged_codes = merge_with_existing(new_codes, target)
-        
-        if merged_codes:
-            # Generate new file
-            generate_network_codes_file(merged_codes, target)
+        print(f"\nProcessing {target}...")
+        if update_file_preserving_structure(target, new_codes):
+            files_updated = True
     
-    print("Update complete!")
+    if files_updated:
+        print("\n✓ Update complete! New network codes added.")
+    else:
+        print("\n✓ No updates needed - all network codes are already current.")
 
 
 if __name__ == "__main__":

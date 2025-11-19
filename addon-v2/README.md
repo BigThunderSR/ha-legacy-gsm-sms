@@ -82,7 +82,18 @@ Creates 8 sensor entities (all grouped by device using IMEI):
 - `sensor.gsm_<imei>_cid` - Cell tower ID
 - `sensor.gsm_<imei>_lac` - Location Area Code
 
-All sensors are grouped under a single device "GSM Modem" with device info (manufacturer, model, firmware).
+All sensors are grouped under a single device "Legacy GSM Modem Add-on" with device info (manufacturer, model, firmware).
+
+Sensor names in UI:
+
+- Legacy GSM Modem Add-on Signal Strength
+- Legacy GSM Modem Add-on Signal Percent
+- Legacy GSM Modem Add-on Bit Error Rate
+- Legacy GSM Modem Add-on Network Name
+- Legacy GSM Modem Add-on State
+- Legacy GSM Modem Add-on Network Code
+- Legacy GSM Modem Add-on CID
+- Legacy GSM Modem Add-on LAC
 
 ## Supported Modems
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.3a
+
+- Improved sensor naming for easier discovery
+- Device name changed to "Legacy GSM Modem Add-on"
+- All sensors now have "Legacy GSM Modem Add-on" prefix in friendly names
+- Makes sensors easy to find in entity search and device pages
+
 ## 0.0.3
 
 - **All HACS integration sensors now supported!**

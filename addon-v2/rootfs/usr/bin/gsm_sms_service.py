@@ -674,15 +674,15 @@ class GSMSMSService:
             sensor_key = entity_id.split('.')[-1]
             data["attributes"]["unique_id"] = f"gsm_{self.imei}_{sensor_key.replace(f'{self.imei}_', '')}" if self.imei else sensor_key
             
-            # Add friendly name if provided
+            # Add friendly name with common prefix for easy identification
             if friendly_name:
-                data["attributes"]["friendly_name"] = friendly_name
+                data["attributes"]["friendly_name"] = f"Legacy GSM Modem Add-on {friendly_name}"
             
             # Add device info if we have IMEI
             if self.imei:
                 data["attributes"]["device"] = {
                     "identifiers": [["legacy_gsm_sms", self.imei]],
-                    "name": "GSM Modem",
+                    "name": "Legacy GSM Modem Add-on",
                     "manufacturer": self.manufacturer,
                     "model": self.model,
                     "sw_version": self.firmware

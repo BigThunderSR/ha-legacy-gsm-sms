@@ -151,9 +151,9 @@ class GSMModem:
                                 })
                         
                         elif '+CMGR:' in line:
-                            # Start recording SMS text
+                            # Start recording SMS - save header line
                             self.recording_sms = True
-                            self.last_sms_text = b''
+                            self.last_sms_text = (line + '\n').encode('utf-8')
                         
                         elif '+CME ERROR:' in line or 'ERROR' in line:
                             _LOGGER.debug(f"Modem error: {line}")
@@ -284,7 +284,7 @@ class GSMModem:
     def read_sms_by_index(self, index):
         """Read a specific SMS by index."""
         try:
-            _LOGGER.debug(f"Reading SMS at index {index}")
+            _LOGGER.info(f"Reading SMS at index {index}")
             
             # Read the SMS
             cmd = f"AT+CMGR={index}"
@@ -292,11 +292,13 @@ class GSMModem:
             self.last_sms_text = b''
             
             if not self.write_command(cmd, timeout=5):
-                _LOGGER.warning(f"Failed to read SMS at index {index}")
+                _LOGGER.warning(f"Failed to read SMS at index {index} - command timeout")
                 return None
             
             # Give time for response
             time.sleep(0.5)
+            
+            _LOGGER.debug(f"SMS response received, length: {len(self.last_sms_text)} bytes")
             
             # Parse response - format is:
             # +CMGR: "REC UNREAD","+1234567890","","24/11/18,12:34:56+00"
@@ -304,9 +306,12 @@ class GSMModem:
             
             if self.last_sms_text:
                 response_text = self.last_sms_text.decode('utf-8', errors='ignore')
+                _LOGGER.debug(f"SMS response text: {repr(response_text)}")
                 lines = response_text.split('\n')
+                _LOGGER.debug(f"SMS response has {len(lines)} lines")
                 
                 if len(lines) >= 2 and '+CMGR:' in lines[0]:
+                    _LOGGER.debug(f"Found +CMGR header: {lines[0]}")
                     # Parse header
                     header_parts = lines[0].split(',')
                     if len(header_parts) >= 2:
@@ -323,6 +328,10 @@ class GSMModem:
                             'message': message,
                             'index': index
                         }
+                else:
+                    _LOGGER.warning(f"SMS response format unexpected: {lines}")
+            else:
+                _LOGGER.warning(f"No SMS text captured for index {index}")
             
             return None
             

@@ -431,7 +431,7 @@ class GSMSMSService:
             _LOGGER.info("")
             _LOGGER.info("shell_command:")
             _LOGGER.info("  send_sms: >")
-            _LOGGER.info("    echo '{\"action\":\"send_sms\",\"number\":\"{{ number }}\",\"message\":\"{{ message }}\"}' > /config/share/gsm_sms_queue.json")
+            _LOGGER.info("    echo '{\"action\":\"send_sms\",\"number\":\"{{ number }}\",\"message\":\"{{ message }}\"}' > /share/gsm_sms_queue.json")
             _LOGGER.info("")
             _LOGGER.info("Then reload shell_command and use in automations:")
             _LOGGER.info("")

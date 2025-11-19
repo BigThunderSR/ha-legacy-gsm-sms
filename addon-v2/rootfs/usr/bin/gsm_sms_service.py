@@ -485,7 +485,7 @@ class GSMSMSService:
     def fire_event(self, event_type, event_data):
         """Fire a Home Assistant event."""
         try:
-            url = f"{self.ha_url}/api/events/{event_type}"
+            url = f"{self.ha_url}/events/{event_type}"
             response = requests.post(url, headers=self.headers, json=event_data, timeout=5)
             
             if response.status_code not in [200, 201]:

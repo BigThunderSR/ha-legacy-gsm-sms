@@ -561,8 +561,133 @@ class GSMSMSService:
         self.connected = False
         _LOGGER.info("Disconnected from modem")
 
+    def rssi_to_dbm(self, rssi):
+        """Convert RSSI to dBm."""
+        if rssi == 99:
+            return None  # Unknown
+        return -113 + (rssi * 2)
+    
+    def rssi_to_percent(self, rssi):
+        """Convert RSSI to percentage."""
+        if rssi == 99:
+            return None  # Unknown
+        # RSSI ranges from 0 to 31
+        return round((rssi / 31) * 100)
+    
+    def ber_to_percent(self, ber):
+        """Convert BER to percentage."""
+        if ber == 99:
+            return None  # Unknown
+        # BER ranges from 0-7, lower is better
+        return round((ber / 7) * 100)
+    
+    def create_sensor(self, entity_id, state, attributes=None, device_class=None, unit=None, icon=None):
+        """Create or update a sensor entity."""
+        try:
+            data = {
+                "state": state,
+                "attributes": attributes or {},
+            }
+            
+            # Add device info if we have IMEI
+            if self.imei:
+                data["attributes"]["device"] = {
+                    "identifiers": [[" legacy_gsm_sms", self.imei]],
+                    "name": "GSM Modem",
+                    "manufacturer": self.manufacturer,
+                    "model": self.model,
+                    "sw_version": self.firmware
+                }
+            
+            # Add device class and unit if provided
+            if device_class:
+                data["attributes"]["device_class"] = device_class
+            if unit:
+                data["attributes"]["unit_of_measurement"] = unit
+            if icon:
+                data["attributes"]["icon"] = icon
+            
+            url = f"{self.ha_url}/states/{entity_id}"
+            response = requests.post(url, headers=self.headers, json=data, timeout=5)
+            
+            if response.status_code not in [200, 201]:
+                _LOGGER.debug(f"Failed to update sensor {entity_id}: {response.status_code}")
+                
+        except Exception as e:
+            _LOGGER.debug(f"Could not update sensor {entity_id}: {e}")
+    
+    def update_all_sensors(self):
+        """Update all sensor entities."""
+        if not self.connected or not self.modem:
+            return
+        
+        # Get current signal strength
+        signal_data = self.modem.get_signal_strength()
+        network_data = self.modem.get_network_info()
+        
+        if signal_data:
+            rssi = signal_data.get('rssi', 99)
+            ber = signal_data.get('ber', 99)
+            
+            # Signal strength in dBm
+            signal_dbm = self.rssi_to_dbm(rssi)
+            if signal_dbm is not None:
+                self.create_sensor(
+                    f"sensor.gsm_{self.imei}_signal_strength",
+                    signal_dbm,
+                    {"rssi": rssi},
+                    device_class="signal_strength",
+                    unit="dBm",
+                    icon="mdi:signal"
+                )
+            
+            # Signal percent
+            signal_percent = self.rssi_to_percent(rssi)
+            if signal_percent is not None:
+                self.create_sensor(
+                    f"sensor.gsm_{self.imei}_signal_percent",
+                    signal_percent,
+                    {"rssi": rssi},
+                    unit="%",
+                    icon="mdi:signal"
+                )
+            
+            # Bit error rate
+            ber_percent = self.ber_to_percent(ber)
+            if ber_percent is not None:
+                self.create_sensor(
+                    f"sensor.gsm_{self.imei}_bit_error_rate",
+                    ber_percent,
+                    {"raw_ber": ber},
+                    unit="%",
+                    icon="mdi:alert-circle"
+                )
+        
+        # Network info
+        if network_data:
+            operator = network_data.get('operator', 'Unknown')
+            self.create_sensor(
+                f"sensor.gsm_{self.imei}_network_operator",
+                operator,
+                {},
+                icon="mdi:network"
+            )
+        
+        # Modem state
+        self.create_sensor(
+            f"sensor.gsm_{self.imei}_state",
+            "connected" if self.connected else "disconnected",
+            {
+                "imei": self.imei,
+                "manufacturer": self.manufacturer,
+                "model": self.model,
+                "firmware": self.firmware
+            },
+            icon="mdi:cellphone-check" if self.connected else "mdi:cellphone-off"
+        )
+    
     def update_sensor(self, state, attributes=None):
-        """Update Home Assistant sensor."""
+        """Update Home Assistant sensor (legacy single sensor)."""
         try:
             data = {
                 "state": state,
@@ -744,6 +869,10 @@ class GSMSMSService:
             _LOGGER.error("Failed to connect to modem after all retries. Exiting.")
             return
         
+        # Create initial sensors
+        _LOGGER.info("Creating sensor entities...")
+        self.update_all_sensors()
+        
         # Start HTTP API server
         self.start_http_server()
         
@@ -777,11 +906,8 @@ class GSMSMSService:
                 if current_time - last_check >= self.scan_interval:
                     self.check_sms()
                     
-                    # Update sensor
-                    self.update_sensor("connected", {
-                        "signal_strength": self.signal_strength,
-                        "last_check": datetime.now().isoformat(),
-                    })
+                    # Update all sensors
+                    self.update_all_sensors()
                     
                     last_check = current_time
                 

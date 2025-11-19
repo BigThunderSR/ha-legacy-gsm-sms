@@ -129,6 +129,10 @@ class GSMModem:
                     elif b'\r\n' in frame:
                         line = frame.decode('ascii', errors='ignore').strip()
                         
+                        # Store non-empty response lines
+                        if line and line not in ['OK', 'ERROR']:
+                            self.response_lines.append(line)
+                        
                         if 'OK' in line:
                             self.ok_received = True
                             if self.recording_sms:
@@ -233,13 +237,91 @@ class GSMModem:
         
         _LOGGER.info("Modem initialization complete")
     
-    def get_signal_strength(self):
-        """Get signal strength."""
+    def get_imei(self):
+        """Get IMEI number."""
         try:
+            self.response_lines = []
+            if self.write_command("AT+CGSN", timeout=2):
+                time.sleep(0.3)
+                for line in self.response_lines:
+                    if line.strip() and line.strip().isdigit():
+                        return line.strip()
+        except Exception as e:
+            _LOGGER.debug(f"Error getting IMEI: {e}")
+        return None
+    
+    def get_manufacturer(self):
+        """Get manufacturer name."""
+        try:
+            self.response_lines = []
+            if self.write_command("AT+CGMI", timeout=2):
+                time.sleep(0.3)
+                for line in self.response_lines:
+                    if line.strip() and line.strip() not in ['OK', 'ERROR']:
+                        return line.strip()
+        except Exception as e:
+            _LOGGER.debug(f"Error getting manufacturer: {e}")
+        return None
+    
+    def get_model(self):
+        """Get model name."""
+        try:
+            self.response_lines = []
+            if self.write_command("AT+CGMM", timeout=2):
+                time.sleep(0.3)
+                for line in self.response_lines:
+                    if line.strip() and line.strip() not in ['OK', 'ERROR']:
+                        return line.strip()
+        except Exception as e:
+            _LOGGER.debug(f"Error getting model: {e}")
+        return None
+    
+    def get_firmware(self):
+        """Get firmware version."""
+        try:
+            self.response_lines = []
+            if self.write_command("AT+CGMR", timeout=2):
+                time.sleep(0.3)
+                for line in self.response_lines:
+                    if line.strip() and line.strip() not in ['OK', 'ERROR']:
+                        return line.strip()
+        except Exception as e:
+            _LOGGER.debug(f"Error getting firmware: {e}")
+        return None
+    
+    def get_signal_strength(self):
+        """Get signal strength - returns rssi and ber."""
+        try:
+            self.response_lines = []
             if self.write_command("AT+CSQ", timeout=2):
-                return 99  # Unknown/not detectable
+                time.sleep(0.3)
+                # Response format: +CSQ: <rssi>,<ber>
+                for line in self.response_lines:
+                    if '+CSQ:' in line:
+                        parts = line.split(':')[1].strip().split(',')
+                        if len(parts) >= 2:
+                            rssi = int(parts[0].strip())
+                            ber = int(parts[1].strip())
+                            return {'rssi': rssi, 'ber': ber}
         except Exception as e:
             _LOGGER.debug(f"Error getting signal strength: {e}")
+        return None
+    
+    def get_network_info(self):
+        """Get network information."""
+        try:
+            self.response_lines = []
+            if self.write_command("AT+COPS?", timeout=2):
+                time.sleep(0.3)
+                # Response format: +COPS: <mode>,<format>,"<operator>",<act>
+                for line in self.response_lines:
+                    if '+COPS:' in line:
+                        parts = line.split(':')[1].strip().split(',')
+                        if len(parts) >= 3:
+                            operator = parts[2].strip().strip('"')
+                            return {'operator': operator}
+        except Exception as e:
+            _LOGGER.debug(f"Error getting network info: {e}")
         return None
     
     def send_sms(self, number, message):
@@ -409,6 +491,12 @@ class GSMSMSService:
         self.connected = False
         self.signal_strength = None
         
+        # Device information
+        self.imei = None
+        self.manufacturer = None
+        self.model = None
+        self.firmware = None
+        
         # Home Assistant API configuration
         self.ha_url = "http://supervisor/core/api"
         self.ha_token = os.environ.get('SUPERVISOR_TOKEN', '')
@@ -437,6 +525,15 @@ class GSMSMSService:
             
             # Initialize modem
             self.modem.init_modem()
+            
+            # Get device information
+            _LOGGER.info("Getting device information...")
+            self.imei = self.modem.get_imei()
+            self.manufacturer = self.modem.get_manufacturer()
+            self.model = self.modem.get_model()
+            self.firmware = self.modem.get_firmware()
+            
+            _LOGGER.info(f"Device Info - IMEI: {self.imei}, Manufacturer: {self.manufacturer}, Model: {self.model}, Firmware: {self.firmware}")
             
             # Get signal strength
             self.signal_strength = self.modem.get_signal_strength()

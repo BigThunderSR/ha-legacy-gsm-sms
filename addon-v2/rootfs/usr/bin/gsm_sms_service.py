@@ -58,6 +58,7 @@ class GSMModem:
         self.opened = False
         self.read_thread = None
         self.response_lock = Lock()
+        self.pending_sms = []  # List of pending SMS indices to read
         self.ok_received = False
         self.prompt_received = False
         self.response_lines = []
@@ -158,6 +159,17 @@ class GSMModem:
                             _LOGGER.debug(f"Modem error: {line}")
                             self.ok_received = True
                         
+                        elif '+CMTI:' in line:
+                            # Incoming SMS notification: +CMTI: "SM",5
+                            try:
+                                parts = line.split(',')
+                                if len(parts) >= 2:
+                                    index = int(parts[1].strip())
+                                    self.pending_sms.append(index)
+                                    _LOGGER.info(f"Incoming SMS notification at index {index}")
+                            except Exception as e:
+                                _LOGGER.error(f"Error parsing +CMTI: {e}")
+                        
                         elif self.recording_sms:
                             # This is SMS text content
                             self.last_sms_text += frame
@@ -210,6 +222,7 @@ class GSMModem:
             ("ATZ", "Reset modem", 3),
             ("ATE0", "Disable echo", 2),
             ("AT+CMGF=1", "Set SMS text mode", 2),
+            ("AT+CNMI=2,1,0,0,0", "Enable SMS notifications", 2),
         ]
         
         for cmd, desc, timeout in commands:
@@ -267,6 +280,55 @@ class GSMModem:
         else:
             _LOGGER.error("SMS send timeout")
             return False
+    
+    def read_sms_by_index(self, index):
+        """Read a specific SMS by index."""
+        try:
+            _LOGGER.debug(f"Reading SMS at index {index}")
+            
+            # Read the SMS
+            cmd = f"AT+CMGR={index}"
+            self.recording_sms = False
+            self.last_sms_text = b''
+            
+            if not self.write_command(cmd, timeout=5):
+                _LOGGER.warning(f"Failed to read SMS at index {index}")
+                return None
+            
+            # Give time for response
+            time.sleep(0.5)
+            
+            # Parse response - format is:
+            # +CMGR: "REC UNREAD","+1234567890","","24/11/18,12:34:56+00"
+            # Message text
+            
+            if self.last_sms_text:
+                response_text = self.last_sms_text.decode('utf-8', errors='ignore')
+                lines = response_text.split('\n')
+                
+                if len(lines) >= 2 and '+CMGR:' in lines[0]:
+                    # Parse header
+                    header_parts = lines[0].split(',')
+                    if len(header_parts) >= 2:
+                        # Extract phone number (remove quotes)
+                        number = header_parts[1].strip().strip('"')
+                        # Message text is on subsequent lines
+                        message = '\n'.join(lines[1:]).strip()
+                        
+                        # Delete the message
+                        self.write_command(f"AT+CMGD={index}", timeout=2)
+                        
+                        return {
+                            'number': number,
+                            'message': message,
+                            'index': index
+                        }
+            
+            return None
+            
+        except Exception as e:
+            _LOGGER.error(f"Error reading SMS at index {index}: {e}", exc_info=True)
+            return None
     
     def read_sms(self):
         """Read all SMS messages - simplified to avoid modem hangs."""
@@ -589,6 +651,21 @@ class GSMSMSService:
                 
                 # Check for events and queue (fast check every second)
                 self.check_for_events()
+                
+                # Process incoming SMS notifications from +CMTI
+                while self.modem.pending_sms:
+                    sms_index = self.modem.pending_sms.pop(0)
+                    _LOGGER.info(f"Processing incoming SMS at index {sms_index}")
+                    sms_data = self.modem.read_sms_by_index(sms_index)
+                    if sms_data:
+                        _LOGGER.info(f"Received SMS from {sms_data['number']}: {sms_data['message']}")
+                        # Fire Home Assistant event
+                        event_data = {
+                            'phone': sms_data['number'],
+                            'message': sms_data['message'],
+                            'date': datetime.now().isoformat()
+                        }
+                        self.fire_event('legacy_gsm_sms_received', event_data)
                 
                 # Check for incoming SMS (slower, based on scan_interval)
                 if current_time - last_check >= self.scan_interval:

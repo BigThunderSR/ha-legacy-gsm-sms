@@ -5,7 +5,7 @@ description: |
   This is the old gammu-based version kept for reference.
   Please use the 'Legacy GSM SMS (Standalone)' add-on instead.
 #codenotary: bigthundersr@outlook.com
-version: 0.0.1n
+version: 0.0.1o
 slug: "z_legacy_gsm_sms_old_test"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 #image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
@@ -30,6 +30,7 @@ stage: experimental
 #boot: auto
 map:
   - share:rw
+  - usb
 options:
   device: "/dev/ttyUSB0"
   baud_speed: "0"

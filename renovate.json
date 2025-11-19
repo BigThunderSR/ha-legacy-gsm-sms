@@ -7,6 +7,8 @@
     "Renovate",
     "dependencies"
   ],
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
   "packageRules": [
     {
       "matchManagers": [

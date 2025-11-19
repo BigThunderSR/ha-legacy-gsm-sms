@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.2c
+
+- Added unique_id attribute to all sensors for UI management
+- Added friendly_name to each sensor for better display
+- Fixed device identifiers format (removed leading space)
+- Sensors now show proper names in HA UI
+
 ## 0.0.2b
 
 - Added multiple sensor entities (signal_strength, signal_percent, bit_error_rate, network_operator, state)

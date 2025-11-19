@@ -581,7 +581,7 @@ class GSMSMSService:
         # BER ranges from 0-7, lower is better
         return round((ber / 7) * 100)
     
-    def create_sensor(self, entity_id, state, attributes=None, device_class=None, unit=None, icon=None):
+    def create_sensor(self, entity_id, state, attributes=None, device_class=None, unit=None, icon=None, friendly_name=None):
         """Create or update a sensor entity."""
         try:
             data = {
@@ -589,10 +589,19 @@ class GSMSMSService:
                 "attributes": attributes or {},
             }
             
+            # Add unique_id based on entity_id for UI management
+            # Extract sensor key from entity_id (e.g., "signal_strength" from "sensor.gsm_123_signal_strength")
+            sensor_key = entity_id.split('.')[-1]
+            data["attributes"]["unique_id"] = f"gsm_{self.imei}_{sensor_key.replace(f'{self.imei}_', '')}" if self.imei else sensor_key
+            
+            # Add friendly name if provided
+            if friendly_name:
+                data["attributes"]["friendly_name"] = friendly_name
+            
             # Add device info if we have IMEI
             if self.imei:
                 data["attributes"]["device"] = {
-                    "identifiers": [[" legacy_gsm_sms", self.imei]],
+                    "identifiers": [["legacy_gsm_sms", self.imei]],
                     "name": "GSM Modem",
                     "manufacturer": self.manufacturer,
                     "model": self.model,
@@ -638,7 +647,8 @@ class GSMSMSService:
                     {"rssi": rssi},
                     device_class="signal_strength",
                     unit="dBm",
-                    icon="mdi:signal"
+                    icon="mdi:signal",
+                    friendly_name="GSM Signal Strength"
                 )
             
             # Signal percent
@@ -649,7 +659,8 @@ class GSMSMSService:
                     signal_percent,
                     {"rssi": rssi},
                     unit="%",
-                    icon="mdi:signal"
+                    icon="mdi:signal",
+                    friendly_name="GSM Signal Percent"
                 )
             
             # Bit error rate
@@ -660,7 +671,8 @@ class GSMSMSService:
                     ber_percent,
                     {"raw_ber": ber},
                     unit="%",
-                    icon="mdi:alert-circle"
+                    icon="mdi:alert-circle",
+                    friendly_name="GSM Bit Error Rate"
                 )
         
         # Network info
@@ -670,7 +682,8 @@ class GSMSMSService:
                 f"sensor.gsm_{self.imei}_network_operator",
                 operator,
                 {},
-                icon="mdi:network"
+                icon="mdi:network",
+                friendly_name="GSM Network Operator"
             )
         
         # Modem state
@@ -683,7 +696,8 @@ class GSMSMSService:
                 "model": self.model,
                 "firmware": self.firmware
             },
-            icon="mdi:cellphone-check" if self.connected else "mdi:cellphone-off"
+            icon="mdi:cellphone-check" if self.connected else "mdi:cellphone-off",
+            friendly_name="GSM Modem State"
         )
     
     def update_sensor(self, state, attributes=None):

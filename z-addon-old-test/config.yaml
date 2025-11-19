@@ -13,18 +13,26 @@ arch:
   - aarch64
   - amd64
 startup: services
-usb: true
 homeassistant_api: true
 auth_api: true
 init: false
 host_dbus: true
 stage: experimental
-#boot: auto
-map:
-  - type: homeassistant_config
-    read_only: false
-  - type: ssl
-    read_only: false
+devices:
+  - "/dev/ttyUSB0:/dev/ttyUSB0:rwm"
+  - "/dev/ttyUSB1:/dev/ttyUSB1:rwm"
+  - "/dev/ttyUSB2:/dev/ttyUSB2:rwm"
+  - "/dev/ttyUSB3:/dev/ttyUSB3:rwm"
+  - "/dev/ttyUSB4:/dev/ttyUSB4:rwm"
+  - "/dev/ttyUSB5:/dev/ttyUSB5:rwm"
+  - "/dev/ttyACM0:/dev/ttyACM0:rwm"
+  - "/dev/ttyACM1:/dev/ttyACM1:rwm"
+  - "/dev/ttyACM2:/dev/ttyACM2:rwm"
+  - "/dev/ttyACM3:/dev/ttyACM3:rwm"
+  - "/dev/ttyS0:/dev/ttyS0:rwm"
+privileged:
+  - "SYS_RAWIO"
+udev: true
 options:
   device: "/dev/ttyUSB0"
   baud_speed: "0"

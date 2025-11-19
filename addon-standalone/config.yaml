@@ -9,13 +9,10 @@ description: |
 version: "1.0.0"
 slug: "legacy_gsm_sms_standalone"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
-#image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
+image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
 arch:
   - aarch64
   - amd64
-  - armhf
-  - armv7
-  - i386
 #startup: application
 usb: true
 uart: true
@@ -27,7 +24,7 @@ homeassistant_api: true
 auth_api: true
 init: false
 host_dbus: true
-stage: experimental
+#stage: experimental
 #boot: auto
 map:
   - share:rw

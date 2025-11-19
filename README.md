@@ -5,15 +5,15 @@
 [![HACS Version](https://img.shields.io/github/manifest-json/v/BigThunderSR/ha-legacy-gsm-sms?filename=custom_components%2Flegacy_gsm_sms%2Fmanifest.json&label=HACS%20version&color=blue)](https://github.com/BigThunderSR/ha-legacy-gsm-sms)
 [![Home Assistant Add-on Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FBigThunderSR%2Fha-legacy-gsm-sms%2Fmain%2Faddon-standalone%2Fconfig.yaml&query=%24.version&label=Add-on%20version&color=blue)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
 
-Send and receive SMS messages using a GSM modem connected to your Home Assistant instance. Includes sensors for monitoring signal strength and network status.
+Send and receive SMS messages using a GSM modem connected to your Home Assistant instance, with sensors for monitoring signal strength and network status.
 
 ## Features
 
-- Send SMS messages via service call
-- Receive SMS messages and fire events
-- Monitor modem signal strength
-- Monitor network status
+- Send and receive SMS messages
+- Monitor GSM modem signal strength
+- Monitor GSM network status
 - GSM network information sensors
+- Available as HACS integration or Home Assistant add-on
 
 ## Requirements
 
@@ -110,30 +110,30 @@ The add-on automatically creates sensor entities and provides an HTTP API for se
 
 **Important:** Do not run both the HACS integration and the add-on simultaneously - they will conflict when accessing the serial device.
 
-## Troubleshooting
+## Troubleshooting (HACS Integration)
 
 ### "Cannot find device" Error
 
-The integration logs `ConfigEntryNotReady` when it cannot connect to the modem:
+The integration logs `ConfigEntryNotReady` when it cannot connect to the GSM modem:
 
 - Verify the device path is correct (e.g., `/dev/ttyUSB0`, `/dev/ttyACM0`)
 - Check available serial devices: `ls -l /dev/ttyUSB* /dev/ttyACM*`
-- Ensure the modem is powered on and properly connected
+- Ensure the GSM modem is powered on and properly connected
 - Check Home Assistant logs for `gammu.GSMError` messages with specific error details
 
 ### "Error communicating with device"
 
-This occurs when the modem stops responding after initial connection:
+This occurs when the GSM modem stops responding after initial connection:
 
-- Check signal strength - poor signal can cause communication failures
+- Check signal strength sensor - poor signal can cause communication failuresailures
 - Try a different baud rate (or set to "Auto" for auto-detection)
 - Restart Home Assistant to reinitialize the connection
-- Check if another application is accessing the modem simultaneously
+- Ensure no other application is accessing the GSM modem simultaneously
 
 ### SMS Not Received
 
 - Check that your SIM card has active service
-- Disable SIM PIN if enabled (some modems can't handle PIN-protected SIMs)
+- Disable SIM PIN if enabled (some GSM modems can't handle PIN-protected SIMs)
 - Check the signal strength sensor - weak signal affects SMS reception
 - Review logs for `ERR_EMPTY` or `ERR_MEMORY_NOT_AVAILABLE` messages
 

@@ -111,9 +111,36 @@ The add-on provides an HTTP API for sending SMS and automatically creates sensor
 
 ## Troubleshooting
 
-- Ensure your modem is properly connected and recognized by the system
-- Check that your user has permissions to access the device (e.g., add your user to the 'dialout' group)
-- Look for errors in the Home Assistant logs
+### "Cannot find device" Error
+
+The integration logs `ConfigEntryNotReady` when it cannot connect to the modem:
+
+- Verify the device path is correct (e.g., `/dev/ttyUSB0`, `/dev/ttyACM0`)
+- Check available serial devices: `ls -l /dev/ttyUSB* /dev/ttyACM*`
+- Ensure the modem is powered on and properly connected
+- Check Home Assistant logs for `gammu.GSMError` messages with specific error details
+
+### "Error communicating with device"
+
+This occurs when the modem stops responding after initial connection:
+
+- Check signal strength - poor signal can cause communication failures
+- Try a different baud rate (or set to "Auto" for auto-detection)
+- Restart Home Assistant to reinitialize the connection
+- Check if another application is accessing the modem simultaneously
+
+### SMS Not Received
+
+- Check that your SIM card has active service
+- Disable SIM PIN if enabled (some modems can't handle PIN-protected SIMs)
+- Check the signal strength sensor - weak signal affects SMS reception
+- Review logs for `ERR_EMPTY` or `ERR_MEMORY_NOT_AVAILABLE` messages
+
+### Permission Issues (Home Assistant Container/Core)
+
+- Add your user to the `dialout` group: `sudo usermod -a -G dialout $USER`
+- Log out and back in for group changes to take effect
+- For Home Assistant OS/Supervised, permissions are handled automatically
 
 ## Credits
 

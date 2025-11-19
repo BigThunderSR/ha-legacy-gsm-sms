@@ -6,7 +6,7 @@ description: |
   Both will try to access the same serial device, causing conflicts.
   Disable/uninstall the HACS integration before using this add-on.
 #codenotary: bigthundersr@outlook.com
-version: "1.0.0"
+version: "1.0.1"
 slug: "legacy_gsm_sms_standalone"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
@@ -31,17 +31,13 @@ map:
 options:
   device: "/dev/ttyUSB0"
   baud_speed: "0"
-  unicode: false
   scan_interval: 30
-  service_name: "legacy_gsm_sms"
   log_level: "info"
 schema:
   device: str
   baud_speed: list(0|50|75|110|134|150|200|300|600|1200|1800|2400|4800|9600|19200|28800|38400|57600|76800|115200)
-  unicode: bool
   scan_interval: int(10,600)
-  service_name: str
-  log_level: list(trace|debug|info|notice|warning|error|fatal)
+  log_level: list(debug|info|warning|error)
 devices:
   - /dev/ttyUSB[0-9]*
   - /dev/ttyACM[0-9]*

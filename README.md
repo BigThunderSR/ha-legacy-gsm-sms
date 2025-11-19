@@ -1,8 +1,9 @@
 # ![brand_icon](png/logo-128x128.png) Legacy GSM SMS for Home Assistant
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/BigThunderSR/ha-legacy-gsm-sms/releases)
-[![Home Assistant Addon](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
+[![GitHub Release](https://img.shields.io/github/v/release/BigThunderSR/ha-legacy-gsm-sms)](https://github.com/BigThunderSR/ha-legacy-gsm-sms/releases)
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![HACS Version](https://img.shields.io/github/manifest-json/v/BigThunderSR/ha-legacy-gsm-sms?filename=custom_components%2Flegacy_gsm_sms%2Fmanifest.json&label=HACS%20version&color=blue)](https://github.com/BigThunderSR/ha-legacy-gsm-sms)
+[![Home Assistant Add-on Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FBigThunderSR%2Fha-legacy-gsm-sms%2Fmain%2Faddon-standalone%2Fconfig.yaml&query=%24.version&label=Add-on%20version&color=blue)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
 
 This integration allows you to send SMS messages using a GSM modem connected to your Home Assistant instance. It also provides sensors for monitoring signal strength and network status.
 

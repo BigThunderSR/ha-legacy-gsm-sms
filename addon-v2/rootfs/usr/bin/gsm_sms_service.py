@@ -757,11 +757,13 @@ class GSMSMSService:
             
             # Bit error rate (matches HACS BitErrorRate)
             ber_percent = self.ber_to_percent(ber)
+            # Show "unknown" instead of 99 to avoid confusion
+            ber_state = "unknown" if ber == 99 else ber_percent
             self.create_sensor(
                 f"sensor.gsm_{self.imei}_bit_error_rate",
-                ber_percent,
-                {"raw_ber": ber, "note": "99 = Unknown/Not detectable, 0-7 = RXQUAL (lower is better)"},
-                unit="%",
+                ber_state,
+                {"raw_ber": ber, "note": "0-7 = RXQUAL (lower is better), 99 = not detectable"},
+                unit="%" if ber != 99 else None,
                 icon="mdi:alert-circle",
                 friendly_name="Bit Error Rate"
             )

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.3d
+
+- **Fixed BER displaying "99%"** - now shows "unknown" when value is 99 (not detectable)
+- Removes % unit when BER is unknown to avoid confusion
+- When BER is measurable (0-7), shows actual RXQUAL value with % unit
+
 ## 0.0.3c
 
 - **Fixed BER sensor not appearing** - now always created even when value is 99 (unknown)

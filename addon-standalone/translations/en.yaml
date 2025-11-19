@@ -1,0 +1,43 @@
+configuration:
+  device:
+    name: Serial Device
+    description: >
+      Path to your GSM modem's serial device.
+      Use /dev/serial/by-id/... for stable device names.
+      Find your device with: ls -l /dev/serial/by-id/
+  baud_speed:
+    name: Baud Rate
+    description: >
+      Serial communication speed.
+      Use 0 for auto-detection (recommended).
+      Common values: 9600, 19200, 38400, 57600, 115200.
+      Most modern modems work at 115200 or auto.
+  unicode:
+    name: Unicode Support
+    description: >
+      Enable Unicode (UTF-8) support for SMS messages.
+      Keep disabled (false) for standard ASCII messages.
+      Enable if you need to send messages in non-Latin scripts.
+  scan_interval:
+    name: Scan Interval
+    description: >
+      How often to update sensors and check for messages (in seconds).
+      Lower values = faster updates and SMS detection, but higher CPU usage.
+      Recommended: 30 seconds for normal use, 10 for faster SMS detection.
+  service_name:
+    name: Service Name
+    description: >
+      Internal service name for the add-on.
+      Leave as default unless you have a specific naming requirement.
+      Used for entity naming and logging.
+  log_level:
+    name: Log Level
+    description: >
+      Verbosity of log messages.
+      - trace: Everything (very verbose)
+      - debug: Detailed debugging information
+      - info: Normal operational messages (recommended)
+      - notice: Important information
+      - warning: Warning messages only
+      - error: Error messages only
+      - fatal: Critical errors only

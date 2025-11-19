@@ -23,9 +23,7 @@ This integration allows you to send SMS messages using a GSM modem connected to 
 
 ## Installation
 
-Choose one of the following installation methods based on your preference:
-
-### Option 1: HACS Integration
+### HACS Integration
 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=BigThunderSR&repository=ha-legacy-gsm-sms&category=integration)
 
@@ -37,19 +35,9 @@ Choose one of the following installation methods based on your preference:
 3. Click "Install" and restart Home Assistant
 4. Configure the integration through the UI (see Configuration section below)
 
-### Option 2: Home Assistant Add-on
+#### Manual Installation
 
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
-
-1. Add this repository to your Home Assistant instance as a custom repository using the button above
-2. Install the "Legacy GSM SMS" add-on from the add-on store
-3. Follow the configuration and usage instructions in the add-on's Documentation tab
-
-The add-on provides an HTTP API for sending SMS and automatically creates sensor entities for signal strength and network information.
-
-**Note:** Do not run both the HACS integration and the add-on simultaneously, as they will conflict when accessing the serial device.
-
-### Option 3: Manual Installation (HACS Integration)
+Alternatively, you can manually install the integration:
 
 1. Copy the `custom_components/legacy_gsm_sms` folder from this repository into your Home Assistant's `config/custom_components/` directory.
 2. Restart Home Assistant.
@@ -106,6 +94,20 @@ action:
     message: "SMS from {{ trigger.event.data.phone }}: {{ trigger.event.data.text }}"
     title: "SMS Received"
 ```
+
+## Home Assistant Add-on (Alternative)
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
+
+As an alternative to the HACS integration, you can install the add-on version:
+
+1. Add this repository to your Home Assistant instance using the button above
+2. Install the "Legacy GSM SMS" add-on from the add-on store
+3. Follow the configuration and usage instructions in the add-on's Documentation tab
+
+The add-on provides an HTTP API for sending SMS and automatically creates sensor entities for signal strength and network information.
+
+**Note:** Do not run both the HACS integration and the add-on simultaneously, as they will conflict when accessing the serial device.
 
 ## Troubleshooting
 

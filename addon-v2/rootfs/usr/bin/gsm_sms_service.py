@@ -431,7 +431,7 @@ class GSMSMSService:
             _LOGGER.info("")
             _LOGGER.info("shell_command:")
             _LOGGER.info("  send_sms: >")
-            _LOGGER.info("    echo '{\"action\":\"send_sms\",\"number\":\"{{ number }}\",\"message\":\"{{ message }}\"}' > /share/gsm_sms_queue.json")
+            _LOGGER.info("    echo '{\"action\":\"send_sms\",\"number\":\"{{ number }}\",\"message\":\"{{ message }}\"}' > /config/share/gsm_sms_queue.json")
             _LOGGER.info("")
             _LOGGER.info("Then reload shell_command and use in automations:")
             _LOGGER.info("")
@@ -439,6 +439,8 @@ class GSMSMSService:
             _LOGGER.info("  data:")
             _LOGGER.info("    number: '+1234567890'")
             _LOGGER.info("    message: 'Your message here'")
+            _LOGGER.info("")
+            _LOGGER.info("Note: /config/share is accessible as /share in the addon")
             _LOGGER.info("=" * 60)
             
             self.service_registered = True
@@ -455,21 +457,16 @@ class GSMSMSService:
             
     def check_queue_fallback(self):
         """Fallback: Check file-based queue for SMS send requests."""
-        # Use /share which is mapped from host
+        # Use /share which is accessible from both HA and the addon
         queue_file = '/share/gsm_sms_queue.json'
         
         try:
             if os.path.exists(queue_file):
-                _LOGGER.info(f"Queue file found: {queue_file}")
-                
                 with open(queue_file, 'r') as f:
-                    content = f.read()
-                    _LOGGER.debug(f"Queue file content: {content}")
-                    command = json.loads(content)
+                    command = json.load(f)
                 
                 # Remove the file immediately
                 os.remove(queue_file)
-                _LOGGER.debug(f"Queue file removed")
                 
                 if command.get('action') == 'send_sms':
                     number = command.get('number')
@@ -479,18 +476,16 @@ class GSMSMSService:
                         _LOGGER.info(f"Processing queued SMS send request to {number}")
                         self.send_sms_message(number, message)
                     else:
-                        _LOGGER.warning(f"Invalid SMS command - missing number or message. Got: {command}")
-                else:
-                    _LOGGER.warning(f"Invalid action in queue: {command.get('action')}")
+                        _LOGGER.warning("Invalid SMS command - missing number or message")
                         
-        except json.JSONDecodeError as e:
-            _LOGGER.error(f"Invalid JSON in queue file: {e}")
+        except json.JSONDecodeError:
+            _LOGGER.error(f"Invalid JSON in queue file")
             try:
                 os.remove(queue_file)
             except:
                 pass
         except Exception as e:
-            _LOGGER.error(f"Error checking queue: {e}", exc_info=True)
+            _LOGGER.debug(f"Error checking queue: {e}")
 
     def run(self):
         """Run the service main loop."""
@@ -516,22 +511,12 @@ class GSMSMSService:
         # Main loop
         _LOGGER.info(f"Entering main loop (scanning every {self.scan_interval} seconds)")
         
-        # Debug: Show available directories
-        _LOGGER.info("Checking available queue file locations:")
-        for path in ['/share', '/data', '/config', '/tmp']:
-            exists = os.path.exists(path)
-            _LOGGER.info(f"  {path}: {'exists' if exists else 'not found'}")
-        
         try:
             last_check = 0
-            check_count = 0
             while True:
                 current_time = time.time()
                 
                 # Check for events and queue (fast check every second)
-                check_count += 1
-                if check_count % 30 == 1:  # Log every 30 seconds
-                    _LOGGER.debug(f"Checking queue file (check #{check_count})")
                 self.check_for_events()
                 
                 # Check for incoming SMS (slower, based on scan_interval)

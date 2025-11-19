@@ -655,11 +655,23 @@ class GSMSMSService:
         return round((rssi / 31) * 100)
     
     def ber_to_percent(self, ber):
-        """Convert BER to percentage."""
+        """Convert BER to percentage.
+        Note: BER is RXQUAL value (0-7) where lower is better.
+        0 = BER < 0.2%
+        1 = 0.2% < BER < 0.4%
+        2 = 0.4% < BER < 0.8%
+        3 = 0.8% < BER < 1.6%
+        4 = 1.6% < BER < 3.2%
+        5 = 3.2% < BER < 6.4%
+        6 = 6.4% < BER < 12.8%
+        7 = BER > 12.8%
+        99 = Unknown
+        """
         if ber == 99:
             return None  # Unknown
-        # BER ranges from 0-7, lower is better
-        return round((ber / 7) * 100)
+        # Return the raw RXQUAL value (0-7) to match HACS behavior
+        # The "percentage" unit in HACS is somewhat misleading - it's actually just the RXQUAL index
+        return ber
     
     def create_sensor(self, entity_id, state, attributes=None, device_class=None, unit=None, icon=None, friendly_name=None):
         """Create or update a sensor entity."""

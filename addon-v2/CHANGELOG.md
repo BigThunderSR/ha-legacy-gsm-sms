@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.3b
+
+- Fixed Bit Error Rate calculation to return raw RXQUAL value (0-7)
+- Added BER value mapping documentation in code
+- BER now matches HACS integration behavior
+- Lower BER values are better (0 = best, 7 = worst)
+
 ## 0.0.3a
 
 - Improved sensor naming for easier discovery

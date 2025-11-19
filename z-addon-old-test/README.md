@@ -1,8 +1,16 @@
-# Home Assistant Add-on: Legacy GSM SMS
+# Home Assistant Add-on: Legacy GSM SMS (Old/Test - DEPRECATED)
 
-Send and receive SMS messages using a GSM modem connected to your Home Assistant instance.
+## ⚠️ DEPRECATED - DO NOT USE
 
-## About
+This is the old gammu-based version kept for reference and testing purposes only.
+
+**Please use the [Legacy GSM SMS (Standalone)](../addon-standalone/) add-on instead.**
+
+This version has known issues and is no longer maintained.
+
+---
+
+## About (Historical)
 
 This add-on allows you to:
 

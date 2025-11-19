@@ -1,8 +1,12 @@
-name: "Legacy GSM SMS"
-description: "Send and receive SMS messages using a GSM modem"
+name: "Z Legacy GSM SMS (Old/Test - DO NOT USE)"
+description: |
+  ⚠️ DEPRECATED - FOR TESTING ONLY
+  
+  This is the old gammu-based version kept for reference.
+  Please use the 'Legacy GSM SMS (Standalone)' add-on instead.
 #codenotary: bigthundersr@outlook.com
 version: 0.0.1n
-slug: "legacy_gsm_sms"
+slug: "z_legacy_gsm_sms_old_test"
 url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms"
 #image: "ghcr.io/bigthundersr/ha-legacy-gsm-sms-{arch}"
 arch:

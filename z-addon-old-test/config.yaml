@@ -20,7 +20,8 @@ host_dbus: true
 stage: experimental
 #boot: auto
 map:
-  - homeassistant_config:rw
+  - type: homeassistant_config
+    read_only: false
   - ssl
   - usb
 options:

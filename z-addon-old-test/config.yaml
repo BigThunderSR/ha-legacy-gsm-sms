@@ -13,6 +13,7 @@ arch:
   - aarch64
   - amd64
 startup: services
+usb: true
 homeassistant_api: true
 auth_api: true
 init: false
@@ -24,7 +25,6 @@ map:
     read_only: false
   - type: ssl
     read_only: false
-  - type: usb
 options:
   device: "/dev/ttyUSB0"
   baud_speed: "0"

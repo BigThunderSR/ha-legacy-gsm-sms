@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.3c
+
+- **Fixed BER sensor not appearing** - now always created even when value is 99 (unknown)
+- Most modems return BER=99 (not detectable), sensor now shows this value
+- Added note in sensor attributes explaining BER values
+- BER sensor will display "99" when modem doesn't support BER measurement
+
 ## 0.0.3b
 
 - Fixed Bit Error Rate calculation to return raw RXQUAL value (0-7)

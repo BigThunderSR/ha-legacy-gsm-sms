@@ -665,11 +665,9 @@ class GSMSMSService:
         5 = 3.2% < BER < 6.4%
         6 = 6.4% < BER < 12.8%
         7 = BER > 12.8%
-        99 = Unknown
+        99 = Unknown/Not detectable
         """
-        if ber == 99:
-            return None  # Unknown
-        # Return the raw RXQUAL value (0-7) to match HACS behavior
+        # Return the raw RXQUAL value (0-7) or 99 for unknown
         # The "percentage" unit in HACS is somewhat misleading - it's actually just the RXQUAL index
         return ber
     
@@ -759,15 +757,14 @@ class GSMSMSService:
             
             # Bit error rate (matches HACS BitErrorRate)
             ber_percent = self.ber_to_percent(ber)
-            if ber_percent is not None:
-                self.create_sensor(
-                    f"sensor.gsm_{self.imei}_bit_error_rate",
-                    ber_percent,
-                    {"raw_ber": ber},
-                    unit="%",
-                    icon="mdi:alert-circle",
-                    friendly_name="Bit Error Rate"
-                )
+            self.create_sensor(
+                f"sensor.gsm_{self.imei}_bit_error_rate",
+                ber_percent,
+                {"raw_ber": ber, "note": "99 = Unknown/Not detectable, 0-7 = RXQUAL (lower is better)"},
+                unit="%",
+                icon="mdi:alert-circle",
+                friendly_name="Bit Error Rate"
+            )
         
         # Network name (matches HACS NetworkName)
         if network_data:

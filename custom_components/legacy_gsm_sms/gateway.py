@@ -152,57 +152,46 @@ class Gateway:
         """Get the IMEI of the device."""
         return await self._worker.get_imei_async()
 
-    def _rssi_to_dbm(self, rssi):
-        """Convert RSSI to dBm (matches addon logic)."""
-        if rssi == 99 or rssi == -1:
-            return None  # Unknown
-        return -113 + (rssi * 2)
-    
-    def _rssi_to_percent(self, rssi):
-        """Convert RSSI to percentage (matches addon logic)."""
-        if rssi == 99 or rssi == -1:
-            return None  # Unknown
-        # RSSI ranges from 0 to 31
-        return round((rssi / 31) * 100)
-
     async def get_signal_quality_async(self):
         """Get the current signal level of the modem."""
         signal_data = await self._worker.get_signal_quality_async()
         
-        # Gammu may return SignalStrength (RSSI 0-31 or -1), SignalPercent (-1 to 100), BitErrorRate (0-7 or 99)
-        # Transform to match addon behavior
-        rssi = signal_data.get("SignalStrength", -1)
+        # Gammu returns already processed values:
+        # - SignalStrength: dBm value (already calculated, -1 = unknown)
+        # - SignalPercent: percentage 0-100 (-1 = unknown)
+        # - BitErrorRate: RXQUAL value 0-7 (99 = unknown)
+        
+        signal_strength = signal_data.get("SignalStrength", -1)
+        signal_percent = signal_data.get("SignalPercent", -1)
         ber = signal_data.get("BitErrorRate", 99)
         
-        # Convert RSSI to dBm for SignalStrength sensor
-        signal_dbm = self._rssi_to_dbm(rssi)
-        
-        # Convert RSSI to percentage for SignalPercent sensor
-        signal_percent = self._rssi_to_percent(rssi)
-        
-        # BitErrorRate: return raw value (0-7) or None for unknown (99)
-        # Note: This is RXQUAL index, not actually a percentage
-        ber_value = None if ber == 99 else ber
+        # Convert -1 to None for unknown values
+        if signal_strength == -1:
+            signal_strength = None
+        if signal_percent == -1:
+            signal_percent = None
+        # BitErrorRate: 99 means unknown, 0-7 is RXQUAL index
+        if ber == 99:
+            ber = None
         
         return {
-            "SignalStrength": signal_dbm,
+            "SignalStrength": signal_strength,
             "SignalPercent": signal_percent,
-            "BitErrorRate": ber_value,
+            "BitErrorRate": ber,
         }
 
     async def get_network_info_async(self):
         """Get the current network info of the modem."""
         network_info = await self._worker.get_network_info_async()
         
-        # Transform to match addon structure
         # Gammu returns: NetworkName, State, NetworkCode, CID, LAC
-        network_name = network_info.get("NetworkName", "")
+        network_name = network_info.get("NetworkName")
+        network_code = network_info.get("NetworkCode")
         
-        # Looks like there is a bug and it's empty for any modem https://github.com/gammu/python-gammu/issues/31, so try workaround
-        if not network_name:
-            network_name = gammu.GSMNetworks.get(
-                network_info.get("NetworkCode", "")
-            ) or "Unknown"
+        # Looks like there is a bug and NetworkName is often empty https://github.com/gammu/python-gammu/issues/31
+        # Try workaround by looking up from numeric code
+        if not network_name and network_code:
+            network_name = gammu.GSMNetworks.get(network_code)
         
         # Map Gammu's state to match addon format
         state = network_info.get("State", "Unknown")
@@ -221,9 +210,9 @@ class Gateway:
         return {
             "NetworkName": network_name,
             "State": mapped_state,
-            "NetworkCode": network_info.get("NetworkCode", ""),
-            "CID": network_info.get("CID", ""),
-            "LAC": network_info.get("LAC", ""),
+            "NetworkCode": network_code or None,
+            "CID": network_info.get("CID") or None,
+            "LAC": network_info.get("LAC") or None,
         }
 
     async def get_manufacturer_async(self):

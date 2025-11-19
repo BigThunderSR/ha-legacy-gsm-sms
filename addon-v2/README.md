@@ -67,16 +67,22 @@ automation:
 
 The addon fires these events:
 
-- `legacy_gsm_sms_sent` - SMS sent successfully
-- `legacy_gsm_sms_failed` - SMS sending failed
-- `legacy_gsm_sms_received` - SMS received (coming soon)
+- `legacy_gsm_sms_received` - SMS received with phone number and message
 
-### Sensor
+### Sensors
 
-Creates `sensor.gsm_modem_status` with attributes:
+Creates 8 sensor entities (all grouped by device using IMEI):
 
-- `signal_strength` - GSM signal strength (0-31)
-- `last_check` - Last time modem was checked
+- `sensor.gsm_<imei>_signal_strength` - Signal strength in dBm (-113 to -51)
+- `sensor.gsm_<imei>_signal_percent` - Signal strength as percentage (0-100%)
+- `sensor.gsm_<imei>_bit_error_rate` - Bit error rate percentage
+- `sensor.gsm_<imei>_network_name` - Network operator name
+- `sensor.gsm_<imei>_state` - Registration state (Home/Roaming/Searching)
+- `sensor.gsm_<imei>_network_code` - MCC+MNC network code
+- `sensor.gsm_<imei>_cid` - Cell tower ID
+- `sensor.gsm_<imei>_lac` - Location Area Code
+
+All sensors are grouped under a single device "GSM Modem" with device info (manufacturer, model, firmware).
 
 ## Supported Modems
 

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.0.3
+
+- **All HACS integration sensors now supported!**
+- Added NetworkCode sensor (MCC+MNC)
+- Added CID sensor (Cell ID)
+- Added LAC sensor (Location Area Code)
+- Renamed network_operator to network_name (matches HACS)
+- Added AT+CREG=2 for network registration location info
+- Added get_network_registration() method
+- State sensor now shows registration status (Home/Roaming/Searching)
+- All 8 sensors match HACS integration structure:
+  - Signal Strength (dBm)
+  - Signal Percent (%)
+  - Bit Error Rate (%)
+  - Network Name (operator)
+  - State (registration status)
+  - Network Code (MCC+MNC)
+  - CID (cell tower ID)
+  - LAC (location area)
+- Sensors properly grouped by device using IMEI
+- Friendly names match HACS integration
+
 ## 0.0.2c
 
 - Added unique_id attribute to all sensors for UI management

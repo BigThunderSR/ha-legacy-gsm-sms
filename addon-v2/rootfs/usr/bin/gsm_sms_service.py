@@ -227,6 +227,7 @@ class GSMModem:
             ("ATE0", "Disable echo", 2),
             ("AT+CMGF=1", "Set SMS text mode", 2),
             ("AT+CNMI=2,1,0,0,0", "Enable SMS notifications", 2),
+            ("AT+CREG=2", "Enable network registration with location info", 2),
         ]
         
         for cmd, desc, timeout in commands:
@@ -308,21 +309,100 @@ class GSMModem:
         return None
     
     def get_network_info(self):
-        """Get network information."""
+        """Get network operator name."""
         try:
             self.response_lines = []
             if self.write_command("AT+COPS?", timeout=2):
                 time.sleep(0.3)
-                # Response format: +COPS: <mode>,<format>,"<operator>",<act>
+                # Response format: +COPS: <mode>,<format>,"<oper>",<act>
                 for line in self.response_lines:
                     if '+COPS:' in line:
-                        parts = line.split(':')[1].strip().split(',')
+                        parts = line.split(',')
                         if len(parts) >= 3:
                             operator = parts[2].strip().strip('"')
                             return {'operator': operator}
         except Exception as e:
             _LOGGER.debug(f"Error getting network info: {e}")
         return None
+    
+    def get_network_registration(self):
+        """Get network registration status including CID and LAC.
+        Returns dict with State, NetworkCode, CID, LAC.
+        """
+        result = {
+            'State': 'Unknown',
+            'NetworkCode': None,
+            'CID': None,
+            'LAC': None
+        }
+        
+        try:
+            # Get registration status with location info
+            # AT+CREG=2 enables network registration and location info URC
+            # AT+CREG? queries current registration status
+            self.response_lines = []
+            if self.write_command("AT+CREG?", timeout=2):
+                time.sleep(0.3)
+                # Response format: +CREG: <n>,<stat>[,<lac>,<ci>[,<AcT>]]
+                # stat: 0=not registered, 1=registered home, 2=searching, 3=denied, 4=unknown, 5=registered roaming
+                for line in self.response_lines:
+                    if '+CREG:' in line:
+                        parts = line.split(':')[1].strip().split(',')
+                        if len(parts) >= 2:
+                            stat = int(parts[1].strip())
+                            state_map = {
+                                0: 'Not Registered',
+                                1: 'Registered (Home)',
+                                2: 'Searching',
+                                3: 'Registration Denied',
+                                4: 'Unknown',
+                                5: 'Registered (Roaming)'
+                            }
+                            result['State'] = state_map.get(stat, 'Unknown')
+                            
+                            # LAC and CID are in hex format
+                            if len(parts) >= 4:
+                                try:
+                                    result['LAC'] = int(parts[2].strip().strip('"'), 16)
+                                    result['CID'] = int(parts[3].strip().strip('"'), 16)
+                                except (ValueError, IndexError):
+                                    pass
+            
+            # Get network code (MCC+MNC) in numeric format
+            self.response_lines = []
+            if self.write_command("AT+COPS?", timeout=2):
+                time.sleep(0.3)
+                # Response format: +COPS: <mode>,<format>,"<oper>",<act>
+                # We need format=2 for numeric code
+                for line in self.response_lines:
+                    if '+COPS:' in line:
+                        parts = line.split(',')
+                        if len(parts) >= 3:
+                            # Check if already in numeric format
+                            network_code = parts[2].strip().strip('"')
+                            if network_code.isdigit():
+                                result['NetworkCode'] = network_code
+            
+            # If we didn't get numeric code, try to query it explicitly
+            if not result['NetworkCode']:
+                self.response_lines = []
+                if self.write_command("AT+COPS=3,2", timeout=2):  # Set format to numeric
+                    time.sleep(0.3)
+                    self.response_lines = []
+                    if self.write_command("AT+COPS?", timeout=2):
+                        time.sleep(0.3)
+                        for line in self.response_lines:
+                            if '+COPS:' in line:
+                                parts = line.split(',')
+                                if len(parts) >= 3:
+                                    result['NetworkCode'] = parts[2].strip().strip('"')
+                    # Restore format to alphanumeric
+                    self.write_command("AT+COPS=3,0", timeout=2)
+                    
+        except Exception as e:
+            _LOGGER.debug(f"Error getting network registration: {e}")
+        
+        return result
     
     def send_sms(self, number, message):
         """Send SMS message."""
@@ -633,12 +713,14 @@ class GSMSMSService:
         # Get current signal strength
         signal_data = self.modem.get_signal_strength()
         network_data = self.modem.get_network_info()
+        network_reg = self.modem.get_network_registration()
         
+        # Signal strength sensors
         if signal_data:
             rssi = signal_data.get('rssi', 99)
             ber = signal_data.get('ber', 99)
             
-            # Signal strength in dBm
+            # Signal strength in dBm (matches HACS SignalStrength)
             signal_dbm = self.rssi_to_dbm(rssi)
             if signal_dbm is not None:
                 self.create_sensor(
@@ -648,10 +730,10 @@ class GSMSMSService:
                     device_class="signal_strength",
                     unit="dBm",
                     icon="mdi:signal",
-                    friendly_name="GSM Signal Strength"
+                    friendly_name="Signal Strength"
                 )
             
-            # Signal percent
+            # Signal percent (matches HACS SignalPercent)
             signal_percent = self.rssi_to_percent(rssi)
             if signal_percent is not None:
                 self.create_sensor(
@@ -660,10 +742,10 @@ class GSMSMSService:
                     {"rssi": rssi},
                     unit="%",
                     icon="mdi:signal",
-                    friendly_name="GSM Signal Percent"
+                    friendly_name="Signal Percent"
                 )
             
-            # Bit error rate
+            # Bit error rate (matches HACS BitErrorRate)
             ber_percent = self.ber_to_percent(ber)
             if ber_percent is not None:
                 self.create_sensor(
@@ -672,33 +754,69 @@ class GSMSMSService:
                     {"raw_ber": ber},
                     unit="%",
                     icon="mdi:alert-circle",
-                    friendly_name="GSM Bit Error Rate"
+                    friendly_name="Bit Error Rate"
                 )
         
-        # Network info
+        # Network name (matches HACS NetworkName)
         if network_data:
             operator = network_data.get('operator', 'Unknown')
             self.create_sensor(
-                f"sensor.gsm_{self.imei}_network_operator",
+                f"sensor.gsm_{self.imei}_network_name",
                 operator,
                 {},
                 icon="mdi:network",
-                friendly_name="GSM Network Operator"
+                friendly_name="Network Name"
             )
         
-        # Modem state
-        self.create_sensor(
-            f"sensor.gsm_{self.imei}_state",
-            "connected" if self.connected else "disconnected",
-            {
-                "imei": self.imei,
-                "manufacturer": self.manufacturer,
-                "model": self.model,
-                "firmware": self.firmware
-            },
-            icon="mdi:cellphone-check" if self.connected else "mdi:cellphone-off",
-            friendly_name="GSM Modem State"
-        )
+        # Network registration sensors
+        if network_reg:
+            # State (matches HACS State)
+            state = network_reg.get('State', 'Unknown')
+            self.create_sensor(
+                f"sensor.gsm_{self.imei}_state",
+                state,
+                {
+                    "imei": self.imei,
+                    "manufacturer": self.manufacturer,
+                    "model": self.model,
+                    "firmware": self.firmware
+                },
+                icon="mdi:cellphone-check" if "Registered" in state else "mdi:cellphone-off",
+                friendly_name="State"
+            )
+            
+            # Network code (matches HACS NetworkCode)
+            network_code = network_reg.get('NetworkCode')
+            if network_code:
+                self.create_sensor(
+                    f"sensor.gsm_{self.imei}_network_code",
+                    network_code,
+                    {},
+                    icon="mdi:network",
+                    friendly_name="Network Code"
+                )
+            
+            # CID - Cell ID (matches HACS CID)
+            cid = network_reg.get('CID')
+            if cid is not None:
+                self.create_sensor(
+                    f"sensor.gsm_{self.imei}_cid",
+                    cid,
+                    {},
+                    icon="mdi:radio-tower",
+                    friendly_name="CID"
+                )
+            
+            # LAC - Location Area Code (matches HACS LAC)
+            lac = network_reg.get('LAC')
+            if lac is not None:
+                self.create_sensor(
+                    f"sensor.gsm_{self.imei}_lac",
+                    lac,
+                    {},
+                    icon="mdi:map-marker",
+                    friendly_name="LAC"
+                )
     
     def update_sensor(self, state, attributes=None):
         """Update Home Assistant sensor (legacy single sensor)."""

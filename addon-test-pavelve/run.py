@@ -19,6 +19,7 @@ from flask_restx import Api, Resource, fields, reqparse
 from support import init_state_machine, retrieveAllSms, deleteSms, encodeSms
 from mqtt_publisher import MQTTPublisher
 from gammu import GSMNetworks
+from network_codes import get_network_name
 
 # Configure logging with timestamp
 logging.basicConfig(
@@ -521,7 +522,18 @@ class Network(Resource):
     def get(self):
         """Get network operator and registration information"""
         network = mqtt_publisher.track_gammu_operation("GetNetworkInfo", machine.GetNetworkInfo)
-        network["NetworkName"] = GSMNetworks.get(network.get("NetworkCode", ""), 'Unknown')
+        network_code = network.get("NetworkCode", "")
+        network_name = network.get("NetworkName")
+        
+        # Try multiple lookup methods if name is empty (Gammu bug: https://github.com/gammu/python-gammu/issues/31)
+        if not network_name and network_code:
+            # First try our comprehensive database
+            network_name = get_network_name(network_code)
+            # Fallback to Gammu's database
+            if not network_name:
+                network_name = GSMNetworks.get(network_code, 'Unknown')
+        
+        network["NetworkName"] = network_name or 'Unknown'
         # Publish to MQTT if enabled
         mqtt_publisher.publish_network_info(network)
         return network

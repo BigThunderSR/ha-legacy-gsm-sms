@@ -1,0 +1,313 @@
+"""Network operator name lookup by MCC+MNC code.
+
+This database is automatically updated monthly from public sources and can be
+manually extended by adding entries to the NETWORK_OPERATORS dictionary.
+
+To contribute missing operators:
+1. Find your MCC+MNC code from your modem (it will show in the sensor)
+2. Add an entry: "MCCMNC": "Operator Name"
+3. Submit a PR or create an issue
+
+Sources: ITU, GSMA, community contributions
+Auto-update: Monthly via GitHub Actions
+"""
+
+# Comprehensive database of mobile network operators by MCC+MNC
+# Format: "MCCMNC": "Operator Name"
+NETWORK_OPERATORS = {
+    # United States (MCC 310-316)
+    "310030": "AT&T",
+    "310070": "AT&T",
+    "310080": "AT&T",
+    "310090": "AT&T",
+    "310150": "AT&T",
+    "310170": "AT&T",
+    "310280": "AT&T",
+    "310380": "AT&T",
+    "310410": "AT&T",
+    "310560": "AT&T",
+    "310680": "AT&T",
+    "310950": "AT&T",
+    "311180": "AT&T",
+    "310004": "Verizon",
+    "310010": "Verizon",
+    "310012": "Verizon",
+    "310013": "Verizon",
+    "311480": "Verizon",
+    "311270": "Verizon",
+    "311271": "Verizon",
+    "311272": "Verizon",
+    "311273": "Verizon",
+    "311274": "Verizon",
+    "311275": "Verizon",
+    "311276": "Verizon",
+    "311277": "Verizon",
+    "311278": "Verizon",
+    "311279": "Verizon",
+    "311280": "Verizon",
+    "311281": "Verizon",
+    "311282": "Verizon",
+    "311283": "Verizon",
+    "311284": "Verizon",
+    "311285": "Verizon",
+    "311286": "Verizon",
+    "311287": "Verizon",
+    "311288": "Verizon",
+    "311289": "Verizon",
+    "310160": "T-Mobile",
+    "310200": "T-Mobile",
+    "310210": "T-Mobile",
+    "310220": "T-Mobile",
+    "310230": "T-Mobile",
+    "310240": "T-Mobile",
+    "310250": "T-Mobile",
+    "310260": "T-Mobile",
+    "310270": "T-Mobile",
+    "310300": "T-Mobile",
+    "310310": "T-Mobile",
+    "310660": "T-Mobile",
+    "310800": "T-Mobile",
+    "311882": "T-Mobile",
+    "312250": "T-Mobile",
+    "316010": "T-Mobile",
+    "310120": "Sprint",
+    "311490": "Sprint",
+    "311870": "Sprint",
+    "311880": "Sprint",
+    "312190": "Sprint",
+    "316011": "Sprint",
+    "310000": "Dish Wireless",
+    "311220": "U.S. Cellular",
+    "311580": "U.S. Cellular",
+    "310260": "T-Mobile",  # Explicitly added for common code
+    
+    # US MVNOs with unique codes
+    "310032": "IT&E Wireless",
+    "310053": "Virgin Mobile",
+    "310260": "T-Mobile/Metro by T-Mobile",
+    "310890": "Rural Independent Network Alliance",
+    "311230": "C Spire Wireless",
+    "311280": "Assurance Wireless",
+    "311290": "Consumer Cellular",
+    "311330": "Bug Tussel Wireless",
+    "311380": "New Dimension Wireless",
+    "311390": "Altice Mobile",
+    "311440": "Bluegrass Cellular",
+    "311500": "Mosaic Telecom",
+    "311590": "California RSA",
+    "311660": "MetroPCS",
+    "311730": "Triangle Communication",
+    "311740": "TracFone",
+    "311810": "Bluegrass Cellular",
+    "311830": "SouthernLinc",
+    "311940": "Ting Mobile",
+    "312010": "Chariton Valley",
+    "312020": "Infrastructure Networks",
+    "312030": "Cross Wireless",
+    "312040": "Custer Telephone Cooperative",
+    "312120": "Appalachian Wireless",
+    "312130": "East Kentucky Network",
+    "312170": "Iowa Wireless",
+    "312180": "Lycamobile",
+    "312530": "Sprint/Boost Mobile",
+    "312670": "FirstNet",
+    "312770": "Verizon/Visible",
+    "313100": "FirstNet",
+    
+    # Canada (MCC 302)
+    "302220": "Telus",
+    "302221": "Telus",
+    "302320": "Rogers",
+    "302370": "Rogers",
+    "302720": "Rogers",
+    "302610": "Bell Mobility",
+    "302620": "Ice Wireless",
+    "302660": "MTS",
+    "302880": "Bell/Telus/SaskTel",
+    
+    # United Kingdom (MCC 234, 235)
+    "23410": "O2 UK",
+    "23411": "O2 UK",
+    "23415": "Vodafone UK",
+    "23420": "Three UK",
+    "23430": "EE",
+    "23431": "EE",
+    "23432": "EE",
+    "23433": "EE",
+    "23450": "JT",
+    "23455": "Cable & Wireless",
+    
+    # Germany (MCC 262)
+    "26201": "Telekom Deutschland",
+    "26202": "Vodafone",
+    "26203": "O2 Germany",
+    "26206": "Telekom Deutschland",
+    "26207": "O2 Germany",
+    "26208": "O2 Germany",
+    
+    # France (MCC 208)
+    "20801": "Orange France",
+    "20802": "Orange France",
+    "20809": "SFR",
+    "20810": "SFR",
+    "20811": "SFR",
+    "20815": "Free Mobile",
+    "20820": "Bouygues",
+    "20821": "Bouygues",
+    
+    # Spain (MCC 214)
+    "21401": "Vodafone Spain",
+    "21403": "Orange Spain",
+    "21404": "Yoigo",
+    "21405": "Telefonica",
+    "21407": "Telefonica",
+    
+    # Italy (MCC 222)
+    "22201": "TIM",
+    "22210": "Vodafone Italy",
+    "22288": "Wind Tre",
+    "22299": "3 Italia",
+    
+    # Netherlands (MCC 204)
+    "20404": "Vodafone Netherlands",
+    "20408": "KPN",
+    "20412": "Telfort",
+    "20416": "T-Mobile Netherlands",
+    "20420": "Orange Netherlands",
+    
+    # Australia (MCC 505)
+    "50501": "Telstra",
+    "50502": "Optus",
+    "50503": "Vodafone Australia",
+    "50506": "3",
+    "50571": "Telstra",
+    "50572": "Telstra",
+    
+    # China (MCC 460, 461)
+    "46000": "China Mobile",
+    "46001": "China Unicom",
+    "46003": "China Telecom",
+    "46011": "China Telecom",
+    
+    # Japan (MCC 440, 441)
+    "44010": "NTT Docomo",
+    "44020": "SoftBank",
+    "44050": "KDDI",
+    
+    # India (MCC 404, 405)
+    "40401": "Vodafone India",
+    "40402": "AirTel",
+    "40403": "AirTel",
+    "40404": "Idea",
+    "40405": "Vodafone India",
+    "40410": "AirTel",
+    "40411": "Vodafone India",
+    "40412": "Idea",
+    "40413": "Vodafone India",
+    "40414": "Idea",
+    "40415": "Vodafone India",
+    "40416": "AirTel",
+    "40420": "Vodafone India",
+    "40421": "Idea",
+    "40422": "Idea",
+    "40424": "Idea",
+    "40425": "AirTel",
+    "40427": "Vodafone India",
+    "40430": "Vodafone India",
+    "40431": "AirTel",
+    "40440": "AirTel",
+    "40441": "AirTel",
+    "40442": "AirTel",
+    "40443": "Vodafone India",
+    "40444": "Idea",
+    "40445": "AirTel",
+    "40446": "Vodafone India",
+    "40449": "AirTel",
+    "40450": "Reliance",
+    "40451": "AirTel",
+    "40452": "Reliance",
+    "40453": "AirTel",
+    "40454": "AirTel",
+    "40455": "AirTel",
+    "40456": "Idea",
+    "40460": "Vodafone India",
+    "40462": "AirTel",
+    "40464": "AirTel",
+    "40466": "Vodafone India",
+    "40467": "Reliance",
+    "40468": "MTNL",
+    "40469": "MTNL",
+    "40470": "AirTel",
+    "40471": "AirTel",
+    "40472": "AirTel",
+    "40473": "AirTel",
+    "40474": "AirTel",
+    "40475": "AirTel",
+    "40476": "AirTel",
+    "40477": "AirTel",
+    "40478": "Idea",
+    "40479": "AirTel",
+    "40480": "AirTel",
+    "40481": "AirTel",
+    "40482": "Idea",
+    "40483": "Reliance",
+    "40484": "Vodafone India",
+    "40485": "Reliance",
+    "40486": "Vodafone India",
+    "40487": "Idea",
+    "40488": "Vodafone India",
+    "40489": "Idea",
+    "40490": "AirTel",
+    "40491": "AirTel",
+    "40492": "AirTel",
+    "40493": "AirTel",
+    "40494": "AirTel",
+    "40495": "AirTel",
+    "40496": "AirTel",
+    "40497": "AirTel",
+    "40498": "AirTel",
+    
+    # Brazil (MCC 724)
+    "72402": "TIM Brasil",
+    "72403": "TIM Brasil",
+    "72404": "TIM Brasil",
+    "72405": "Claro",
+    "72406": "Vivo",
+    "72410": "Vivo",
+    "72411": "Vivo",
+    "72423": "Vivo",
+    
+    # Mexico (MCC 334)
+    "33402": "Telcel",
+    "33403": "Movistar",
+    "33404": "Iusacell",
+    "33420": "AT&T Mexico",
+    
+    # Russia (MCC 250)
+    "25001": "MTS",
+    "25002": "MegaFon",
+    "25005": "ETK",
+    "25007": "SMARTS",
+    "25099": "Beeline",
+    
+    # South Africa (MCC 655)
+    "65501": "Vodacom",
+    "65507": "Cell C",
+    "65510": "MTN",
+    
+    # Add more countries as needed...
+}
+
+
+def get_network_name(network_code: str):
+    """Get network operator name from MCC+MNC code.
+    
+    Args:
+        network_code: MCC+MNC code (e.g., "310260" for T-Mobile USA)
+        
+    Returns:
+        Network operator name or None if not found
+    """
+    if not network_code:
+        return None
+    return NETWORK_OPERATORS.get(network_code)

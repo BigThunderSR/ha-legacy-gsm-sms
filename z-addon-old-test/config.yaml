@@ -30,6 +30,7 @@ devices:
   - /dev/ttyACM2
   - /dev/ttyACM3
   - /dev/ttyS0
+  - /dev/serial/by-id
 privileged:
   - SYS_RAWIO
 udev: true

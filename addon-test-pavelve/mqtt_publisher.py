@@ -658,9 +658,9 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
         
-        # Signal strength dBm sensor (diagnostic - technical detail)
+        # Signal strength dBm sensor (diagnostic - shows actual dBm value, not percent)
         signal_dbm_config = {
-            "name": "GSM Signal Strength (dBm)",
+            "name": "GSM Signal Strength",
             "unique_id": "sms_gateway_signal_dbm",
             "state_topic": f"{self.topic_prefix}/signal/state",
             "value_template": "{{ value_json.SignalStrength }}",

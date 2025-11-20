@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2025-11-20
+
+### Added
+
+- **Last SMS Sender Sensor** - New dedicated sensor displaying phone number of last received SMS
+  - Entity: `sensor.sms_gateway_last_sms_sender`
+  - Extracts phone number from incoming SMS data
+  - Separate from Last SMS Received sensor (which shows message text)
+  - Simplifies automations that need to respond based on sender
+  - Uses phone icon (mdi:phone) for easy identification
+
+### Changed
+
+- **Documentation Updates** - Updated README.md and DOCS.md to include new sensor
+
 ## [2.0.0] - 2025-11-19
 
 ### Added - Enhanced Edition by BigThunderSR
@@ -58,6 +73,7 @@ All notable changes to this project will be documented in this file.
 - **BER Sensor Display** - Invalid values now handled gracefully
   - -1 (invalid/unavailable) filtered to None
   - Shows as "unavailable" in Home Assistant instead of -1
+- **Translation Files** - Fixed SMS check interval range (10-300 seconds) and currency defaults (USD first) in all translation files
 - **Version Number** - Bumped to 2.0.0 to reflect major enhancements
 
 ### Credits

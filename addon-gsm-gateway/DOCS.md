@@ -102,20 +102,21 @@ After enabling MQTT, these entities are automatically created:
 
 ### Status Sensors
 
-| Entity                             | Type   | Description                                     |
-| ---------------------------------- | ------ | ----------------------------------------------- |
-| `sensor.sms_gateway_modem_status`  | Sensor | Modem connectivity status (online/offline)      |
-| `sensor.sms_gateway_signal`        | Sensor | GSM signal strength in %                        |
-| `sensor.sms_gateway_signal_dbm`    | Sensor | GSM signal strength in dBm (🆕 v2.0.0)          |
-| `sensor.sms_gateway_ber`           | Sensor | Bit Error Rate - network quality (🆕 v2.0.0)    |
-| `sensor.sms_gateway_network`       | Sensor | Network operator name with provider lookup (🆕) |
-| `sensor.sms_gateway_network_state` | Sensor | Human-readable network state (🆕 v2.0.0)        |
-| `sensor.sms_gateway_network_code`  | Sensor | MCC+MNC network code (🆕 v2.0.0)                |
-| `sensor.sms_gateway_cid`           | Sensor | Cell tower ID (🆕 v2.0.0)                       |
-| `sensor.sms_gateway_lac`           | Sensor | Location Area Code (🆕 v2.0.0)                  |
-| `sensor.sms_gateway_last_sms`      | Sensor | Last received SMS message                       |
-| `sensor.sms_gateway_send_status`   | Sensor | SMS send operation status                       |
-| `sensor.sms_gateway_delete_status` | Sensor | SMS delete operation status                     |
+| Entity                               | Type   | Description                                     |
+| ------------------------------------ | ------ | ----------------------------------------------- |
+| `sensor.sms_gateway_modem_status`    | Sensor | Modem connectivity status (online/offline)      |
+| `sensor.sms_gateway_signal`          | Sensor | GSM signal strength in %                        |
+| `sensor.sms_gateway_signal_dbm`      | Sensor | GSM signal strength in dBm (🆕 v2.0.0)          |
+| `sensor.sms_gateway_ber`             | Sensor | Bit Error Rate - network quality (🆕 v2.0.0)    |
+| `sensor.sms_gateway_network`         | Sensor | Network operator name with provider lookup (🆕) |
+| `sensor.sms_gateway_network_state`   | Sensor | Human-readable network state (🆕 v2.0.0)        |
+| `sensor.sms_gateway_network_code`    | Sensor | MCC+MNC network code (🆕 v2.0.0)                |
+| `sensor.sms_gateway_cid`             | Sensor | Cell tower ID (🆕 v2.0.0)                       |
+| `sensor.sms_gateway_lac`             | Sensor | Location Area Code (🆕 v2.0.0)                  |
+| `sensor.sms_gateway_last_sms`        | Sensor | Last received SMS message                       |
+| `sensor.sms_gateway_last_sms_sender` | Sensor | Phone number of last SMS sender (🆕 v2.0.1)     |
+| `sensor.sms_gateway_send_status`     | Sensor | SMS send operation status                       |
+| `sensor.sms_gateway_delete_status`   | Sensor | SMS delete operation status                     |
 
 ### Modem Information Sensors
 

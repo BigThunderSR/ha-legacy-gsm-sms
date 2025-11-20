@@ -60,7 +60,7 @@ The standard add-on provides an HTTP API-based solution for SMS messaging:
 
 ### GSM SMS Gateway Enhanced Add-on
 
-**Version 2.0.0** - Enhanced add-on with advanced features and diagnostics.
+**Version 2.0.1** - Enhanced add-on with advanced features and diagnostics.
 
 **Credits:** Based on [PavelVe's SMS Gammu Gateway](https://github.com/PavelVe/hassio-addons) and [pajikos's gammu-sms-gateway](https://github.com/pajikos/gammu-sms-gateway), enhanced with additional diagnostic capabilities.
 
@@ -75,6 +75,7 @@ The standard add-on provides an HTTP API-based solution for SMS messaging:
   - Network registration state
   - Bit Error Rate (BER)
   - Network operator information
+  - Last SMS sender phone number
 - **Organized Entity Grouping** - All sensors grouped under single device in HA
 - **HTTP API** - Compatible with existing SMS gateway integrations
 - **Event-based SMS Reception** - Same as standard add-on

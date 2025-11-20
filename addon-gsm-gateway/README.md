@@ -54,6 +54,7 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 - **GSM Network** - Carrier/operator name with automatic lookup
 - **GSM Network State** - Registration status (Registered (Home), Registered (Roaming), etc.)
 - **Last SMS Received** - Full message details
+- **Last SMS Sender** - Phone number of last received SMS
 - **SMS Send Status** - Success/error tracking
 - **SMS Sent Count** - Persistent counter (survives restarts)
 - **SMS Storage Used** - SIM card capacity monitoring
@@ -222,6 +223,8 @@ All sensors appear under the **SMS Gateway** device:
 - Check signal strength: `sensor.gsm_signal_strength`
 - Check operator: `sensor.gsm_network`
 - Check network state: `sensor.gsm_network_state`
+- Check last SMS: `sensor.gsm_last_sms_received`
+- Check SMS sender: `sensor.gsm_last_sms_sender`
 - Check signal dBm: `sensor.gsm_signal_strength_2` (diagnostic)
 - Check BER: `sensor.gsm_bit_error_rate` (diagnostic)
 - Check Cell ID: `sensor.gsm_cell_id` (diagnostic)
@@ -334,6 +337,11 @@ This project maintains the Apache License 2.0 from the original works:
 
 ## Changelog
 
+### Version 2.0.1 (2025-11-20)
+
+- Added Last SMS Sender sensor for easier access to incoming phone numbers
+- Updated documentation
+
 ### Version 2.0.0 (2025-11-19)
 
 - Initial release of enhanced version
@@ -345,6 +353,7 @@ This project maintains the Apache License 2.0 from the original works:
 - Added Location Area Code sensor (network area)
 - Added Network Code sensor (MCC+MNC display for debugging)
 - Improved BER display (filter -1 invalid values to unavailable)
+- Fixed SMS check interval range and currency defaults in all translation files
 - Enhanced device path logging with troubleshooting tips
 - Reorganized MQTT topics for better grouping
 - Fixed sensor naming to avoid duplicates

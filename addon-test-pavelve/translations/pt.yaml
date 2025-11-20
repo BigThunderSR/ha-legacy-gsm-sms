@@ -1,0 +1,52 @@
+configuration:
+  device_path:
+    name: Caminho do dispositivo
+    description: Caminho para o modem GSM (por exemplo /dev/ttyUSB0)
+  pin:
+    name: PIN do SIM
+    description: Código PIN do cartão SIM (deixar vazio se nenhum PIN for necessário)
+  port:
+    name: Porta da API
+    description: Porta para a API REST do gateway SMS
+  ssl:
+    name: Ativar SSL
+    description: Ativar HTTPS para conexões seguras (requer certificados SSL)
+  username:
+    name: Nome de usuário
+    description: Nome de usuário para autenticação da API
+  password:
+    name: Senha
+    description: Senha para autenticação da API
+  mqtt_enabled:
+    name: Ativar MQTT
+    description: Publicar SMS e estado do dispositivo no broker MQTT
+  mqtt_host:
+    name: Host MQTT
+    description: Nome do host do broker MQTT (use 'core-mosquitto' para o broker HA integrado)
+  mqtt_port:
+    name: Porta MQTT
+    description: Porta do broker MQTT (geralmente 1883)
+  mqtt_username:
+    name: Usuário MQTT
+    description: Nome de usuário para autenticação MQTT (deixar vazio se não for necessário)
+  mqtt_password:
+    name: Senha MQTT
+    description: Senha para autenticação MQTT (deixar vazio se não for necessário)
+  mqtt_topic_prefix:
+    name: Prefixo de tópico MQTT
+    description: Prefixo de tópico MQTT para mensagens publicadas
+  sms_monitoring_enabled:
+    name: Ativar monitoramento de SMS
+    description: Detectar automaticamente e publicar mensagens SMS recebidas no MQTT
+  sms_check_interval:
+    name: Intervalo de verificação de SMS
+    description: Frequência de verificação de novas mensagens SMS (segundos, 30-300)
+  sms_cost_per_message:
+    name: Custo por SMS
+    description: Custo por SMS enviado. Defina como 0 para desativar o rastreamento de custos.
+  sms_cost_currency:
+    name: Moeda
+    description: Moeda para exibir custos de SMS (por exemplo EUR, USD, BRL)
+  auto_delete_read_sms:
+    name: Excluir automaticamente SMS lidos
+    description: Excluir automaticamente mensagens SMS do cartão SIM após a leitura (libera espaço no SIM)

@@ -1,0 +1,52 @@
+configuration:
+  device_path:
+    name: Cesta k zariadeniu
+    description: Cesta k vášmu GSM modemu (napr. /dev/ttyUSB0)
+  pin:
+    name: PIN SIM karty
+    description: PIN kód SIM karty (nechajte prázdne, ak PIN nie je potrebný)
+  port:
+    name: Port API
+    description: Port pre REST API SMS Gateway
+  ssl:
+    name: Povoliť SSL
+    description: Povoliť HTTPS pre zabezpečené pripojenia (vyžaduje SSL certifikáty)
+  username:
+    name: Používateľské meno
+    description: Používateľské meno pre overenie API
+  password:
+    name: Heslo
+    description: Heslo pre overenie API
+  mqtt_enabled:
+    name: Povoliť MQTT
+    description: Publikovať SMS a stav zariadenia do MQTT brokera
+  mqtt_host:
+    name: MQTT Host
+    description: Hostname MQTT brokera (použite 'core-mosquitto' pre vstavaný HA broker)
+  mqtt_port:
+    name: MQTT Port
+    description: Port MQTT brokera (zvyčajne 1883)
+  mqtt_username:
+    name: MQTT Používateľ
+    description: Používateľské meno pre MQTT (nechajte prázdne, ak nie je potrebné)
+  mqtt_password:
+    name: MQTT Heslo
+    description: Heslo pre MQTT (nechajte prázdne, ak nie je potrebné)
+  mqtt_topic_prefix:
+    name: MQTT Topic Prefix
+    description: Prefix pre MQTT topicy publikovaných správ
+  sms_monitoring_enabled:
+    name: Povoliť SMS Monitoring
+    description: Automaticky detekovať a publikovať prichádzajúce SMS správy do MQTT
+  sms_check_interval:
+    name: Interval Kontroly SMS
+    description: Ako často kontrolovať nové SMS správy (sekundy, 30-300)
+  sms_cost_per_message:
+    name: Cena za SMS
+    description: Cena za jednu odoslanú SMS správu. Nastavte 0 pre vypnutie sledovania nákladov.
+  sms_cost_currency:
+    name: Mena
+    description: Mena pre zobrazenie nákladov za SMS (napr. EUR, USD, CZK)
+  auto_delete_read_sms:
+    name: Automaticky mazať prečítané SMS
+    description: Automaticky zmazať SMS správy zo SIM karty po ich prečítaní (uvoľní miesto na SIM)

@@ -1,0 +1,52 @@
+configuration:
+  device_path:
+    name: Gerätepfad
+    description: Pfad zu Ihrem GSM-Modem (z.B. /dev/ttyUSB0)
+  pin:
+    name: SIM-PIN
+    description: PIN-Code der SIM-Karte (leer lassen, wenn kein PIN erforderlich)
+  port:
+    name: API-Port
+    description: Port für die SMS Gateway REST API
+  ssl:
+    name: SSL aktivieren
+    description: HTTPS für sichere Verbindungen aktivieren (erfordert SSL-Zertifikate)
+  username:
+    name: Benutzername
+    description: Benutzername für API-Authentifizierung
+  password:
+    name: Passwort
+    description: Passwort für API-Authentifizierung
+  mqtt_enabled:
+    name: MQTT aktivieren
+    description: SMS und Gerätestatus an MQTT-Broker veröffentlichen
+  mqtt_host:
+    name: MQTT-Host
+    description: MQTT-Broker-Hostname (verwenden Sie 'core-mosquitto' für HA eingebauten Broker)
+  mqtt_port:
+    name: MQTT-Port
+    description: MQTT-Broker-Port (normalerweise 1883)
+  mqtt_username:
+    name: MQTT-Benutzername
+    description: MQTT-Authentifizierung Benutzername (leer lassen, falls nicht erforderlich)
+  mqtt_password:
+    name: MQTT-Passwort
+    description: MQTT-Authentifizierung Passwort (leer lassen, falls nicht erforderlich)
+  mqtt_topic_prefix:
+    name: MQTT-Topic-Präfix
+    description: MQTT-Topic-Präfix für veröffentlichte Nachrichten
+  sms_monitoring_enabled:
+    name: SMS-Überwachung aktivieren
+    description: Eingehende SMS-Nachrichten automatisch erkennen und an MQTT veröffentlichen
+  sms_check_interval:
+    name: SMS-Prüfintervall
+    description: Wie oft nach neuen SMS-Nachrichten gesucht werden soll (Sekunden, 30-300)
+  sms_cost_per_message:
+    name: SMS-Kosten pro Nachricht
+    description: Kosten pro gesendeter SMS. Auf 0 setzen, um Kostenverfolgung zu deaktivieren.
+  sms_cost_currency:
+    name: Währung
+    description: Währung für SMS-Kostenanzei (z.B. EUR, USD, CZK)
+  auto_delete_read_sms:
+    name: Gelesene SMS automatisch löschen
+    description: SMS-Nachrichten nach dem Lesen automatisch von der SIM-Karte löschen (spart SIM-Speicher)

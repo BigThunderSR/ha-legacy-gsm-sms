@@ -1,0 +1,52 @@
+configuration:
+  device_path:
+    name: Percorso dispositivo
+    description: Percorso al modem GSM (es. /dev/ttyUSB0)
+  pin:
+    name: PIN SIM
+    description: Codice PIN della scheda SIM (lasciare vuoto se non richiesto)
+  port:
+    name: Porta API
+    description: Porta per l'API REST del gateway SMS
+  ssl:
+    name: Abilita SSL
+    description: Abilita HTTPS per connessioni sicure (richiede certificati SSL)
+  username:
+    name: Nome utente
+    description: Nome utente per l'autenticazione API
+  password:
+    name: Password
+    description: Password per l'autenticazione API
+  mqtt_enabled:
+    name: Abilita MQTT
+    description: Pubblica SMS e stato del dispositivo sul broker MQTT
+  mqtt_host:
+    name: Host MQTT
+    description: Nome host del broker MQTT (usa 'core-mosquitto' per il broker HA integrato)
+  mqtt_port:
+    name: Porta MQTT
+    description: Porta del broker MQTT (di solito 1883)
+  mqtt_username:
+    name: Nome utente MQTT
+    description: Nome utente per l'autenticazione MQTT (lasciare vuoto se non richiesto)
+  mqtt_password:
+    name: Password MQTT
+    description: Password per l'autenticazione MQTT (lasciare vuoto se non richiesto)
+  mqtt_topic_prefix:
+    name: Prefisso topic MQTT
+    description: Prefisso topic MQTT per i messaggi pubblicati
+  sms_monitoring_enabled:
+    name: Abilita monitoraggio SMS
+    description: Rileva automaticamente e pubblica messaggi SMS in arrivo su MQTT
+  sms_check_interval:
+    name: Intervallo controllo SMS
+    description: Frequenza di controllo nuovi messaggi SMS (secondi, 30-300)
+  sms_cost_per_message:
+    name: Costo per SMS
+    description: Costo per SMS inviato. Impostare a 0 per disabilitare il monitoraggio dei costi.
+  sms_cost_currency:
+    name: Valuta
+    description: Valuta per visualizzare i costi SMS (es. EUR, USD, CZK)
+  auto_delete_read_sms:
+    name: Elimina automaticamente SMS letti
+    description: Elimina automaticamente i messaggi SMS dalla scheda SIM dopo la lettura (libera spazio SIM)

@@ -1,0 +1,72 @@
+name: "SMS Gammu Gateway (PavelVe Test)"
+version: "1.5.3"
+slug: "sms_gammu_gateway_pavelve_test"
+description: "TEST VERSION - PavelVe's SMS Gammu Gateway for testing"
+startup: services
+arch:
+  - amd64
+  - aarch64
+boot: auto
+panel_icon: "mdi:cellphone-message"
+url: "https://github.com/PavelVe/home-assistant-addons/blob/main/sms-gammu-gateway/README.md"
+homeassistant: "2022.1.1"
+init: false
+ingress: true
+ingress_port: 5000
+host_network: false
+devices:
+  - /dev/ttyUSB0
+  - /dev/ttyUSB1
+  - /dev/ttyUSB2
+  - /dev/ttyUSB3
+  - /dev/ttyUSB4
+  - /dev/ttyUSB5
+  - /dev/ttyACM0
+  - /dev/ttyACM1
+  - /dev/ttyACM2
+  - /dev/ttyACM3
+  - /dev/ttyS0
+  - /dev/serial/by-id
+privileged:
+  - SYS_RAWIO
+udev: true
+ports:
+  5000/tcp: 5000
+ports_description:
+  5000/tcp: "SMS Gateway API port"
+options:
+  device_path: "/dev/ttyUSB0"
+  pin: ""
+  port: 5000
+  ssl: false
+  username: "admin"
+  password: "password"
+  mqtt_enabled: true
+  mqtt_host: "core-mosquitto"
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
+  mqtt_topic_prefix: "homeassistant/sensor/sms_gateway"
+  sms_monitoring_enabled: true
+  sms_check_interval: 60
+  sms_cost_per_message: 0.0
+  sms_cost_currency: "CZK"
+  auto_delete_read_sms: true
+schema:
+  device_path: str
+  pin: str?
+  port: int(1,65535)
+  ssl: bool
+  username: str
+  password: str
+  mqtt_enabled: bool
+  mqtt_host: str
+  mqtt_port: int(1,65535)
+  mqtt_username: str?
+  mqtt_password: str?
+  mqtt_topic_prefix: str
+  sms_monitoring_enabled: bool
+  sms_check_interval: int(10,300)
+  sms_cost_per_message: float?
+  sms_cost_currency: str
+  auto_delete_read_sms: bool

@@ -8,6 +8,11 @@
 
 Send and receive SMS messages using a GSM modem connected to your Home Assistant instance, with sensors for monitoring signal strength and network status.
 
+> **⚠️ IMPORTANT DEPRECATION NOTICE:**  
+> The HACS integration will **stop working on Home Assistant OS and Supervised installations** starting with Home Assistant 2025.12, as Gammu will be removed from the base system. The integration will continue to work on Home Assistant Container and Core installations where you can install Gammu manually.
+>
+> **Recommended migration path:** Use the [GSM SMS Gateway Enhanced Add-on](#gsm-sms-gateway-enhanced-add-on) which includes Gammu and will continue to work on all installation types.
+
 ## Features
 
 - Send and receive SMS messages
@@ -25,8 +30,8 @@ Send and receive SMS messages using a GSM modem connected to your Home Assistant
 
 Multiple installation methods are available:
 
-- **[HACS Integration](#hacs-integration)** (provides notify service, sensors, and event-based SMS reception)
-- **[Home Assistant Add-ons](#home-assistant-add-ons)** (two options available):
+- **[HACS Integration](#hacs-integration)** - ⚠️ **Being deprecated** - Will stop working on HA OS/Supervised in 2025.12
+- **[Home Assistant Add-ons](#home-assistant-add-ons)** (two options available - recommended):
   - **[Legacy GSM SMS](#legacy-gsm-sms-add-on)** - Standard add-on with HTTP API
   - **[GSM SMS Gateway Enhanced](#gsm-sms-gateway-enhanced-add-on)** - Enhanced add-on with network diagnostics and MQTT support
 
@@ -86,6 +91,13 @@ Refer to [addon-gsm-gateway/README.md](addon-gsm-gateway/README.md) for detailed
 **⚠️ Important:** Do not run multiple add-ons or the HACS integration simultaneously - they will conflict when accessing the GSM modem's serial device. Choose only one installation method.
 
 ### HACS Integration
+
+> **⚠️ DEPRECATION WARNING:**  
+> This integration will **stop working on Home Assistant OS and Supervised** starting with version **2025.12** due to Gammu being removed from the base system.
+>
+> - **Affected installations:** Home Assistant OS, Home Assistant Supervised
+> - **Still supported:** Home Assistant Container, Home Assistant Core (with manual Gammu installation)
+> - **Recommended alternative:** Use the [GSM SMS Gateway Enhanced Add-on](#gsm-sms-gateway-enhanced-add-on) which includes Gammu and works on all platforms
 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=BigThunderSR&repository=ha-legacy-gsm-sms&category=integration)
 

@@ -91,7 +91,7 @@ def get_device_from_config(config_device):
                 return by_id_devices[0]  # Return the first one
             return None
         else:
-            # Specific by-id path
+            # Specific by-id path - resolve the symlink
             return resolve_device_symlink(config_device)
     else:
         # Direct device path
@@ -113,14 +113,24 @@ def map_config_device(config_device, prefer_by_id=False):
         Tuple of (actual_device_path, by_id_path)
     """
     if "by-id" in config_device:
-        # Find the first available serial device
-        devices = find_all_serial_devices()
-        if devices:
-            actual_path = list(devices.keys())[0]
-            by_id_path = devices[actual_path]
-            logger.info(f"Mapped by-id request to: {actual_path}")
-            return (actual_path, by_id_path)
-        return (None, None)
+        if config_device == "/dev/serial/by-id":
+            # Generic by-id directory - find the first available device
+            devices = find_all_serial_devices()
+            if devices:
+                actual_path = list(devices.keys())[0]
+                by_id_path = devices[actual_path]
+                logger.info(f"Mapped generic by-id to: {actual_path}")
+                return (actual_path, by_id_path)
+            return (None, None)
+        else:
+            # Specific by-id path - resolve it to actual device
+            resolved = resolve_device_symlink(config_device)
+            if resolved:
+                logger.info(f"Mapped by-id {config_device} to: {resolved}")
+                return (resolved, config_device)
+            else:
+                logger.error(f"Failed to resolve by-id path: {config_device}")
+                return (None, None)
     else:
         # Direct path - check if it has a by-id equivalent
         resolved = resolve_device_symlink(config_device)

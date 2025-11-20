@@ -159,12 +159,13 @@ def main():
     
     print(f"Found {len(new_codes)} network codes from public sources")
     
-    # Update both files
+    # Update all network_codes.py files
     repo_root = Path(__file__).parent.parent.parent
     
     files_updated = False
     for target in [
         repo_root / "custom_components" / "legacy_gsm_sms" / "network_codes.py",
+        repo_root / "addon-gsm-gateway" / "network_codes.py",
         repo_root / "network_codes.py"
     ]:
         if not target.exists():

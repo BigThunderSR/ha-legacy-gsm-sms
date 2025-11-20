@@ -4,6 +4,7 @@
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg?label=HACS)](https://github.com/hacs/integration)
 [![HACS Version](https://img.shields.io/github/manifest-json/v/BigThunderSR/ha-legacy-gsm-sms?filename=custom_components%2Flegacy_gsm_sms%2Fmanifest.json&label=HACS%20Version&color=blue&cacheSeconds=0)](https://github.com/BigThunderSR/ha-legacy-gsm-sms)
 [![Home Assistant Add-on Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FBigThunderSR%2Fha-legacy-gsm-sms%2Fmain%2Faddon-standalone%2Fconfig.yaml&query=%24.version&label=Home%20Assistant%20Add-on%20Version&color=blue&cacheSeconds=0)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
+[![GSM Gateway Enhanced Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FBigThunderSR%2Fha-legacy-gsm-sms%2Fmain%2Faddon-gsm-gateway%2Fconfig.yaml&query=%24.version&label=GSM%20Gateway%20Enhanced&color=green&cacheSeconds=0)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
 
 Send and receive SMS messages using a GSM modem connected to your Home Assistant instance, with sensors for monitoring signal strength and network status.
 
@@ -22,10 +23,67 @@ Send and receive SMS messages using a GSM modem connected to your Home Assistant
 
 ## Installation
 
-Two installation methods are available:
+Multiple installation methods are available:
 
 - **[HACS Integration](#hacs-integration)** (provides notify service, sensors, and event-based SMS reception)
-- **[Add-on](#add-on-installation)** (provides HTTP API, sensors, and event-based SMS reception).
+- **[Home Assistant Add-ons](#home-assistant-add-ons)** (two options available):
+  - **[Legacy GSM SMS](#legacy-gsm-sms-add-on)** - Standard add-on with HTTP API
+  - **[GSM SMS Gateway Enhanced](#gsm-sms-gateway-enhanced-add-on)** - Enhanced add-on with network diagnostics and MQTT support
+
+## Home Assistant Add-ons
+
+Two add-on options are available, each with different features and capabilities. Choose the one that best fits your needs.
+
+### Legacy GSM SMS Add-on
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
+
+The standard add-on provides an HTTP API-based solution for SMS messaging:
+
+**Features:**
+
+- HTTP API for sending SMS messages
+- Basic sensor entities for signal strength
+- Event-based SMS reception
+- Simple configuration and setup
+
+**Installation:**
+
+1. Click the button above to add this repository to your Home Assistant instance
+2. Install the "Legacy GSM SMS" add-on from the Add-on Store
+3. Configure and start the add-on (refer to the Documentation tab)
+
+### GSM SMS Gateway Enhanced Add-on
+
+**Version 2.0.0** - Enhanced add-on with advanced features and diagnostics.
+
+**Credits:** Based on [PavelVe's SMS Gammu Gateway](https://github.com/PavelVe/hassio-addons) and [pajikos's gammu-sms-gateway](https://github.com/pajikos/gammu-sms-gateway), enhanced with additional diagnostic capabilities.
+
+**Enhanced Features:**
+
+- **MQTT Discovery** - Automatic sensor creation in Home Assistant
+- **Network Provider Lookup** - Identifies carrier name from MCC/MNC codes
+- **Human-readable States** - Modem states translated to plain language
+- **Enhanced Diagnostics:**
+  - Signal strength (percentage and dBm)
+  - Battery status and voltage
+  - Network registration state
+  - Bit Error Rate (BER)
+  - Network operator information
+- **Organized Entity Grouping** - All sensors grouped under single device in HA
+- **HTTP API** - Compatible with existing SMS gateway integrations
+- **Event-based SMS Reception** - Same as standard add-on
+
+**Installation:**
+
+1. Add this repository to Home Assistant (use button above)
+2. Install "GSM SMS Gateway Enhanced" from the Add-on Store
+3. Configure your modem device and MQTT settings
+4. Start the add-on
+
+Refer to [addon-gsm-gateway/README.md](addon-gsm-gateway/README.md) for detailed documentation, configuration options, and troubleshooting.
+
+**⚠️ Important:** Do not run multiple add-ons or the HACS integration simultaneously - they will conflict when accessing the GSM modem's serial device. Choose only one installation method.
 
 ### HACS Integration
 
@@ -98,20 +156,6 @@ action:
     message: "SMS from {{ trigger.event.data.phone }}: {{ trigger.event.data.text }}"
     title: "SMS Received"
 ```
-
-## Add-on Installation
-
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
-
-As an alternative to the HACS integration, the add-on provides an HTTP API-based solution:
-
-1. Click the button above to add this repository to your Home Assistant instance
-2. Install the "Legacy GSM SMS" add-on from the Add-on Store
-3. Configure and start the add-on (refer to the Documentation tab for configuration and usage instructions)
-
-The add-on automatically creates sensor entities and provides an HTTP API for sending SMS.
-
-**⚠️ Important:** Do not run both the HACS integration and the add-on simultaneously - they will conflict when accessing the GSM modem's serial device.
 
 ## Troubleshooting (HACS Integration)
 

@@ -1,0 +1,52 @@
+configuration:
+  device_path:
+    name: Chemin du périphérique
+    description: Chemin vers votre modem GSM (par exemple /dev/ttyUSB0)
+  pin:
+    name: Code PIN SIM
+    description: Code PIN de la carte SIM (laisser vide si aucun PIN requis)
+  port:
+    name: Port API
+    description: Port pour l'API REST de la passerelle SMS
+  ssl:
+    name: Activer SSL
+    description: Activer HTTPS pour des connexions sécurisées (nécessite des certificats SSL)
+  username:
+    name: Nom d'utilisateur
+    description: Nom d'utilisateur pour l'authentification API
+  password:
+    name: Mot de passe
+    description: Mot de passe pour l'authentification API
+  mqtt_enabled:
+    name: Activer MQTT
+    description: Publier les SMS et l'état du périphérique sur le broker MQTT
+  mqtt_host:
+    name: Hôte MQTT
+    description: Nom d'hôte du broker MQTT (utilisez 'core-mosquitto' pour le broker HA intégré)
+  mqtt_port:
+    name: Port MQTT
+    description: Port du broker MQTT (généralement 1883)
+  mqtt_username:
+    name: Nom d'utilisateur MQTT
+    description: Nom d'utilisateur pour l'authentification MQTT (laisser vide si non requis)
+  mqtt_password:
+    name: Mot de passe MQTT
+    description: Mot de passe pour l'authentification MQTT (laisser vide si non requis)
+  mqtt_topic_prefix:
+    name: Préfixe de topic MQTT
+    description: Préfixe de topic MQTT pour les messages publiés
+  sms_monitoring_enabled:
+    name: Activer la surveillance SMS
+    description: Détecter automatiquement et publier les SMS entrants sur MQTT
+  sms_check_interval:
+    name: Intervalle de vérification SMS
+    description: Fréquence de vérification des nouveaux SMS (secondes, 30-300)
+  sms_cost_per_message:
+    name: Coût par SMS
+    description: Coût par SMS envoyé. Définir à 0 pour désactiver le suivi des coûts.
+  sms_cost_currency:
+    name: Devise
+    description: Devise pour l'affichage des coûts SMS (par exemple EUR, USD, CZK)
+  auto_delete_read_sms:
+    name: Supprimer automatiquement les SMS lus
+    description: Supprimer automatiquement les SMS de la carte SIM après lecture (libère de l'espace SIM)

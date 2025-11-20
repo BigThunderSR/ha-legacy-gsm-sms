@@ -1,0 +1,81 @@
+name: "GSM SMS Gateway Enhanced"
+version: "2.0.0"
+slug: "gsm_sms_gateway_enhanced"
+description: "Enhanced SMS Gammu Gateway with network provider lookup and comprehensive diagnostics. Based on [PavelVe's SMS Gammu Gateway](https://github.com/PavelVe/hassio-addons)."
+arch:
+  - aarch64
+  - amd64
+
+url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms/tree/main/addon-gsm-gateway"
+image: "ghcr.io/bigthundersr/gsm-sms-gateway-enhanced-{arch}"
+#boot: auto
+#host_network: false
+#startup: services
+init: false
+ingress: true
+ingress_port: 5000
+panel_icon: "mdi:cellphone-message"
+homeassistant: "2022.1.1"
+devices:
+  - /dev/ttyUSB0
+  - /dev/ttyUSB1
+  - /dev/ttyUSB2
+  - /dev/ttyUSB3
+  - /dev/ttyUSB4
+  - /dev/ttyUSB5
+  - /dev/ttyUSB6
+  - /dev/ttyUSB7
+  - /dev/ttyUSB8
+  - /dev/ttyUSB9
+  - /dev/ttyACM0
+  - /dev/ttyACM1
+  - /dev/ttyACM2
+  - /dev/ttyACM3
+  - /dev/ttyS0
+  - /dev/ttyS1
+  - /dev/ttyS2
+  - /dev/ttyS3
+  - /dev/serial/by-id
+udev: true
+privileged:
+  - SYS_RAWIO
+ports:
+  5000/tcp: 5000
+ports_description:
+  5000/tcp: "SMS Gateway API port"
+options:
+  device_path: "/dev/ttyUSB0"
+  pin: ""
+  port: 5000
+  ssl: false
+  username: "admin"
+  password: "password"
+  mqtt_enabled: true
+  mqtt_host: "core-mosquitto"
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
+  mqtt_topic_prefix: "homeassistant/sensor/sms_gateway"
+  sms_monitoring_enabled: true
+  sms_check_interval: 10
+  sms_cost_per_message: 0.0
+  sms_cost_currency: "USD"
+  auto_delete_read_sms: true
+schema:
+  device_path: str
+  pin: str?
+  port: int(1,65535)
+  ssl: bool
+  username: str
+  password: str
+  mqtt_enabled: bool
+  mqtt_host: str
+  mqtt_port: int(1,65535)
+  mqtt_username: str?
+  mqtt_password: str?
+  mqtt_topic_prefix: str
+  sms_monitoring_enabled: bool
+  sms_check_interval: int(10,300)
+  sms_cost_per_message: float?
+  sms_cost_currency: str
+  auto_delete_read_sms: bool

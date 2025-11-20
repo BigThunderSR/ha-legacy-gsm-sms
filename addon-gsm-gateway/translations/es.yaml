@@ -1,0 +1,52 @@
+configuration:
+  device_path:
+    name: Ruta del dispositivo
+    description: Ruta a su módem GSM (por ejemplo /dev/ttyUSB0)
+  pin:
+    name: PIN SIM
+    description: Código PIN de la tarjeta SIM (dejar vacío si no se requiere PIN)
+  port:
+    name: Puerto API
+    description: Puerto para la API REST de la puerta de enlace SMS
+  ssl:
+    name: Activar SSL
+    description: Activar HTTPS para conexiones seguras (requiere certificados SSL)
+  username:
+    name: Nombre de usuario
+    description: Nombre de usuario para autenticación API
+  password:
+    name: Contraseña
+    description: Contraseña para autenticación API
+  mqtt_enabled:
+    name: Activar MQTT
+    description: Publicar SMS y estado del dispositivo en el broker MQTT
+  mqtt_host:
+    name: Host MQTT
+    description: Nombre del host del broker MQTT (use 'core-mosquitto' para el broker HA integrado)
+  mqtt_port:
+    name: Puerto MQTT
+    description: Puerto del broker MQTT (generalmente 1883)
+  mqtt_username:
+    name: Usuario MQTT
+    description: Nombre de usuario para autenticación MQTT (dejar vacío si no es necesario)
+  mqtt_password:
+    name: Contraseña MQTT
+    description: Contraseña para autenticación MQTT (dejar vacío si no es necesario)
+  mqtt_topic_prefix:
+    name: Prefijo de tema MQTT
+    description: Prefijo de tema MQTT para mensajes publicados
+  sms_monitoring_enabled:
+    name: Activar monitoreo SMS
+    description: Detectar automáticamente y publicar mensajes SMS entrantes en MQTT
+  sms_check_interval:
+    name: Intervalo de verificación SMS
+    description: Frecuencia para verificar nuevos mensajes SMS (segundos, 30-300)
+  sms_cost_per_message:
+    name: Costo por SMS
+    description: Costo por SMS enviado. Establecer en 0 para desactivar el seguimiento de costos.
+  sms_cost_currency:
+    name: Moneda
+    description: Moneda para mostrar costos SMS (por ejemplo EUR, USD, CZK)
+  auto_delete_read_sms:
+    name: Eliminar automáticamente SMS leídos
+    description: Eliminar automáticamente mensajes SMS de la tarjeta SIM después de leer (libera espacio SIM)

@@ -1,0 +1,52 @@
+configuration:
+  device_path:
+    name: Ścieżka urządzenia
+    description: Ścieżka do modemu GSM (np. /dev/ttyUSB0)
+  pin:
+    name: PIN karty SIM
+    description: Kod PIN karty SIM (pozostaw puste, jeśli PIN nie jest wymagany)
+  port:
+    name: Port API
+    description: Port dla REST API bramy SMS
+  ssl:
+    name: Włącz SSL
+    description: Włącz HTTPS dla bezpiecznych połączeń (wymaga certyfikatów SSL)
+  username:
+    name: Nazwa użytkownika
+    description: Nazwa użytkownika do uwierzytelniania API
+  password:
+    name: Hasło
+    description: Hasło do uwierzytelniania API
+  mqtt_enabled:
+    name: Włącz MQTT
+    description: Publikuj SMS i stan urządzenia do brokera MQTT
+  mqtt_host:
+    name: Host MQTT
+    description: Nazwa hosta brokera MQTT (użyj 'core-mosquitto' dla wbudowanego brokera HA)
+  mqtt_port:
+    name: Port MQTT
+    description: Port brokera MQTT (zwykle 1883)
+  mqtt_username:
+    name: Użytkownik MQTT
+    description: Nazwa użytkownika do uwierzytelniania MQTT (pozostaw puste, jeśli nie jest wymagane)
+  mqtt_password:
+    name: Hasło MQTT
+    description: Hasło do uwierzytelniania MQTT (pozostaw puste, jeśli nie jest wymagane)
+  mqtt_topic_prefix:
+    name: Prefiks tematu MQTT
+    description: Prefiks tematu MQTT dla publikowanych wiadomości
+  sms_monitoring_enabled:
+    name: Włącz monitorowanie SMS
+    description: Automatycznie wykrywaj i publikuj przychodzące wiadomości SMS do MQTT
+  sms_check_interval:
+    name: Interwał sprawdzania SMS
+    description: Jak często sprawdzać nowe wiadomości SMS (sekundy, 30-300)
+  sms_cost_per_message:
+    name: Koszt za SMS
+    description: Koszt za wysłaną wiadomość SMS. Ustaw 0, aby wyłączyć śledzenie kosztów.
+  sms_cost_currency:
+    name: Waluta
+    description: Waluta do wyświetlania kosztów SMS (np. PLN, EUR, USD)
+  auto_delete_read_sms:
+    name: Automatycznie usuwaj przeczytane SMS
+    description: Automatycznie usuwaj wiadomości SMS z karty SIM po przeczytaniu (zwalnia miejsce na SIM)

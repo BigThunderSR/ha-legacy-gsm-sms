@@ -33,7 +33,7 @@ jobs:
       - name: Check for changes
         id: git-check
         run: |
-          git diff --exit-code custom_components/legacy_gsm_sms/network_codes.py || echo "changed=true" >> $GITHUB_OUTPUT
+          git diff --exit-code custom_components/legacy_gsm_sms/network_codes.py addon-gsm-gateway/network_codes.py network_codes.py || echo "changed=true" >> $GITHUB_OUTPUT
           
       - name: Create Pull Request
         if: steps.git-check.outputs.changed == 'true'

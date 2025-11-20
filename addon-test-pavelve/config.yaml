@@ -48,9 +48,9 @@ options:
   mqtt_password: ""
   mqtt_topic_prefix: "homeassistant/sensor/sms_gateway"
   sms_monitoring_enabled: true
-  sms_check_interval: 60
+  sms_check_interval: 10
   sms_cost_per_message: 0.0
-  sms_cost_currency: "CZK"
+  sms_cost_currency: "USD"
   auto_delete_read_sms: true
 schema:
   device_path: str

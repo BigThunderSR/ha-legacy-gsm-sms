@@ -27,9 +27,9 @@ devices:
   - /dev/ttyACM3
   - /dev/ttyS0
   - /dev/serial/by-id
+udev: true
 privileged:
   - SYS_RAWIO
-udev: true
 ports:
   5000/tcp: 5000
 ports_description:

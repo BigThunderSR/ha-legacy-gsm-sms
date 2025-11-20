@@ -11,6 +11,7 @@ import os
 from typing import Optional, Dict, Any
 import paho.mqtt.client as mqtt
 import concurrent.futures
+from network_codes import get_network_name
 
 logger = logging.getLogger(__name__)
 
@@ -1085,7 +1086,18 @@ class MQTTPublisher:
 
             # Publish initial network info with connectivity tracking
             network = self.track_gammu_operation("GetNetworkInfo", gammu_machine.GetNetworkInfo)
-            network["NetworkName"] = GSMNetworks.get(network.get("NetworkCode", ""), 'Unknown')
+            network_code = network.get("NetworkCode", "")
+            network_name = network.get("NetworkName")
+            
+            # Try multiple lookup methods if name is empty (Gammu bug: https://github.com/gammu/python-gammu/issues/31)
+            if not network_name and network_code:
+                # First try our comprehensive database
+                network_name = get_network_name(network_code)
+                # Fallback to Gammu's database
+                if not network_name:
+                    network_name = GSMNetworks.get(network_code, 'Unknown')
+            
+            network["NetworkName"] = network_name or 'Unknown'
             self.publish_network_info(network)
 
             # Don't publish empty SMS state on startup - it would overwrite the last real SMS
@@ -1260,7 +1272,18 @@ class MQTTPublisher:
                 try:
                     from gammu import GSMNetworks
                     network = self.track_gammu_operation("GetNetworkInfo", gammu_machine.GetNetworkInfo)
-                    network["NetworkName"] = GSMNetworks.get(network.get("NetworkCode", ""), 'Unknown')
+                    network_code = network.get("NetworkCode", "")
+                    network_name = network.get("NetworkName")
+                    
+                    # Try multiple lookup methods if name is empty (Gammu bug: https://github.com/gammu/python-gammu/issues/31)
+                    if not network_name and network_code:
+                        # First try our comprehensive database
+                        network_name = get_network_name(network_code)
+                        # Fallback to Gammu's database
+                        if not network_name:
+                            network_name = GSMNetworks.get(network_code, 'Unknown')
+                    
+                    network["NetworkName"] = network_name or 'Unknown'
                     self.publish_network_info(network)
                 except Exception as e:
                     # track_gammu_operation already recorded the failure

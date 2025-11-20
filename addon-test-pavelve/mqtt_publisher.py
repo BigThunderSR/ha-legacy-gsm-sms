@@ -913,35 +913,35 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
 
-        # Publish discovery configs
+        # Publish discovery configs - all using consistent node_id "sms_gateway" for proper grouping
         discoveries = [
             # Signal sensors
-            ("homeassistant/sensor/sms_gateway_signal/config", signal_config),
-            ("homeassistant/sensor/sms_gateway_signal_dbm/config", signal_dbm_config),
-            ("homeassistant/sensor/sms_gateway_ber/config", ber_config),
+            ("homeassistant/sensor/sms_gateway/signal/config", signal_config),
+            ("homeassistant/sensor/sms_gateway/signal_dbm/config", signal_dbm_config),
+            ("homeassistant/sensor/sms_gateway/ber/config", ber_config),
             # Network sensors
-            ("homeassistant/sensor/sms_gateway_network/config", network_config),
-            ("homeassistant/sensor/sms_gateway_network_state/config", network_state_config),
-            ("homeassistant/sensor/sms_gateway_network_code/config", network_code_config),
-            ("homeassistant/sensor/sms_gateway_cid/config", cid_config),
-            ("homeassistant/sensor/sms_gateway_lac/config", lac_config),
+            ("homeassistant/sensor/sms_gateway/network/config", network_config),
+            ("homeassistant/sensor/sms_gateway/network_state/config", network_state_config),
+            ("homeassistant/sensor/sms_gateway/network_code/config", network_code_config),
+            ("homeassistant/sensor/sms_gateway/cid/config", cid_config),
+            ("homeassistant/sensor/sms_gateway/lac/config", lac_config),
             # SMS sensors
-            ("homeassistant/sensor/sms_gateway_last_sms/config", sms_config),
-            ("homeassistant/sensor/sms_gateway_send_status/config", send_status_config),
-            ("homeassistant/sensor/sms_gateway_delete_status/config", delete_status_config),
-            ("homeassistant/sensor/sms_gateway_sent_count/config", sms_counter_config),
-            ("homeassistant/sensor/sms_gateway_sms_capacity/config", sms_capacity_config),
+            ("homeassistant/sensor/sms_gateway/last_sms/config", sms_config),
+            ("homeassistant/sensor/sms_gateway/send_status/config", send_status_config),
+            ("homeassistant/sensor/sms_gateway/delete_status/config", delete_status_config),
+            ("homeassistant/sensor/sms_gateway/sent_count/config", sms_counter_config),
+            ("homeassistant/sensor/sms_gateway/sms_capacity/config", sms_capacity_config),
             # Modem/SIM sensors
-            ("homeassistant/sensor/sms_gateway_modem_status/config", device_status_config),
-            ("homeassistant/sensor/sms_gateway_modem_imei/config", modem_imei_config),
-            ("homeassistant/sensor/sms_gateway_modem_model/config", modem_model_config),
-            ("homeassistant/sensor/sms_gateway_sim_imsi/config", sim_imsi_config),
+            ("homeassistant/sensor/sms_gateway/modem_status/config", device_status_config),
+            ("homeassistant/sensor/sms_gateway/modem_imei/config", modem_imei_config),
+            ("homeassistant/sensor/sms_gateway/modem_model/config", modem_model_config),
+            ("homeassistant/sensor/sms_gateway/sim_imsi/config", sim_imsi_config),
             # Controls
-            ("homeassistant/button/sms_gateway_send_button/config", button_config),
-            ("homeassistant/button/sms_gateway_reset_counter/config", reset_counter_button_config),
-            ("homeassistant/button/sms_gateway_delete_all_sms/config", delete_all_sms_button_config),
-            ("homeassistant/text/sms_gateway_phone_number/config", phone_text_config),
-            ("homeassistant/text/sms_gateway_message_text/config", message_text_config)
+            ("homeassistant/button/sms_gateway/send_button/config", button_config),
+            ("homeassistant/button/sms_gateway/reset_counter/config", reset_counter_button_config),
+            ("homeassistant/button/sms_gateway/delete_all_sms/config", delete_all_sms_button_config),
+            ("homeassistant/text/sms_gateway/phone_number/config", phone_text_config),
+            ("homeassistant/text/sms_gateway/message_text/config", message_text_config)
         ]
 
         # Add cost sensor only if cost is configured (> 0)
@@ -958,7 +958,7 @@ class MQTTPublisher:
                 "device": DEVICE_CONFIG,
                 **AVAILABILITY_CONFIG
             }
-            discoveries.append(("homeassistant/sensor/sms_gateway_total_cost/config", sms_cost_config))
+            discoveries.append(("homeassistant/sensor/sms_gateway/total_cost/config", sms_cost_config))
         
         for topic, config in discoveries:
             self.client.publish(topic, json.dumps(config), retain=True, qos=1)

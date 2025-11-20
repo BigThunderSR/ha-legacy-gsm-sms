@@ -764,6 +764,17 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
 
+        # Last SMS sender number sensor
+        sms_sender_config = {
+            "name": "Last SMS Sender",
+            "unique_id": "sms_gateway_last_sms_sender",
+            "state_topic": f"{self.topic_prefix}/sms/state",
+            "value_template": "{{ value_json.Number }}",
+            "icon": "mdi:phone",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
         # SMS send status sensor
         send_status_config = {
             "name": "SMS Send Status",
@@ -934,6 +945,7 @@ class MQTTPublisher:
             ("homeassistant/sensor/sms_gateway/lac/config", lac_config),
             # SMS sensors
             ("homeassistant/sensor/sms_gateway/last_sms/config", sms_config),
+            ("homeassistant/sensor/sms_gateway/last_sms_sender/config", sms_sender_config),
             ("homeassistant/sensor/sms_gateway/send_status/config", send_status_config),
             ("homeassistant/sensor/sms_gateway/delete_status/config", delete_status_config),
             ("homeassistant/sensor/sms_gateway/sent_count/config", sms_counter_config),

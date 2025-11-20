@@ -40,13 +40,13 @@ configuration:
     description: Eingehende SMS-Nachrichten automatisch erkennen und an MQTT veröffentlichen
   sms_check_interval:
     name: SMS-Prüfintervall
-    description: Wie oft nach neuen SMS-Nachrichten gesucht werden soll (Sekunden, 30-300)
+    description: Wie oft nach neuen SMS-Nachrichten gesucht werden soll (Sekunden, 10-300)
   sms_cost_per_message:
     name: SMS-Kosten pro Nachricht
-    description: Kosten pro gesendeter SMS. Auf 0 setzen, um Kostenverfolgung zu deaktivieren.
+    description: Kosten pro gesendete SMS-Nachricht. Auf 0 setzen, um die Kostenverfolgung zu deaktivieren.
   sms_cost_currency:
     name: Währung
-    description: Währung für SMS-Kostenanzei (z.B. EUR, USD, CZK)
+    description: Währung für die Anzeige der SMS-Kosten (z. B. USD, EUR, GBP, CZK)
   auto_delete_read_sms:
     name: Gelesene SMS automatisch löschen
     description: SMS-Nachrichten nach dem Lesen automatisch von der SIM-Karte löschen (spart SIM-Speicher)

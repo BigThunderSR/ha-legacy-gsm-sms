@@ -39,14 +39,14 @@ configuration:
     name: Activar monitoreo SMS
     description: Detectar automáticamente y publicar mensajes SMS entrantes en MQTT
   sms_check_interval:
-    name: Intervalo de verificación SMS
-    description: Frecuencia para verificar nuevos mensajes SMS (segundos, 30-300)
+    name: Intervalo de verificación de SMS
+    description: Con qué frecuencia verificar nuevos mensajes SMS (segundos, 10-300)
   sms_cost_per_message:
     name: Costo por SMS
-    description: Costo por SMS enviado. Establecer en 0 para desactivar el seguimiento de costos.
+    description: Costo por mensaje SMS enviado. Establecer en 0 para deshabilitar el seguimiento de costos.
   sms_cost_currency:
     name: Moneda
-    description: Moneda para mostrar costos SMS (por ejemplo EUR, USD, CZK)
+    description: Moneda para mostrar el costo de SMS (p. ej., USD, EUR, GBP, CZK)
   auto_delete_read_sms:
     name: Eliminar automáticamente SMS leídos
     description: Eliminar automáticamente mensajes SMS de la tarjeta SIM después de leer (libera espacio SIM)

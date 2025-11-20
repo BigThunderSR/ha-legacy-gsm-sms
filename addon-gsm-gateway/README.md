@@ -115,35 +115,35 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 
 ### Basic Settings
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `device_path` | `/dev/ttyUSB0` | Path to your GSM modem device |
-| `pin` | `""` | SIM card PIN (leave empty if no PIN) |
-| `port` | `5000` | API port |
-| `ssl` | `false` | Enable HTTPS |
-| `username` | `admin` | API username |
-| `password` | `password` | **Change this!** API password |
+| Option        | Default        | Description                          |
+| ------------- | -------------- | ------------------------------------ |
+| `device_path` | `/dev/ttyUSB0` | Path to your GSM modem device        |
+| `pin`         | `""`           | SIM card PIN (leave empty if no PIN) |
+| `port`        | `5000`         | API port                             |
+| `ssl`         | `false`        | Enable HTTPS                         |
+| `username`    | `admin`        | API username                         |
+| `password`    | `password`     | **Change this!** API password        |
 
 ### MQTT Settings
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `mqtt_enabled` | `true` | Enable MQTT integration |
-| `mqtt_host` | `core-mosquitto` | MQTT broker hostname |
-| `mqtt_port` | `1883` | MQTT broker port |
-| `mqtt_username` | `""` | MQTT username (if required) |
-| `mqtt_password` | `""` | MQTT password (if required) |
-| `mqtt_topic_prefix` | `homeassistant/sensor/sms_gateway` | MQTT topic prefix |
+| Option              | Default                            | Description                 |
+| ------------------- | ---------------------------------- | --------------------------- |
+| `mqtt_enabled`      | `true`                             | Enable MQTT integration     |
+| `mqtt_host`         | `core-mosquitto`                   | MQTT broker hostname        |
+| `mqtt_port`         | `1883`                             | MQTT broker port            |
+| `mqtt_username`     | `""`                               | MQTT username (if required) |
+| `mqtt_password`     | `""`                               | MQTT password (if required) |
+| `mqtt_topic_prefix` | `homeassistant/sensor/sms_gateway` | MQTT topic prefix           |
 
 ### SMS Settings
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `sms_monitoring_enabled` | `true` | Enable SMS monitoring |
-| `sms_check_interval` | `10` | Check for new SMS every X seconds |
-| `auto_delete_read_sms` | `true` | Auto-delete SMS after reading |
-| `sms_cost_per_message` | `0.0` | Cost per SMS (0 = disabled) |
-| `sms_cost_currency` | `USD` | Currency for cost tracking |
+| Option                   | Default | Description                       |
+| ------------------------ | ------- | --------------------------------- |
+| `sms_monitoring_enabled` | `true`  | Enable SMS monitoring             |
+| `sms_check_interval`     | `10`    | Check for new SMS every X seconds |
+| `auto_delete_read_sms`   | `true`  | Auto-delete SMS after reading     |
+| `sms_cost_per_message`   | `0.0`   | Cost per SMS (0 = disabled)       |
+| `sms_cost_currency`      | `USD`   | Currency for cost tracking        |
 
 ### Device Path Options
 

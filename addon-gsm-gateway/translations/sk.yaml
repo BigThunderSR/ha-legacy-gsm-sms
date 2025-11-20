@@ -39,14 +39,14 @@ configuration:
     name: Povoliť SMS Monitoring
     description: Automaticky detekovať a publikovať prichádzajúce SMS správy do MQTT
   sms_check_interval:
-    name: Interval Kontroly SMS
-    description: Ako často kontrolovať nové SMS správy (sekundy, 30-300)
+    name: Interval kontroly SMS
+    description: Ako často kontrolovať nové SMS správy (sekundy, 10-300)
   sms_cost_per_message:
     name: Cena za SMS
     description: Cena za jednu odoslanú SMS správu. Nastavte 0 pre vypnutie sledovania nákladov.
   sms_cost_currency:
     name: Mena
-    description: Mena pre zobrazenie nákladov za SMS (napr. EUR, USD, CZK)
+    description: Mena pre zobrazenie nákladov za SMS (napr. USD, EUR, GBP, CZK)
   auto_delete_read_sms:
     name: Automaticky mazať prečítané SMS
     description: Automaticky zmazať SMS správy zo SIM karty po ich prečítaní (uvoľní miesto na SIM)

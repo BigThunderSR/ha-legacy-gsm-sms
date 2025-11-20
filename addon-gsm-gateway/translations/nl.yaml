@@ -39,14 +39,14 @@ configuration:
     name: SMS-monitoring inschakelen
     description: Automatisch inkomende SMS-berichten detecteren en publiceren naar MQTT
   sms_check_interval:
-    name: SMS-controle interval
-    description: Hoe vaak controleren op nieuwe SMS-berichten (seconden, 30-300)
+    name: SMS-controle-interval
+    description: Hoe vaak controleren op nieuwe SMS-berichten (seconden, 10-300)
   sms_cost_per_message:
     name: Kosten per SMS
-    description: Kosten per verzonden SMS. Stel in op 0 om kostenbewaking uit te schakelen.
+    description: Kosten per verzonden SMS-bericht. Stel in op 0 om kostenbewaking uit te schakelen.
   sms_cost_currency:
     name: Valuta
-    description: Valuta voor weergave SMS-kosten (bijv. EUR, USD, CZK)
+    description: Valuta voor weergave van SMS-kosten (bijv. USD, EUR, GBP, CZK)
   auto_delete_read_sms:
     name: Gelezen SMS automatisch verwijderen
     description: SMS-berichten automatisch van SIM-kaart verwijderen na lezen (maakt SIM-ruimte vrij)

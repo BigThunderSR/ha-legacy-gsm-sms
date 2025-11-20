@@ -646,22 +646,21 @@ class MQTTPublisher:
             "payload_not_available": "offline"
         }
 
-        # Signal strength percent sensor
-        signal_percent_config = {
-            "name": "GSM Signal Percent",
-            "unique_id": "sms_gateway_signal_percent",
+        # Signal strength sensor (original from PavelVe)
+        signal_config = {
+            "name": "GSM Signal Strength",
+            "unique_id": "sms_gateway_signal",
             "state_topic": f"{self.topic_prefix}/signal/state",
             "value_template": "{{ value_json.SignalPercent }}",
             "unit_of_measurement": "%",
             "icon": "mdi:signal-cellular-3",
-            "state_class": "measurement",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
         
-        # Signal strength dBm sensor (diagnostic)
+        # Signal strength dBm sensor (diagnostic - technical detail)
         signal_dbm_config = {
-            "name": "GSM Signal Strength",
+            "name": "GSM Signal Strength (dBm)",
             "unique_id": "sms_gateway_signal_dbm",
             "state_topic": f"{self.topic_prefix}/signal/state",
             "value_template": "{{ value_json.SignalStrength }}",
@@ -688,10 +687,10 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
         
-        # Network name sensor (main display)
-        network_name_config = {
+        # Network info sensor (original from PavelVe)
+        network_config = {
             "name": "GSM Network",
-            "unique_id": "sms_gateway_network_name",
+            "unique_id": "sms_gateway_network",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.NetworkName }}",
             "icon": "mdi:network",
@@ -710,7 +709,7 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
         
-        # Network code (MCC+MNC) sensor
+        # Network code (MCC+MNC) sensor (diagnostic)
         network_code_config = {
             "name": "GSM Network Code",
             "unique_id": "sms_gateway_network_code",
@@ -917,11 +916,11 @@ class MQTTPublisher:
         # Publish discovery configs
         discoveries = [
             # Signal sensors
-            ("homeassistant/sensor/sms_gateway_signal_percent/config", signal_percent_config),
+            ("homeassistant/sensor/sms_gateway_signal/config", signal_config),
             ("homeassistant/sensor/sms_gateway_signal_dbm/config", signal_dbm_config),
             ("homeassistant/sensor/sms_gateway_ber/config", ber_config),
             # Network sensors
-            ("homeassistant/sensor/sms_gateway_network_name/config", network_name_config),
+            ("homeassistant/sensor/sms_gateway_network/config", network_config),
             ("homeassistant/sensor/sms_gateway_network_state/config", network_state_config),
             ("homeassistant/sensor/sms_gateway_network_code/config", network_code_config),
             ("homeassistant/sensor/sms_gateway_cid/config", cid_config),

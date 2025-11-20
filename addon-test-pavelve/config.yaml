@@ -6,14 +6,14 @@ startup: services
 arch:
   - amd64
   - aarch64
-boot: auto
+#boot: auto
 panel_icon: "mdi:cellphone-message"
 url: "https://github.com/PavelVe/home-assistant-addons/blob/main/sms-gammu-gateway/README.md"
 homeassistant: "2022.1.1"
 init: false
 ingress: true
 ingress_port: 5000
-host_network: false
+#host_network: false
 devices:
   - /dev/ttyUSB0
   - /dev/ttyUSB1

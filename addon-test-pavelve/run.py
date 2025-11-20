@@ -534,6 +534,19 @@ class Network(Resource):
                 network_name = GSMNetworks.get(network_code, 'Unknown')
         
         network["NetworkName"] = network_name or 'Unknown'
+        
+        # Map Gammu's state to human-readable format
+        state = network.get("State", "Unknown")
+        state_map = {
+            "HomeNetwork": "Registered (Home)",
+            "RoamingNetwork": "Registered (Roaming)",
+            "RequestingNetwork": "Searching",
+            "RegistrationDenied": "Registration Denied",
+            "NoNetwork": "Not Registered",
+            "Unknown": "Unknown",
+        }
+        network["State"] = state_map.get(state, state)
+        
         # Publish to MQTT if enabled
         mqtt_publisher.publish_network_info(network)
         return network

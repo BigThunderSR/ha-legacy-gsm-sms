@@ -1171,6 +1171,9 @@ class MQTTPublisher:
 
             # Publish initial signal strength with connectivity tracking
             signal = self.track_gammu_operation("GetSignalQuality", gammu_machine.GetSignalQuality)
+            # Filter out invalid BER value (-1 means not available)
+            if signal.get("BitErrorRate") == -1:
+                signal["BitErrorRate"] = None
             self.publish_signal_strength(signal)
 
             # Publish initial network info with connectivity tracking
@@ -1187,6 +1190,19 @@ class MQTTPublisher:
                     network_name = GSMNetworks.get(network_code, 'Unknown')
             
             network["NetworkName"] = network_name or 'Unknown'
+            
+            # Map Gammu's state to human-readable format
+            state = network.get("State", "Unknown")
+            state_map = {
+                "HomeNetwork": "Registered (Home)",
+                "RoamingNetwork": "Registered (Roaming)",
+                "RequestingNetwork": "Searching",
+                "RegistrationDenied": "Registration Denied",
+                "NoNetwork": "Not Registered",
+                "Unknown": "Unknown",
+            }
+            network["State"] = state_map.get(state, state)
+            
             self.publish_network_info(network)
 
             # Don't publish empty SMS state on startup - it would overwrite the last real SMS
@@ -1352,6 +1368,9 @@ class MQTTPublisher:
                 # Publish signal strength with connectivity tracking
                 try:
                     signal = self.track_gammu_operation("GetSignalQuality", gammu_machine.GetSignalQuality)
+                    # Filter out invalid BER value (-1 means not available)
+                    if signal.get("BitErrorRate") == -1:
+                        signal["BitErrorRate"] = None
                     self.publish_signal_strength(signal)
                 except Exception as e:
                     # track_gammu_operation already recorded the failure
@@ -1373,6 +1392,19 @@ class MQTTPublisher:
                             network_name = GSMNetworks.get(network_code, 'Unknown')
                     
                     network["NetworkName"] = network_name or 'Unknown'
+                    
+                    # Map Gammu's state to human-readable format
+                    state = network.get("State", "Unknown")
+                    state_map = {
+                        "HomeNetwork": "Registered (Home)",
+                        "RoamingNetwork": "Registered (Roaming)",
+                        "RequestingNetwork": "Searching",
+                        "RegistrationDenied": "Registration Denied",
+                        "NoNetwork": "Not Registered",
+                        "Unknown": "Unknown",
+                    }
+                    network["State"] = state_map.get(state, state)
+                    
                     self.publish_network_info(network)
                 except Exception as e:
                     # track_gammu_operation already recorded the failure

@@ -646,25 +646,103 @@ class MQTTPublisher:
             "payload_not_available": "offline"
         }
 
-        # Signal strength sensor
-        signal_config = {
-            "name": "GSM Signal Strength",
-            "unique_id": "sms_gateway_signal",
+        # Signal strength percent sensor
+        signal_percent_config = {
+            "name": "GSM Signal Percent",
+            "unique_id": "sms_gateway_signal_percent",
             "state_topic": f"{self.topic_prefix}/signal/state",
             "value_template": "{{ value_json.SignalPercent }}",
             "unit_of_measurement": "%",
             "icon": "mdi:signal-cellular-3",
+            "state_class": "measurement",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
         
-        # Network info sensor
-        network_config = {
-            "name": "GSM Network",
-            "unique_id": "sms_gateway_network",
+        # Signal strength dBm sensor
+        signal_dbm_config = {
+            "name": "GSM Signal Strength",
+            "unique_id": "sms_gateway_signal_dbm",
+            "state_topic": f"{self.topic_prefix}/signal/state",
+            "value_template": "{{ value_json.SignalStrength }}",
+            "unit_of_measurement": "dBm",
+            "device_class": "signal_strength",
+            "entity_category": "diagnostic",
+            "icon": "mdi:signal",
+            "state_class": "measurement",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+        
+        # Bit Error Rate sensor
+        ber_config = {
+            "name": "GSM Bit Error Rate",
+            "unique_id": "sms_gateway_ber",
+            "state_topic": f"{self.topic_prefix}/signal/state",
+            "value_template": "{{ value_json.BitErrorRate }}",
+            "unit_of_measurement": "%",
+            "entity_category": "diagnostic",
+            "icon": "mdi:gauge",
+            "state_class": "measurement",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+        
+        # Network name sensor
+        network_name_config = {
+            "name": "GSM Network Name",
+            "unique_id": "sms_gateway_network_name",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.NetworkName }}",
             "icon": "mdi:network",
+            "entity_category": "diagnostic",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+        
+        # Network registration state sensor
+        network_state_config = {
+            "name": "GSM Network State",
+            "unique_id": "sms_gateway_network_state",
+            "state_topic": f"{self.topic_prefix}/network/state",
+            "value_template": "{{ value_json.State }}",
+            "icon": "mdi:signal-variant",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+        
+        # Network code (MCC+MNC) sensor
+        network_code_config = {
+            "name": "GSM Network Code",
+            "unique_id": "sms_gateway_network_code",
+            "state_topic": f"{self.topic_prefix}/network/state",
+            "value_template": "{{ value_json.NetworkCode }}",
+            "icon": "mdi:network",
+            "entity_category": "diagnostic",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+        
+        # Cell ID sensor
+        cid_config = {
+            "name": "GSM Cell ID",
+            "unique_id": "sms_gateway_cid",
+            "state_topic": f"{self.topic_prefix}/network/state",
+            "value_template": "{{ value_json.CID }}",
+            "icon": "mdi:radio-tower",
+            "entity_category": "diagnostic",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+        
+        # Location Area Code sensor
+        lac_config = {
+            "name": "GSM Location Area Code",
+            "unique_id": "sms_gateway_lac",
+            "state_topic": f"{self.topic_prefix}/network/state",
+            "value_template": "{{ value_json.LAC }}",
+            "icon": "mdi:map-marker-radius",
+            "entity_category": "diagnostic",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
@@ -839,17 +917,28 @@ class MQTTPublisher:
 
         # Publish discovery configs
         discoveries = [
-            ("homeassistant/sensor/sms_gateway_signal/config", signal_config),
-            ("homeassistant/sensor/sms_gateway_network/config", network_config),
+            # Signal sensors
+            ("homeassistant/sensor/sms_gateway_signal_percent/config", signal_percent_config),
+            ("homeassistant/sensor/sms_gateway_signal_dbm/config", signal_dbm_config),
+            ("homeassistant/sensor/sms_gateway_ber/config", ber_config),
+            # Network sensors
+            ("homeassistant/sensor/sms_gateway_network_name/config", network_name_config),
+            ("homeassistant/sensor/sms_gateway_network_state/config", network_state_config),
+            ("homeassistant/sensor/sms_gateway_network_code/config", network_code_config),
+            ("homeassistant/sensor/sms_gateway_cid/config", cid_config),
+            ("homeassistant/sensor/sms_gateway_lac/config", lac_config),
+            # SMS sensors
             ("homeassistant/sensor/sms_gateway_last_sms/config", sms_config),
             ("homeassistant/sensor/sms_gateway_send_status/config", send_status_config),
             ("homeassistant/sensor/sms_gateway_delete_status/config", delete_status_config),
-            ("homeassistant/sensor/sms_gateway_modem_status/config", device_status_config),
             ("homeassistant/sensor/sms_gateway_sent_count/config", sms_counter_config),
+            ("homeassistant/sensor/sms_gateway_sms_capacity/config", sms_capacity_config),
+            # Modem/SIM sensors
+            ("homeassistant/sensor/sms_gateway_modem_status/config", device_status_config),
             ("homeassistant/sensor/sms_gateway_modem_imei/config", modem_imei_config),
             ("homeassistant/sensor/sms_gateway_modem_model/config", modem_model_config),
             ("homeassistant/sensor/sms_gateway_sim_imsi/config", sim_imsi_config),
-            ("homeassistant/sensor/sms_gateway_sms_capacity/config", sms_capacity_config),
+            # Controls
             ("homeassistant/button/sms_gateway_send_button/config", button_config),
             ("homeassistant/button/sms_gateway_reset_counter/config", reset_counter_button_config),
             ("homeassistant/button/sms_gateway_delete_all_sms/config", delete_all_sms_button_config),

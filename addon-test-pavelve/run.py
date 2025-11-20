@@ -19,7 +19,6 @@ from flask_restx import Api, Resource, fields, reqparse
 from support import init_state_machine, retrieveAllSms, deleteSms, encodeSms
 from mqtt_publisher import MQTTPublisher
 from gammu import GSMNetworks
-from device_mapper import find_all_serial_devices, map_config_device
 
 # Configure logging with timestamp
 logging.basicConfig(
@@ -116,33 +115,32 @@ ssl = config.get('ssl', False)
 port = config.get('port', 5000)
 username = config.get('username', 'admin')
 password = config.get('password', 'password')
-configured_device = config.get('device_path', '/dev/ttyUSB0')
+device_path = config.get('device_path', '/dev/ttyUSB0')
 
-# Resolve device path (handle by-id symlinks)
-logging.info(f"🔍 Configured device: {configured_device}")
-actual_device, by_id_path = map_config_device(configured_device)
+# Log device path and check accessibility
+logging.info(f"📱 Configured device path: {device_path}")
 
-if actual_device:
-    device_path = actual_device
-    if by_id_path:
-        logging.info(f"✅ Resolved device: {device_path} (by-id: {by_id_path})")
-    else:
-        logging.info(f"✅ Using device: {device_path}")
-else:
-    # Fallback: try to find any available serial device
-    logging.warning(f"⚠️  Configured device not found: {configured_device}")
-    logging.info("🔍 Searching for available serial devices...")
-    devices = find_all_serial_devices()
-    if devices:
-        device_path = list(devices.keys())[0]
-        by_id = devices[device_path]
-        if by_id:
-            logging.info(f"✅ Auto-detected device: {device_path} (by-id: {by_id})")
+# Check if it's a by-id symlink
+if '/dev/serial/by-id/' in device_path:
+    if os.path.islink(device_path):
+        resolved_path = os.path.realpath(device_path)
+        logging.info(f"🔗 By-ID symlink resolves to: {resolved_path}")
+        
+        # Check if resolved device exists and is accessible
+        if os.path.exists(resolved_path):
+            logging.info(f"✅ Resolved device {resolved_path} is accessible")
         else:
-            logging.info(f"✅ Auto-detected device: {device_path}")
+            logging.error(f"❌ ERROR: Resolved device {resolved_path} is NOT accessible!")
+            logging.error(f"💡 TIP: Add '{resolved_path}' to the 'devices' list in config.yaml")
     else:
-        device_path = '/dev/ttyUSB0'  # Ultimate fallback
-        logging.error(f"❌ No serial devices found! Using fallback: {device_path}")
+        logging.error(f"❌ ERROR: {device_path} is not a valid symlink!")
+        if not os.path.exists(device_path):
+            logging.error(f"💡 TIP: Check if /dev/serial/by-id is mounted (add to 'devices' list)")
+elif os.path.exists(device_path):
+    logging.info(f"✅ Device {device_path} is accessible")
+else:
+    logging.error(f"❌ ERROR: Device {device_path} is NOT accessible!")
+    logging.error(f"💡 TIP: Add '{device_path}' to the 'devices' list in config.yaml")
 
 # Initialize MQTT publisher FIRST (before gammu)
 mqtt_publisher = MQTTPublisher(config)
@@ -154,6 +152,7 @@ if mqtt_publisher.connected:
     logging.info("📡 Published initial OFFLINE status on startup")
 
 # Now initialize gammu state machine (this may fail if modem not connected)
+logging.info(f"🔌 Attempting to initialize Gammu with device: {device_path}")
 machine = init_state_machine(pin, device_path)
 
 # Set gammu machine for MQTT SMS sending

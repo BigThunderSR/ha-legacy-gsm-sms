@@ -659,7 +659,7 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
         
-        # Signal strength dBm sensor
+        # Signal strength dBm sensor (diagnostic)
         signal_dbm_config = {
             "name": "GSM Signal Strength",
             "unique_id": "sms_gateway_signal_dbm",
@@ -674,7 +674,7 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
         
-        # Bit Error Rate sensor
+        # Bit Error Rate sensor (diagnostic)
         ber_config = {
             "name": "GSM Bit Error Rate",
             "unique_id": "sms_gateway_ber",
@@ -688,19 +688,18 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
         
-        # Network name sensor
+        # Network name sensor (main display)
         network_name_config = {
-            "name": "GSM Network Name",
+            "name": "GSM Network",
             "unique_id": "sms_gateway_network_name",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.NetworkName }}",
             "icon": "mdi:network",
-            "entity_category": "diagnostic",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
         
-        # Network registration state sensor
+        # Network registration state sensor (main display)
         network_state_config = {
             "name": "GSM Network State",
             "unique_id": "sms_gateway_network_state",

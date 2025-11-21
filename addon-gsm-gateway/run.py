@@ -38,6 +38,9 @@ mqtt_logger.setLevel(logging.INFO)
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+# Load version early for startup banner
+VERSION = None  # Will be loaded properly later
+
 # Monkey-patch click.echo to suppress Flask CLI startup messages
 import click
 _original_echo = click.echo
@@ -115,6 +118,14 @@ def load_ha_config():
 # Load version and configuration
 VERSION = load_version()
 config = load_ha_config()
+
+# Display startup banner with version
+logging.info("=" * 60)
+logging.info(f"🚀 GSM SMS Gateway Enhanced v{VERSION}")
+logging.info("   Based on PavelVe's SMS Gammu Gateway")
+logging.info("   Enhanced by BigThunderSR")
+logging.info("=" * 60)
+
 pin = config.get('pin') if config.get('pin') else None
 ssl = config.get('ssl', False)
 port = config.get('port', 5000)

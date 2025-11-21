@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [2.1.0] - 2025-11-20
 
+### Changed
+
+- **Base Image Update** - Updated to Alpine 3.22 base image
+
+  - Security improvements and CVE patches
+  - Performance optimizations
+  - Updated Python versions (3.13.x)
+  - Modernized tooling (pip 25.2, Bashio 0.17.5)
+
+- **Docker Configuration** - Fixed multi-architecture build support
+
+  - Removed hardcoded architecture from Dockerfile
+  - Proper ARG BUILD_FROM usage for multi-arch builds
+  - Updated Dockerfile labels with correct version and maintainer
+
+- **Startup Logging** - Enhanced version visibility
+  - Added startup banner displaying addon version
+  - Better identification of running version in logs
+
 ### Added
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant

@@ -383,6 +383,15 @@ This project maintains the Apache License 2.0 from the original works:
 
 ### Version 2.1.0 (2025-11-20)
 
+**Infrastructure Updates:**
+
+- Updated to Alpine 3.22 base image (from 3.19) with security patches and performance improvements
+- Fixed Docker multi-architecture build configuration
+- Enhanced startup logging with version display banner
+- Updated Python to 3.13.x, pip to 25.2, Bashio to 0.17.5
+
+**Features:**
+
 - Added USSD support - send codes like \*#100# to check balance, query data/minutes
 - Added USSD Code text field with format validation
 - Added Send USSD button and USSD Response sensor

@@ -45,11 +45,11 @@ EXPOSE 5000
 
 # Labels
 LABEL \
-    io.hass.name="SMS Gammu Gateway" \
-    io.hass.description="REST API SMS Gateway using python-gammu for USB GSM modems" \
+    io.hass.name="GSM SMS Gateway Enhanced" \
+    io.hass.description="Enhanced SMS Gammu Gateway with network provider lookup and comprehensive diagnostics" \
     io.hass.type="addon" \
-    io.hass.version="1.2.9" \
-    maintainer="PavelVe"
+    io.hass.version="2.1.0" \
+    maintainer="BigThunderSR"
 
 # Run
 CMD [ "./run.sh" ]

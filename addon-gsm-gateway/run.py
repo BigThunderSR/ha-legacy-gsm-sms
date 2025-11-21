@@ -56,26 +56,46 @@ def load_version():
     """Load version from config.yaml"""
     try:
         # Try to read from addon info API first (most reliable in HA)
-        try:
-            import requests
-            response = requests.get('http://supervisor/addons/self/info',
-                                   headers={'Authorization': f'Bearer {os.environ.get("SUPERVISOR_TOKEN", "")}'},
-                                   timeout=1)
-            if response.status_code == 200:
-                return response.json().get('data', {}).get('version', 'unknown')
-        except:
-            pass
+        supervisor_token = os.environ.get("SUPERVISOR_TOKEN", "")
+        if supervisor_token:
+            try:
+                import requests
+                response = requests.get('http://supervisor/addons/self/info',
+                                       headers={'Authorization': f'Bearer {supervisor_token}'},
+                                       timeout=2)
+                if response.status_code == 200:
+                    data = response.json()
+                    logging.debug(f"Supervisor API response: {data}")
+                    # The structure might be: {'result': 'ok', 'data': {'version': 'x.x.x'}}
+                    # or just: {'data': {'version': 'x.x.x'}}
+                    if 'data' in data and 'version' in data['data']:
+                        version = data['data']['version']
+                        if version and version != 'unknown':
+                            logging.debug(f"Got version from Supervisor API: {version}")
+                            return version
+            except Exception as e:
+                logging.debug(f"Supervisor API failed: {e}")
+                pass
 
-        # Fallback: try to read from config.yaml
-        config_yaml_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
-        if os.path.exists(config_yaml_path):
-            import yaml
-            with open(config_yaml_path, 'r') as f:
-                config_data = yaml.safe_load(f)
-                version = config_data.get('version')
-                if version:
-                    return version
+        # Fallback: try to read from config.yaml in multiple locations
+        possible_paths = [
+            '/config.yaml',  # Root location when copied to container
+            os.path.join(os.path.dirname(__file__), 'config.yaml'),  # Same directory as run.py
+            '/data/../config.yaml',  # Relative to data directory
+        ]
+        
+        import yaml
+        for config_yaml_path in possible_paths:
+            logging.debug(f"Trying to read version from: {config_yaml_path}")
+            if os.path.exists(config_yaml_path):
+                with open(config_yaml_path, 'r') as f:
+                    config_data = yaml.safe_load(f)
+                    version = config_data.get('version')
+                    if version:
+                        logging.debug(f"Got version from {config_yaml_path}: {version}")
+                        return version
 
+        logging.warning("Could not find version in any location")
         return "unknown"
     except Exception as e:
         logging.warning(f"Could not read version: {e}")
@@ -113,12 +133,8 @@ def load_ha_config():
 VERSION = load_version()
 config = load_ha_config()
 
-# Display startup banner with version
-logging.info("=" * 60)
-logging.info(f"🚀 GSM SMS Gateway Enhanced v{VERSION}")
-logging.info("   Based on PavelVe's SMS Gammu Gateway")
-logging.info("   Enhanced by BigThunderSR")
-logging.info("=" * 60)
+# Log version at startup
+logging.info(f"GSM SMS Gateway Enhanced v{VERSION}")
 
 pin = config.get('pin') if config.get('pin') else None
 ssl = config.get('ssl', False)

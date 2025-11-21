@@ -36,6 +36,7 @@ COPY network_codes.py .
 COPY run.sh .
 COPY icon.png .
 COPY services.yaml .
+COPY config.yaml .
 
 # Make run script executable
 RUN chmod +x run.sh

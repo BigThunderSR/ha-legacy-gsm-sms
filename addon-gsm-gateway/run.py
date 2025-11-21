@@ -53,15 +53,8 @@ def _silent_echo(message=None, **kwargs):
 click.echo = _silent_echo
 
 def load_version():
-    """Load version from config.json"""
+    """Load version from config.yaml"""
     try:
-        # Try multiple possible locations
-        possible_paths = [
-            '/data/options.json',
-            os.path.join(os.path.dirname(__file__), 'config.json'),
-            '/config.json',
-        ]
-
         # Try to read from addon info API first (most reliable in HA)
         try:
             import requests
@@ -73,14 +66,15 @@ def load_version():
         except:
             pass
 
-        # Fallback: try to find config.json
-        for config_path in possible_paths:
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    config_json = json.load(f)
-                    version = config_json.get('version')
-                    if version:
-                        return version
+        # Fallback: try to read from config.yaml
+        config_yaml_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
+        if os.path.exists(config_yaml_path):
+            import yaml
+            with open(config_yaml_path, 'r') as f:
+                config_data = yaml.safe_load(f)
+                version = config_data.get('version')
+                if version:
+                    return version
 
         return "unknown"
     except Exception as e:

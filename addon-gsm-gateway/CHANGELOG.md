@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 - **Startup Logging** - Enhanced version visibility
   - Added startup banner displaying addon version
   - Better identification of running version in logs
+  - Fixed version loading to read from config.yaml
+  - Added PyYAML and requests to dependencies
 
 ### Added
 

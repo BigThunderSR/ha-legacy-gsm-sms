@@ -31,6 +31,8 @@ mqtt_host: "core-mosquitto"
 
 ## 📱 How to Send SMS
 
+> **Note:** This is an **addon**, not an integration. Addons cannot create `notify.*` services. Use one of the methods below instead.
+
 ### Method 1: UI Button (Easiest)
 
 1. Go to **Devices** → **MQTT** → **SMS Gateway**
@@ -38,13 +40,26 @@ mqtt_host: "core-mosquitto"
 3. Fill **Message Text**
 4. Click **Send SMS**
 
-### Method 2: Notify Service
+### Method 2: Shell Command (Service-like)
+
+Add to `configuration.yaml`:
 
 ```yaml
-service: notify.sms_gateway
+shell_command:
+  send_sms: >
+    curl -X POST "http://localhost:5000/sms" 
+    -u "admin:password" 
+    -H "Content-Type: application/json" 
+    -d '{"number":"{{ number }}","text":"{{ message }}"}'
+```
+
+Then use in automations:
+
+```yaml
+service: shell_command.send_sms
 data:
-  message: "Test message"
-  target: "+420123456789"
+  number: "+420123456789"
+  message: "Your message here"
 ```
 
 ### Method 3: MQTT
@@ -90,13 +105,13 @@ curl -X POST http://192.168.1.x:5000/sms \
 
 ### SMS Management Settings
 
-| Parameter                  | Default | Description                                                          |
-| -------------------------- | ------- | -------------------------------------------------------------------- |
-| `sms_cost_per_message`     | `0.0`   | Price per SMS (0 = cost tracking disabled)                           |
-| `sms_cost_currency`        | `USD`   | Currency code (EUR, USD, CZK, GBP, etc.)                             |
-| `auto_delete_read_sms`     | `true`  | Auto-delete SMS after reading (frees SIM space)                      |
-| `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                 |
-| `sms_delivery_reports`     | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0)  |
+| Parameter                  | Default | Description                                                         |
+| -------------------------- | ------- | ------------------------------------------------------------------- |
+| `sms_cost_per_message`     | `0.0`   | Price per SMS (0 = cost tracking disabled)                          |
+| `sms_cost_currency`        | `USD`   | Currency code (EUR, USD, CZK, GBP, etc.)                            |
+| `auto_delete_read_sms`     | `true`  | Auto-delete SMS after reading (frees SIM space)                     |
+| `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                |
+| `sms_delivery_reports`     | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0) |
 
 ### Example Configuration with v2.1.0 Features
 
@@ -110,8 +125,8 @@ mqtt_host: "core-mosquitto"
 sms_monitoring_enabled: true
 sms_check_interval: 10
 auto_delete_read_sms: true
-sms_history_max_messages: 20    # Keep last 20 received SMS (default: 10)
-sms_delivery_reports: false     # Keep disabled to avoid carrier charges
+sms_history_max_messages: 20 # Keep last 20 received SMS (default: 10)
+sms_delivery_reports: false # Keep disabled to avoid carrier charges
 sms_cost_per_message: 0.05
 sms_cost_currency: "USD"
 ```
@@ -180,10 +195,10 @@ automation:
       entity_id: binary_sensor.front_door
       to: "on"
     action:
-      service: notify.sms_gateway
+      service: shell_command.send_sms
       data:
+        number: "+420123456789"
         message: "ALERT: Front door opened!"
-        target: "+420123456789"
 ```
 
 ### SMS on Low Temperature
@@ -196,10 +211,10 @@ automation:
       entity_id: sensor.outside_temperature
       below: 0
     action:
-      service: notify.sms_gateway
+      service: shell_command.send_sms
       data:
+        number: "+420123456789"
         message: "Warning: Freezing temperature! Current: {{ states('sensor.outside_temperature') }}°C"
-        target: "+420123456789"
 ```
 
 ### SMS on Power Failure (UPS)
@@ -212,10 +227,10 @@ automation:
       entity_id: sensor.ups_status
       to: "on_battery"
     action:
-      service: notify.sms_gateway
+      service: shell_command.send_sms
       data:
+        number: "+420123456789"
         message: "Power failure detected! UPS on battery."
-        target: "+420123456789"
 ```
 
 ### Check Balance with USSD (Daily)

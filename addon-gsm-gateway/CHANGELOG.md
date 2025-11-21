@@ -24,6 +24,11 @@ All notable changes to this project will be documented in this file.
   - Fixed version loading to read from config.yaml
   - Added PyYAML and requests to dependencies
 
+- **Documentation Corrections** - Fixed incorrect service documentation
+  - Removed incorrect `notify.sms_gateway` service (addons cannot create notify services)
+  - Added `shell_command` wrapper as alternative for service-like interface
+  - Updated all automation examples to use correct methods
+
 ### Added
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant

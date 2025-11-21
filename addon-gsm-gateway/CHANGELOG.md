@@ -19,9 +19,8 @@ All notable changes to this project will be documented in this file.
   - Proper ARG BUILD_FROM usage for multi-arch builds
   - Updated Dockerfile labels with correct version and maintainer
 
-- **Startup Logging** - Enhanced version visibility
-  - Added startup banner displaying addon version
-  - Better identification of running version in logs
+- **Startup Logging & Dependencies** - Enhanced version visibility and fixed dependencies
+  - Added version display in startup logs
   - Fixed version loading to read from config.yaml
   - Added PyYAML and requests to dependencies
 
@@ -29,7 +28,7 @@ All notable changes to this project will be documented in this file.
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant
 
-  - USSD Code text field - Enter USSD codes (validates format: must start with \*)
+  - USSD Code text field - Enter USSD codes (validates format: starts with \*, e.g., \*225#, \*#100#)
   - Send USSD button - Execute USSD code and receive network response
   - USSD Response sensor - Displays network response with timestamp
   - Uses Gammu's DialService for reliable USSD execution

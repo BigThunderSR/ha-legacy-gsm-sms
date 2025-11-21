@@ -1142,7 +1142,7 @@ class MQTTPublisher:
             "state_topic": f"{self.topic_prefix}/ussd_code/state",
             "icon": "mdi:pound",
             "mode": "text",
-            "pattern": r"^\*[0-9#\*]*#?$",  # USSD codes start with * and may end with #
+            "pattern": r"^\*[0-9#\*]+#?$",  # USSD codes start with * followed by digits/# (e.g., *225#, *#100#)
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }

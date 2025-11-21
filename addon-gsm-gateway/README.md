@@ -393,7 +393,7 @@ This project maintains the Apache License 2.0 from the original works:
 **Features:**
 
 - Added USSD support - send codes like \*#100# to check balance, query data/minutes
-- Added USSD Code text field with format validation
+- Added USSD Code text field with format validation (supports formats like \*225#, \*#100#, \*611)
 - Added Send USSD button and USSD Response sensor
 - Automatic code clearing after successful USSD send
 - Added SMS history tracking with configurable length (1-100 messages, default: 10)

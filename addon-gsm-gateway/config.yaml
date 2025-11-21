@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: "2.0.1"
+version: "2.1.0"
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup and comprehensive diagnostics. 
@@ -67,6 +67,8 @@ options:
   sms_cost_per_message: 0.0
   sms_cost_currency: "USD"
   auto_delete_read_sms: true
+  sms_history_max_messages: 10
+  sms_delivery_reports: false
 schema:
   device_path: str
   pin: str?
@@ -85,3 +87,5 @@ schema:
   sms_cost_per_message: float?
   sms_cost_currency: str
   auto_delete_read_sms: bool
+  sms_history_max_messages: int(1,100)
+  sms_delivery_reports: bool

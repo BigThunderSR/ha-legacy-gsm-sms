@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2025-11-20
+
+### Added
+
+- **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant
+
+  - USSD Code text field - Enter USSD codes (validates format: must start with \*)
+  - Send USSD button - Execute USSD code and receive network response
+  - USSD Response sensor - Displays network response with timestamp
+  - Uses Gammu's DialService for reliable USSD execution
+  - Automatic code clearing after successful send
+  - Error handling with user-friendly messages
+
+- **SMS History Tracking** - Received messages stored with persistence
+
+  - Messages include phone number, full message text, and timestamp
+  - Available as JSON attributes on Last SMS Received sensor
+  - Persistent storage survives addon restarts
+  - Configurable history length (default: 10 messages, range: 1-100)
+  - Automatic trimming keeps only most recent messages
+  - Access via `state_attr('sensor.sms_gateway_last_sms', 'history')`
+
+- **SMS Delivery Reports** - Optional delivery status tracking (disabled by default)
+  - Enable via `sms_delivery_reports: true` in configuration
+  - Automatic delivery report request for sent SMS when enabled
+  - Message reference tracking with persistent storage
+  - Delivery status sensor shows pending/delivered status
+  - Includes message preview, timestamps, and recipient number
+  - Note: Some carriers may charge for delivery reports
+
+### Use Cases
+
+- Check mobile account balance (\*#100#, \*#123#, etc.)
+- Query remaining data/minutes (\*#111#, \*#150#, etc.)
+- Activate/deactivate carrier services
+- USSD-based service interactions
+- Review recent SMS messages in automations
+- Track SMS communication patterns
+- Monitor SMS delivery success/failure
+- Track message delivery timing for critical notifications
+
 ## [2.0.1] - 2025-11-20
 
 ### Added
@@ -111,6 +152,7 @@ All enhancements maintain full compatibility with the Apache License 2.0.
 ## [1.5.1] - 2025-10-29
 
 ### Enhanced
+
 - **Improved Modem Status Monitoring** - Enhanced online/offline detection with better error handling and recovery
 - **Extended Message Length** - Message Text field now supports up to 255 characters (MQTT text entity limit)
 - Gammu automatically splits longer messages into multiple SMS parts during sending. Incoming message is also limited to 255 characters.
@@ -137,7 +179,6 @@ Based on your feedback, I’ve implemented a bunch of new features! 🚀
 - 🌍 Added new translations – now available in **10 languages**
 
 💬 Update now and explore all the new features!
-
 
 ### Added
 
@@ -206,7 +247,6 @@ Based on your feedback, I’ve implemented a bunch of new features! 🚀
 - Modem information published on addon startup and available via REST API endpoints
 - Auto-delete functionality integrated into SMS monitoring loop when enabled
 - SMS storage capacity automatically refreshed after deletion operations to reflect current state
-
 
 ## [1.3.2] - 2025-08-21
 

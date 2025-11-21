@@ -33,12 +33,16 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 - **Organized MQTT Topics** - Better grouping in Home Assistant
 - **Enhanced Device Path Logging** - Troubleshooting tips for by-id device paths
 
-### 📱 SMS Management
+### 📱 SMS & USSD Management
 
 - **Send SMS** via REST API, MQTT, or Home Assistant UI
 - **Receive SMS** with automatic MQTT notifications
+- **SMS History** - Configurable message history with timestamps (default: 10, up to 100)
+- **Delivery Reports** - Optional delivery status tracking (disabled by default, some carriers charge)
+- **Send USSD Codes** - Check balance, query data/minutes, activate services
+- **USSD Response Display** - View network responses in sensor
 - **Text Input Fields** directly in Home Assistant device
-- **Smart Button** for easy SMS sending from UI
+- **Smart Buttons** for easy SMS/USSD sending from UI
 - **Phone Number Persistence** - keeps number for multiple messages
 - **Automatic Unicode Detection** - special characters handled automatically
 - **Delete All SMS Button** - Clear SIM card storage with one click
@@ -138,13 +142,15 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 
 ### SMS Settings
 
-| Option                   | Default | Description                       |
-| ------------------------ | ------- | --------------------------------- |
-| `sms_monitoring_enabled` | `true`  | Enable SMS monitoring             |
-| `sms_check_interval`     | `10`    | Check for new SMS every X seconds |
-| `auto_delete_read_sms`   | `true`  | Auto-delete SMS after reading     |
-| `sms_cost_per_message`   | `0.0`   | Cost per SMS (0 = disabled)       |
-| `sms_cost_currency`      | `USD`   | Currency for cost tracking        |
+| Option                     | Default | Description                                             |
+| -------------------------- | ------- | ------------------------------------------------------- |
+| `sms_monitoring_enabled`   | `true`  | Enable SMS monitoring                                   |
+| `sms_check_interval`       | `10`    | Check for new SMS every X seconds                       |
+| `auto_delete_read_sms`     | `true`  | Auto-delete SMS after reading                           |
+| `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100)                |
+| `sms_delivery_reports`     | `false` | Enable SMS delivery reports (may incur carrier charges) |
+| `sms_cost_per_message`     | `0.0`   | Cost per SMS (0 = disabled)                             |
+| `sms_cost_currency`        | `USD`   | Currency for cost tracking                              |
 
 ### Device Path Options
 
@@ -192,6 +198,8 @@ sms_check_interval: 10
 sms_cost_per_message: 0.0
 sms_cost_currency: USD
 auto_delete_read_sms: true
+sms_history_max_messages: 10
+sms_delivery_reports: false
 ```
 
 ## Usage
@@ -216,6 +224,41 @@ data:
   message: "Hello from Home Assistant!"
 ```
 
+### Sending USSD Codes
+
+USSD codes (like \*#100# for balance) can be sent to query your mobile carrier:
+
+**From Home Assistant UI:**
+
+1. Go to Settings → Devices & Services → MQTT → SMS Gateway device
+2. Enter USSD code in **USSD Code** field (e.g., `*#100#`)
+3. Click **Send USSD** button
+4. View response in **USSD Response** sensor
+
+**Common USSD Codes:**
+
+- `*#100#` - Check account balance (many carriers)
+- `*#123#` - Check balance (alternative)
+- `*#111#` - Check data usage
+- `*#150#` - Check minutes remaining
+- Codes vary by carrier - check your mobile provider's documentation
+
+**Via Automation:**
+
+```yaml
+# Set USSD code
+service: text.set_value
+target:
+  entity_id: text.sms_gateway_ussd_code
+data:
+  value: "*#100#"
+
+# Send USSD
+service: button.press
+target:
+  entity_id: button.sms_gateway_send_ussd_button
+```
+
 ### Monitoring Network Status
 
 All sensors appear under the **SMS Gateway** device:
@@ -225,6 +268,7 @@ All sensors appear under the **SMS Gateway** device:
 - Check network state: `sensor.gsm_network_state`
 - Check last SMS: `sensor.gsm_last_sms_received`
 - Check SMS sender: `sensor.gsm_last_sms_sender`
+- Check USSD response: `sensor.sms_gateway_ussd_response`
 - Check signal dBm: `sensor.gsm_signal_strength_2` (diagnostic)
 - Check BER: `sensor.gsm_bit_error_rate` (diagnostic)
 - Check Cell ID: `sensor.gsm_cell_id` (diagnostic)
@@ -336,6 +380,16 @@ This project maintains the Apache License 2.0 from the original works:
 - [pajikos/sms-gammu-gateway](https://github.com/pajikos/sms-gammu-gateway)
 
 ## Changelog
+
+### Version 2.1.0 (2025-11-20)
+
+- Added USSD support - send codes like \*#100# to check balance, query data/minutes
+- Added USSD Code text field with format validation
+- Added Send USSD button and USSD Response sensor
+- Automatic code clearing after successful USSD send
+- Added SMS history tracking with configurable length (1-100 messages, default: 10)
+- SMS history available as JSON attributes on Last SMS sensor
+- Added optional SMS delivery reports (disabled by default to avoid carrier charges)
 
 ### Version 2.0.1 (2025-11-20)
 

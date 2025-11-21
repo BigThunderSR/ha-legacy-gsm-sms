@@ -60,13 +60,16 @@ The standard add-on provides an HTTP API-based solution for SMS messaging:
 
 ### GSM SMS Gateway Enhanced Add-on
 
-**Version 2.0.1** - Enhanced add-on with advanced features and diagnostics.
+**Version 2.1.0** - Enhanced add-on with advanced features and diagnostics.
 
 **Credits:** Based on [PavelVe's SMS Gammu Gateway](https://github.com/PavelVe/hassio-addons) and [pajikos's gammu-sms-gateway](https://github.com/pajikos/gammu-sms-gateway), enhanced with additional diagnostic capabilities.
 
 **Enhanced Features:**
 
 - **MQTT Discovery** - Automatic sensor creation in Home Assistant
+- **USSD Support** - Send USSD codes (\*#100# for balance, \*#111# for data usage, etc.)
+- **SMS History** - Configurable message history with timestamps (default: 10, up to 100)
+- **Delivery Reports** - Optional SMS delivery status tracking (disabled by default)
 - **Network Provider Lookup** - Identifies carrier name from MCC/MNC codes
 - **Human-readable States** - Modem states translated to plain language
 - **Enhanced Diagnostics:**

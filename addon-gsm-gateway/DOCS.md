@@ -90,11 +90,31 @@ curl -X POST http://192.168.1.x:5000/sms \
 
 ### SMS Management Settings
 
-| Parameter              | Default | Description                                     |
-| ---------------------- | ------- | ----------------------------------------------- |
-| `sms_cost_per_message` | `0.0`   | Price per SMS (0 = cost tracking disabled)      |
-| `sms_cost_currency`    | `USD`   | Currency code (EUR, USD, CZK, GBP, etc.)        |
-| `auto_delete_read_sms` | `true`  | Auto-delete SMS after reading (frees SIM space) |
+| Parameter                  | Default | Description                                                          |
+| -------------------------- | ------- | -------------------------------------------------------------------- |
+| `sms_cost_per_message`     | `0.0`   | Price per SMS (0 = cost tracking disabled)                           |
+| `sms_cost_currency`        | `USD`   | Currency code (EUR, USD, CZK, GBP, etc.)                             |
+| `auto_delete_read_sms`     | `true`  | Auto-delete SMS after reading (frees SIM space)                      |
+| `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                 |
+| `sms_delivery_reports`     | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0)  |
+
+### Example Configuration with v2.1.0 Features
+
+```yaml
+device_path: "/dev/ttyUSB0"
+pin: ""
+username: "admin"
+password: "change_this_password"
+mqtt_enabled: true
+mqtt_host: "core-mosquitto"
+sms_monitoring_enabled: true
+sms_check_interval: 10
+auto_delete_read_sms: true
+sms_history_max_messages: 20    # Keep last 20 received SMS (default: 10)
+sms_delivery_reports: false     # Keep disabled to avoid carrier charges
+sms_cost_per_message: 0.05
+sms_cost_currency: "USD"
+```
 
 ## 📊 MQTT Sensors
 
@@ -102,21 +122,23 @@ After enabling MQTT, these entities are automatically created:
 
 ### Status Sensors
 
-| Entity                               | Type   | Description                                     |
-| ------------------------------------ | ------ | ----------------------------------------------- |
-| `sensor.sms_gateway_modem_status`    | Sensor | Modem connectivity status (online/offline)      |
-| `sensor.sms_gateway_signal`          | Sensor | GSM signal strength in %                        |
-| `sensor.sms_gateway_signal_dbm`      | Sensor | GSM signal strength in dBm (🆕 v2.0.0)          |
-| `sensor.sms_gateway_ber`             | Sensor | Bit Error Rate - network quality (🆕 v2.0.0)    |
-| `sensor.sms_gateway_network`         | Sensor | Network operator name with provider lookup (🆕) |
-| `sensor.sms_gateway_network_state`   | Sensor | Human-readable network state (🆕 v2.0.0)        |
-| `sensor.sms_gateway_network_code`    | Sensor | MCC+MNC network code (🆕 v2.0.0)                |
-| `sensor.sms_gateway_cid`             | Sensor | Cell tower ID (🆕 v2.0.0)                       |
-| `sensor.sms_gateway_lac`             | Sensor | Location Area Code (🆕 v2.0.0)                  |
-| `sensor.sms_gateway_last_sms`        | Sensor | Last received SMS message                       |
-| `sensor.sms_gateway_last_sms_sender` | Sensor | Phone number of last SMS sender (🆕 v2.0.1)     |
-| `sensor.sms_gateway_send_status`     | Sensor | SMS send operation status                       |
-| `sensor.sms_gateway_delete_status`   | Sensor | SMS delete operation status                     |
+| Entity                               | Type   | Description                                        |
+| ------------------------------------ | ------ | -------------------------------------------------- |
+| `sensor.sms_gateway_modem_status`    | Sensor | Modem connectivity status (online/offline)         |
+| `sensor.sms_gateway_signal`          | Sensor | GSM signal strength in %                           |
+| `sensor.sms_gateway_signal_dbm`      | Sensor | GSM signal strength in dBm (🆕 v2.0.0)             |
+| `sensor.sms_gateway_ber`             | Sensor | Bit Error Rate - network quality (🆕 v2.0.0)       |
+| `sensor.sms_gateway_network`         | Sensor | Network operator name with provider lookup (🆕)    |
+| `sensor.sms_gateway_network_state`   | Sensor | Human-readable network state (🆕 v2.0.0)           |
+| `sensor.sms_gateway_network_code`    | Sensor | MCC+MNC network code (🆕 v2.0.0)                   |
+| `sensor.sms_gateway_cid`             | Sensor | Cell tower ID (🆕 v2.0.0)                          |
+| `sensor.sms_gateway_lac`             | Sensor | Location Area Code (🆕 v2.0.0)                     |
+| `sensor.sms_gateway_last_sms`        | Sensor | Last received SMS with history (🆕 v2.1.0 history) |
+| `sensor.sms_gateway_last_sms_sender` | Sensor | Phone number of last SMS sender (🆕 v2.0.1)        |
+| `sensor.sms_gateway_send_status`     | Sensor | SMS send operation status                          |
+| `sensor.sms_gateway_delete_status`   | Sensor | SMS delete operation status                        |
+| `sensor.sms_gateway_delivery_status` | Sensor | SMS delivery report status (🆕 v2.1.0)             |
+| `sensor.sms_gateway_ussd_response`   | Sensor | USSD response from network (🆕 v2.1.0)             |
 
 ### Modem Information Sensors
 
@@ -136,13 +158,15 @@ After enabling MQTT, these entities are automatically created:
 
 ### Controls
 
-| Entity                              | Type       | Description                  |
-| ----------------------------------- | ---------- | ---------------------------- |
-| `text.sms_gateway_phone_number`     | Text input | Phone number input field     |
-| `text.sms_gateway_message_text`     | Text input | Message text input field     |
-| `button.sms_gateway_send_button`    | Button     | Send SMS button              |
-| `button.sms_gateway_reset_counter`  | Button     | Reset SMS counter and costs  |
-| `button.sms_gateway_delete_all_sms` | Button     | Delete all SMS from SIM card |
+| Entity                                | Type       | Description                       |
+| ------------------------------------- | ---------- | --------------------------------- |
+| `text.sms_gateway_phone_number`       | Text input | Phone number input field          |
+| `text.sms_gateway_message_text`       | Text input | Message text input field          |
+| `text.sms_gateway_ussd_code`          | Text input | USSD code input (🆕 v2.1.0)       |
+| `button.sms_gateway_send_button`      | Button     | Send SMS button                   |
+| `button.sms_gateway_send_ussd_button` | Button     | Send USSD code button (🆕 v2.1.0) |
+| `button.sms_gateway_reset_counter`    | Button     | Reset SMS counter and costs       |
+| `button.sms_gateway_delete_all_sms`   | Button     | Delete all SMS from SIM card      |
 
 ## 🎯 Automation Examples
 
@@ -192,6 +216,104 @@ automation:
       data:
         message: "Power failure detected! UPS on battery."
         target: "+420123456789"
+```
+
+### Check Balance with USSD (Daily)
+
+```yaml
+automation:
+  - alias: "Daily Balance Check"
+    trigger:
+      platform: time
+      at: "09:00:00"
+    action:
+      - service: text.set_value
+        target:
+          entity_id: text.sms_gateway_ussd_code
+        data:
+          value: "*#100#"
+      - service: button.press
+        target:
+          entity_id: button.sms_gateway_send_ussd_button
+      - delay:
+          seconds: 5
+      - service: notify.persistent_notification
+        data:
+          title: "Mobile Balance"
+          message: "{{ states('sensor.sms_gateway_ussd_response') }}"
+```
+
+### Check Data Usage with USSD
+
+```yaml
+automation:
+  - alias: "Check Data Usage"
+    trigger:
+      platform: state
+      entity_id: input_button.check_data
+    action:
+      - service: text.set_value
+        target:
+          entity_id: text.sms_gateway_ussd_code
+        data:
+          value: "*#111#"
+      - service: button.press
+        target:
+          entity_id: button.sms_gateway_send_ussd_button
+```
+
+### Access SMS History
+
+```yaml
+# View last 10 SMS messages in template
+template:
+  - sensor:
+      - name: "SMS History"
+        state: "{{ state_attr('sensor.sms_gateway_last_sms', 'history') | length }}"
+        attributes:
+          messages: "{{ state_attr('sensor.sms_gateway_last_sms', 'history') }}"
+
+# Example: Notify if specific number appears in history
+automation:
+  - alias: "Check SMS History for Number"
+    trigger:
+      platform: state
+      entity_id: sensor.sms_gateway_last_sms
+    condition:
+      - condition: template
+        value_template: >
+          {{ '+1234567890' in state_attr('sensor.sms_gateway_last_sms', 'history') | map(attribute='number') | list }}
+    action:
+      - service: notify.persistent_notification
+        data:
+          title: "SMS from Watched Number"
+          message: "Received SMS from monitored contact"
+```
+
+### Monitor SMS Delivery Status
+
+```yaml
+# Alert if SMS delivery fails
+automation:
+  - alias: "Alert on Failed SMS Delivery"
+    trigger:
+      platform: state
+      entity_id: sensor.sms_gateway_delivery_status
+      to: "failed"
+    action:
+      - service: notify.persistent_notification
+        data:
+          title: "SMS Delivery Failed"
+          message: >
+            Failed to deliver SMS to {{ state_attr('sensor.sms_gateway_delivery_status', 'number') }}
+            Message: {{ state_attr('sensor.sms_gateway_delivery_status', 'text_preview') }}
+
+# Track pending deliveries
+template:
+  - sensor:
+      - name: "Pending SMS Deliveries"
+        state: "{{ state_attr('sensor.sms_gateway_delivery_status', 'pending_count') | int(0) }}"
+        unit_of_measurement: "messages"
 ```
 
 ## 📡 REST API

@@ -85,6 +85,150 @@ class SMSCounter:
         """Get current count"""
         return self.sent_count
 
+class SMSHistory:
+    """Tracks received SMS history with persistent storage"""
+
+    def __init__(self, history_file='/data/sms_history.json', max_messages=10):
+        self.history_file = history_file
+        self.max_messages = max_messages
+        self.messages = []
+        self._load()
+
+    def _load(self):
+        """Load history from JSON file"""
+        try:
+            if os.path.exists(self.history_file):
+                with open(self.history_file, 'r') as f:
+                    data = json.load(f)
+                    self.messages = data.get('messages', [])
+                    # Keep only max_messages
+                    self.messages = self.messages[-self.max_messages:]
+                    logger.info(f"📜 Loaded SMS history: {len(self.messages)} messages")
+            else:
+                logger.info("📜 SMS history file not found, starting fresh")
+        except Exception as e:
+            logger.error(f"Error loading SMS history: {e}")
+            self.messages = []
+
+    def _save(self):
+        """Save history to JSON file"""
+        try:
+            # Ensure /data directory exists
+            os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
+
+            data = {'messages': self.messages}
+            with open(self.history_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            logger.debug(f"📜 Saved SMS history: {len(self.messages)} messages")
+        except Exception as e:
+            logger.error(f"Error saving SMS history: {e}")
+
+    def add_message(self, number, text, timestamp=None):
+        """Add a new message to history"""
+        if timestamp is None:
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        
+        message = {
+            "number": number,
+            "text": text,  # Store full message text
+            "timestamp": timestamp
+        }
+        
+        self.messages.append(message)
+        
+        # Keep only last max_messages
+        if len(self.messages) > self.max_messages:
+            self.messages = self.messages[-self.max_messages:]
+        
+        self._save()
+        logger.debug(f"📜 Added message to history from {number}")
+        return self.messages
+
+    def get_history(self):
+        """Get all messages in history"""
+        return self.messages
+
+    def clear(self):
+        """Clear all history"""
+        self.messages = []
+        self._save()
+        logger.info("📜 SMS history cleared")
+
+class SMSDeliveryTracker:
+    """Tracks SMS delivery status and reports"""
+
+    def __init__(self, delivery_file='/data/sms_delivery.json', max_tracked=50):
+        self.delivery_file = delivery_file
+        self.max_tracked = max_tracked
+        self.pending_deliveries = {}  # message_ref -> delivery info
+        self._load()
+
+    def _load(self):
+        """Load delivery tracking from JSON file"""
+        try:
+            if os.path.exists(self.delivery_file):
+                with open(self.delivery_file, 'r') as f:
+                    data = json.load(f)
+                    self.pending_deliveries = data.get('pending', {})
+                    logger.info(f"📬 Loaded delivery tracking: {len(self.pending_deliveries)} pending")
+            else:
+                logger.info("📬 Delivery tracking file not found, starting fresh")
+        except Exception as e:
+            logger.error(f"Error loading delivery tracking: {e}")
+            self.pending_deliveries = {}
+
+    def _save(self):
+        """Save delivery tracking to JSON file"""
+        try:
+            os.makedirs(os.path.dirname(self.delivery_file), exist_ok=True)
+            
+            # Keep only max_tracked most recent entries
+            if len(self.pending_deliveries) > self.max_tracked:
+                sorted_items = sorted(
+                    self.pending_deliveries.items(),
+                    key=lambda x: x[1].get('sent_timestamp', ''),
+                    reverse=True
+                )
+                self.pending_deliveries = dict(sorted_items[:self.max_tracked])
+            
+            data = {'pending': self.pending_deliveries}
+            with open(self.delivery_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            logger.debug(f"📬 Saved delivery tracking: {len(self.pending_deliveries)} pending")
+        except Exception as e:
+            logger.error(f"Error saving delivery tracking: {e}")
+
+    def track_sent_sms(self, message_ref, number, text_preview):
+        """Track a sent SMS awaiting delivery report"""
+        if message_ref:
+            self.pending_deliveries[str(message_ref)] = {
+                "number": number,
+                "text_preview": text_preview[:50],  # First 50 chars for identification
+                "sent_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "status": "sent"
+            }
+            self._save()
+            logger.info(f"📬 Tracking delivery for message ref {message_ref} to {number}")
+
+    def update_delivery_status(self, message_ref, status, timestamp=None):
+        """Update delivery status for a message"""
+        ref_str = str(message_ref)
+        if ref_str in self.pending_deliveries:
+            self.pending_deliveries[ref_str]["status"] = status
+            self.pending_deliveries[ref_str]["delivered_timestamp"] = timestamp or time.strftime("%Y-%m-%d %H:%M:%S")
+            self._save()
+            logger.info(f"📬 Updated delivery status for ref {message_ref}: {status}")
+            return self.pending_deliveries[ref_str]
+        return None
+
+    def get_pending_count(self):
+        """Get count of messages awaiting delivery report"""
+        return len([d for d in self.pending_deliveries.values() if d.get('status') == 'sent'])
+
+    def get_all_deliveries(self):
+        """Get all tracked deliveries"""
+        return self.pending_deliveries
+
 class DeviceConnectivityTracker:
     """Tracks USB GSM device connectivity status based on gammu communication"""
 
@@ -171,8 +315,16 @@ class MQTTPublisher:
         self.gammu_lock = threading.Lock()  # Serialize all Gammu operations to prevent race conditions
         self.current_phone_number = ""  # Current phone number from text input
         self.current_message_text = ""  # Current message text from text input
+        self.current_ussd_code = ""  # Current USSD code from text input
         self.device_tracker = DeviceConnectivityTracker()  # USB device connectivity tracking
         self.sms_counter = SMSCounter()  # SMS counter with persistence
+        
+        # Initialize SMS history with configurable max messages (default: 10)
+        max_history = config.get('sms_history_max_messages', 10)
+        self.sms_history = SMSHistory(max_messages=max_history)  # SMS history with persistence
+        
+        # Initialize delivery tracking
+        self.delivery_tracker = SMSDeliveryTracker()  # SMS delivery report tracking
 
         if config.get('mqtt_enabled', False):
             self._setup_client()
@@ -270,6 +422,16 @@ class MQTTPublisher:
             client.subscribe(phone_state_topic)  # Subscribe to state topics too
             client.subscribe(message_state_topic)
             logger.info(f"Subscribed to text input topics: {phone_topic}, {message_topic}, {phone_state_topic}, {message_state_topic}")
+
+            # Subscribe to USSD topics
+            ussd_code_topic = f"{self.topic_prefix}/ussd_code/set"
+            ussd_code_state_topic = f"{self.topic_prefix}/ussd_code/state"
+            ussd_button_topic = f"{self.topic_prefix}/send_ussd_button"
+
+            client.subscribe(ussd_code_topic)
+            client.subscribe(ussd_code_state_topic)
+            client.subscribe(ussd_button_topic)
+            logger.info(f"Subscribed to USSD topics: {ussd_code_topic}, {ussd_code_state_topic}, {ussd_button_topic}")
         else:
             logger.error(f"Failed to connect to MQTT broker: {rc}")
     
@@ -298,6 +460,9 @@ class MQTTPublisher:
             message_topic = f"{self.topic_prefix}/message_text/set"
             phone_state_topic = f"{self.topic_prefix}/phone_number/state"
             message_state_topic = f"{self.topic_prefix}/message_text/state"
+            ussd_code_topic = f"{self.topic_prefix}/ussd_code/set"
+            ussd_code_state_topic = f"{self.topic_prefix}/ussd_code/state"
+            ussd_button_topic = f"{self.topic_prefix}/send_ussd_button"
 
             if topic == send_topic:
                 self._handle_sms_send_command(payload)
@@ -328,6 +493,18 @@ class MQTTPublisher:
                 # Message text state received (sync with HA)
                 self.current_message_text = payload
                 logger.info(f"Message text synced from HA state: {payload}")
+            elif topic == ussd_code_topic:
+                # USSD code updated via command topic
+                self.current_ussd_code = payload
+                self._publish_ussd_code_state(payload)
+                logger.info(f"USSD code updated via command: {payload}")
+            elif topic == ussd_code_state_topic:
+                # USSD code state received (sync with HA)
+                self.current_ussd_code = payload
+                logger.info(f"USSD code synced from HA state: {payload}")
+            elif topic == ussd_button_topic and payload == "PRESS":
+                # USSD button pressed - send USSD using current code
+                self._handle_button_ussd_send()
 
         except Exception as e:
             logger.error(f"Error processing MQTT message on topic {msg.topic}: {e}")
@@ -372,6 +549,59 @@ class MQTTPublisher:
         except Exception as e:
             logger.error(f"Error handling SMS send command: {e}")
     
+    def _send_ussd_via_gammu(self, ussd_code):
+        """Send USSD code using gammu machine and return response
+
+        Args:
+            ussd_code: USSD code to send (e.g., *#123#, *100#)
+
+        Returns:
+            str: USSD response text from network
+        """
+        try:
+            logger.info(f"📱 Sending USSD code: {ussd_code}")
+            
+            # Use DialService to send USSD and get response
+            # DialService returns the USSD response as text (or dict with Text key)
+            response = self.track_gammu_operation("DialService", self.gammu_machine.DialService, ussd_code)
+            
+            # Handle response - may be string or dict depending on Gammu version
+            if isinstance(response, dict):
+                response_text = response.get('Text', str(response))
+            else:
+                response_text = str(response) if response else "No response"
+            
+            logger.info(f"✅ USSD Response received: {response_text}")
+            
+            # Publish USSD response to MQTT
+            if self.connected:
+                response_topic = f"{self.topic_prefix}/ussd_response/state"
+                response_data = {
+                    "response": response_text,
+                    "code": ussd_code,
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                self.client.publish(response_topic, json.dumps(response_data), retain=True)
+                logger.info(f"📤 Published USSD response to {response_topic}")
+            
+            return response_text
+
+        except Exception as e:
+            error_msg = f"Failed to send USSD code: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            
+            # Publish error to USSD response sensor
+            if self.connected:
+                response_topic = f"{self.topic_prefix}/ussd_response/state"
+                error_data = {
+                    "response": f"ERROR: {str(e)}",
+                    "code": ussd_code,
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                self.client.publish(response_topic, json.dumps(error_data), retain=True)
+            
+            raise
+
     def _send_sms_via_gammu(self, number, text, unicode_mode=None):
         """Send SMS using gammu machine
 
@@ -404,6 +634,7 @@ class MQTTPublisher:
 
             # Encode and send SMS
             messages = encodeSms(smsinfo)
+            message_refs = []
             for message in messages:
                 # Use same SMSC logic as REST API
                 config_smsc = self.config.get('smsc_number', '').strip()
@@ -416,24 +647,41 @@ class MQTTPublisher:
                     logger.info("Using SMSC from Location 1 (same as REST API)")
 
                 message["Number"] = number
+                
+                # Request delivery report if enabled in config
+                if self.config.get('sms_delivery_reports', False):
+                    message["DeliveryReport"] = "yes"
+                
                 result = self.track_gammu_operation("SendSMS", self.gammu_machine.SendSMS, message)
                 logger.info(f"SMS sent successfully: {result}")
+                
+                # Track delivery - result is the message reference
+                if result and self.config.get('sms_delivery_reports', False):
+                    message_refs.append(result)
+                    self.delivery_tracker.track_sent_sms(result, number, text)
+                    logger.info(f"📬 Delivery report requested for message ref: {result}")
 
             # Increment SMS counter and publish
             new_count = self.sms_counter.increment()
             self.publish_sms_counter()
             logger.info(f"📊 SMS counter incremented to: {new_count}")
 
-            # Publish confirmation
+            # Publish confirmation with message references
             if self.connected:
                 status_topic = f"{self.topic_prefix}/send_status"
                 status_data = {
                     "status": "success",
                     "number": number,
                     "text": text,
+                    "message_refs": message_refs,
+                    "pending_delivery_reports": len(message_refs),
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
                 }
                 self.client.publish(status_topic, json.dumps(status_data), retain=False)
+                
+                # Publish initial delivery status if enabled
+                if self.config.get('sms_delivery_reports', False) and message_refs:
+                    self.publish_delivery_pending(message_refs, number)
                 
         except Exception as e:
             error_msg = str(e)
@@ -489,6 +737,37 @@ class MQTTPublisher:
             logger.error("Gammu machine not available for SMS sending")
             # Clear fields even if gammu not available
             self._clear_text_fields()
+
+    def _handle_button_ussd_send(self):
+        """Handle USSD send when button is pressed using current USSD code"""
+        logger.info(f"USSD button pressed - current code: '{self.current_ussd_code}'")
+
+        if not self.current_ussd_code.strip():
+            # If USSD code is empty, show instruction
+            if self.connected:
+                response_topic = f"{self.topic_prefix}/ussd_response/state"
+                response_data = {
+                    "response": "ERROR: Please enter a USSD code first (e.g., *#100#)",
+                    "code": "",
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                self.client.publish(response_topic, json.dumps(response_data), retain=True)
+            logger.warning(f"USSD button pressed but code field is empty")
+            return
+
+        # Send USSD using current value
+        logger.info(f"Sending USSD code: {self.current_ussd_code}")
+        if hasattr(self, 'gammu_machine') and self.gammu_machine:
+            try:
+                response = self._send_ussd_via_gammu(self.current_ussd_code)
+                logger.info(f"✅ USSD sent successfully, response: {response}")
+                # Clear USSD code after successful send
+                self.current_ussd_code = ""
+                self._publish_ussd_code_state("")
+            except Exception as e:
+                logger.error(f"❌ USSD send failed: {e}")
+        else:
+            logger.error("Gammu machine not available for USSD sending")
     
     def _handle_reset_counter(self):
         """Handle reset counter button press"""
@@ -632,6 +911,12 @@ class MQTTPublisher:
         if self.connected:
             state_topic = f"{self.topic_prefix}/message_text/state"
             self.client.publish(state_topic, value, retain=True, qos=1)
+
+    def _publish_ussd_code_state(self, value):
+        """Publish USSD code state"""
+        if self.connected:
+            state_topic = f"{self.topic_prefix}/ussd_code/state"
+            self.client.publish(state_topic, value, retain=True, qos=1)
     
     def _publish_discovery_configs(self):
         """Publish Home Assistant auto-discovery configurations"""
@@ -759,6 +1044,7 @@ class MQTTPublisher:
             "state_topic": f"{self.topic_prefix}/sms/state",
             "value_template": "{{ value_json.Text }}",
             "json_attributes_topic": f"{self.topic_prefix}/sms/state",
+            "json_attributes_template": "{{ {'Number': value_json.Number, 'timestamp': value_json.timestamp, 'history': value_json.history} | tojson }}",
             "icon": "mdi:message-text",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
@@ -799,6 +1085,18 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
 
+        # SMS delivery report sensor (🆕 v2.1.0)
+        delivery_report_config = {
+            "name": "SMS Delivery Status",
+            "unique_id": "sms_gateway_delivery_status",
+            "state_topic": f"{self.topic_prefix}/delivery_status",
+            "value_template": "{{ value_json.status }}",
+            "json_attributes_topic": f"{self.topic_prefix}/delivery_status",
+            "icon": "mdi:email-check",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
         # SMS send button
         button_config = {
             "name": "Send SMS",
@@ -832,6 +1130,42 @@ class MQTTPublisher:
             "icon": "mdi:message-text",
             "mode": "text",
             "max": 255,  # HA text entity max length (Gammu will still split long messages into multiple SMS)
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
+        # USSD code input text
+        ussd_code_text_config = {
+            "name": "USSD Code",
+            "unique_id": "sms_gateway_ussd_code",
+            "command_topic": f"{self.topic_prefix}/ussd_code/set",
+            "state_topic": f"{self.topic_prefix}/ussd_code/state",
+            "icon": "mdi:pound",
+            "mode": "text",
+            "pattern": r"^\*[0-9#\*]*#?$",  # USSD codes start with * and may end with #
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
+        # USSD send button
+        ussd_button_config = {
+            "name": "Send USSD",
+            "unique_id": "sms_gateway_send_ussd_button",
+            "command_topic": f"{self.topic_prefix}/send_ussd_button",
+            "payload_press": "PRESS",
+            "icon": "mdi:dialpad",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
+        # USSD response sensor
+        ussd_response_config = {
+            "name": "USSD Response",
+            "unique_id": "sms_gateway_ussd_response",
+            "state_topic": f"{self.topic_prefix}/ussd_response/state",
+            "value_template": "{{ value_json.response }}",
+            "json_attributes_topic": f"{self.topic_prefix}/ussd_response/state",
+            "icon": "mdi:message-reply-text",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
@@ -948,6 +1282,7 @@ class MQTTPublisher:
             ("homeassistant/sensor/sms_gateway/last_sms_sender/config", sms_sender_config),
             ("homeassistant/sensor/sms_gateway/send_status/config", send_status_config),
             ("homeassistant/sensor/sms_gateway/delete_status/config", delete_status_config),
+            ("homeassistant/sensor/sms_gateway/delivery_status/config", delivery_report_config),
             ("homeassistant/sensor/sms_gateway/sent_count/config", sms_counter_config),
             ("homeassistant/sensor/sms_gateway/sms_capacity/config", sms_capacity_config),
             # Modem/SIM sensors
@@ -959,8 +1294,12 @@ class MQTTPublisher:
             ("homeassistant/button/sms_gateway/send_button/config", button_config),
             ("homeassistant/button/sms_gateway/reset_counter/config", reset_counter_button_config),
             ("homeassistant/button/sms_gateway/delete_all_sms/config", delete_all_sms_button_config),
+            ("homeassistant/button/sms_gateway/send_ussd_button/config", ussd_button_config),
             ("homeassistant/text/sms_gateway/phone_number/config", phone_text_config),
-            ("homeassistant/text/sms_gateway/message_text/config", message_text_config)
+            ("homeassistant/text/sms_gateway/message_text/config", message_text_config),
+            ("homeassistant/text/sms_gateway/ussd_code/config", ussd_code_text_config),
+            # USSD response sensor
+            ("homeassistant/sensor/sms_gateway/ussd_response/config", ussd_response_config)
         ]
 
         # Add cost sensor only if cost is configured (> 0)
@@ -1015,7 +1354,18 @@ class MQTTPublisher:
             return
             
         # Add timestamp
-        sms_data['timestamp'] = time.strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        sms_data['timestamp'] = timestamp
+        
+        # Add message to history
+        self.sms_history.add_message(
+            number=sms_data.get('Number', 'Unknown'),
+            text=sms_data.get('Text', ''),
+            timestamp=timestamp
+        )
+        
+        # Include history in published data
+        sms_data['history'] = self.sms_history.get_history()
         
         topic = f"{self.topic_prefix}/sms/state"
         self.client.publish(topic, json.dumps(sms_data), qos=1)
@@ -1096,6 +1446,41 @@ class MQTTPublisher:
         topic = f"{self.topic_prefix}/sms_capacity/state"
         self.client.publish(topic, json.dumps(capacity_data), retain=True)
         logger.info(f"📡 Published SMS capacity to MQTT: {capacity_data.get('SIMUsed', 0)}/{capacity_data.get('SIMSize', 0)}")
+    
+    def publish_delivery_pending(self, message_refs, number):
+        """Publish pending delivery status"""
+        if not self.connected or not message_refs:
+            return
+        
+        topic = f"{self.topic_prefix}/delivery_status"
+        status_data = {
+            "status": "pending",
+            "message_refs": message_refs,
+            "number": number,
+            "pending_count": self.delivery_tracker.get_pending_count(),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        self.client.publish(topic, json.dumps(status_data), retain=True)
+        logger.info(f"📬 Published pending delivery status for {len(message_refs)} message(s) to {number}")
+    
+    def publish_delivery_report(self, message_ref, status, delivery_info):
+        """Publish delivery report when received"""
+        if not self.connected:
+            return
+        
+        topic = f"{self.topic_prefix}/delivery_status"
+        status_data = {
+            "status": status,
+            "message_ref": message_ref,
+            "number": delivery_info.get("number", "Unknown"),
+            "text_preview": delivery_info.get("text_preview", ""),
+            "sent_timestamp": delivery_info.get("sent_timestamp", ""),
+            "delivered_timestamp": delivery_info.get("delivered_timestamp", ""),
+            "pending_count": self.delivery_tracker.get_pending_count(),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        self.client.publish(topic, json.dumps(status_data), retain=True)
+        logger.info(f"📬 Published delivery report: ref={message_ref}, status={status}")
         
     def track_gammu_operation(self, operation_name, gammu_function, *args, **kwargs):
         """Execute gammu operation with connectivity tracking, thread safety, and Python-level timeout"""
@@ -1241,7 +1626,7 @@ class MQTTPublisher:
                 }
                 try:
                     modem_info["Firmware"] = self.track_gammu_operation("GetFirmware", gammu_machine.GetFirmware)[0]
-                except:
+                except Exception:
                     modem_info["Firmware"] = "Unknown"
                 self.publish_modem_info(modem_info)
             except Exception as e:
@@ -1308,10 +1693,38 @@ class MQTTPublisher:
 
                 try:
                     if first_run:
-                        # On first run, publish only unread SMS
+                        # On first run, publish only unread SMS and process delivery reports
                         logger.info(f"📱 Initial SMS check: {current_count} total SMS on SIM")
                         unread_count = 0
-                        for sms in all_sms:
+                        delivery_reports_processed = 0
+                        deleted_count = 0
+                        
+                        for i, sms in enumerate(all_sms):
+                            # Check if this is a delivery report (process even if read)
+                            if self.config.get('sms_delivery_reports', False):
+                                sms_type = sms.get('Type', '')
+                                if sms_type == 'Status_Report':
+                                    message_ref = sms.get('MessageReference', None)
+                                    status = sms.get('DeliveryStatus', 'unknown')
+                                    
+                                    if message_ref:
+                                        delivery_info = self.delivery_tracker.update_delivery_status(
+                                            message_ref, status
+                                        )
+                                        if delivery_info:
+                                            self.publish_delivery_report(message_ref, status, delivery_info)
+                                            delivery_reports_processed += 1
+                                    
+                                    # Auto-delete delivery report
+                                    try:
+                                        self.track_gammu_operation("deleteSms", deleteSms, gammu_machine, all_sms[i])
+                                        logger.debug(f"🗑️ Auto-deleted delivery report (ref={message_ref})")
+                                        deleted_count += 1
+                                    except Exception as e:
+                                        logger.error(f"Error deleting delivery report: {e}")
+                                    continue  # Skip publishing as regular SMS
+                            
+                            # Publish unread regular SMS
                             if sms.get('State') == 'UnRead':
                                 sms_copy = sms.copy()
                                 sms_copy.pop("Locations", None)
@@ -1320,8 +1733,23 @@ class MQTTPublisher:
 
                         if unread_count > 0:
                             logger.info(f"📱 Published {unread_count} unread SMS messages")
-                        else:
-                            logger.info(f"📱 No unread SMS messages to publish")
+                        if delivery_reports_processed > 0:
+                            logger.info(f"📬 Processed {delivery_reports_processed} delivery reports")
+                        if deleted_count > 0:
+                            logger.info(f"🗑️ Auto-deleted {deleted_count} delivery report(s)")
+                        if unread_count == 0 and delivery_reports_processed == 0:
+                            logger.info(f"📱 No unread messages or delivery reports")
+
+                        # If we deleted any delivery reports, update SMS capacity
+                        if deleted_count > 0:
+                            try:
+                                capacity = self.track_gammu_operation("GetSMSStatus", gammu_machine.GetSMSStatus)
+                                self.publish_sms_capacity(capacity)
+                                # Update count to reflect deleted delivery reports
+                                current_count = capacity.get('SIMUsed', 0) + capacity.get('PhoneUsed', 0)
+                                logger.info(f"📊 After deleting delivery reports: {current_count} SMS remaining on SIM")
+                            except Exception as e:
+                                logger.warning(f"Could not update SMS capacity after deleting delivery reports: {e}")
 
                         last_sms_count = current_count
                         first_run = False
@@ -1338,7 +1766,36 @@ class MQTTPublisher:
                                 sms = all_sms[i].copy()
                                 sms.pop("Locations", None)
 
-                                # Publish to MQTT
+                                # Check if this is a delivery report
+                                if self.config.get('sms_delivery_reports', False):
+                                    sms_type = sms.get('Type', '')
+                                    if sms_type == 'Status_Report':
+                                        # This is a delivery report
+                                        message_ref = sms.get('MessageReference', None)
+                                        status = sms.get('DeliveryStatus', 'unknown')
+                                        
+                                        if message_ref:
+                                            # Update delivery tracking
+                                            delivery_info = self.delivery_tracker.update_delivery_status(
+                                                message_ref, status
+                                            )
+                                            
+                                            if delivery_info:
+                                                # Publish delivery report
+                                                self.publish_delivery_report(message_ref, status, delivery_info)
+                                                logger.info(f"📬 Processed delivery report: ref={message_ref}, status={status}")
+                                        
+                                        # Don't publish delivery reports as regular SMS
+                                        # Auto-delete delivery report
+                                        try:
+                                            self.track_gammu_operation("deleteSms", deleteSms, gammu_machine, all_sms[i])
+                                            logger.debug(f"🗑️ Auto-deleted delivery report (ref={message_ref})")
+                                            deleted_count += 1
+                                        except Exception as e:
+                                            logger.error(f"Error deleting delivery report: {e}")
+                                        continue  # Skip regular SMS processing
+
+                                # Publish regular SMS to MQTT
                                 self.publish_sms_received(sms)
 
                                 # Auto-delete if enabled and SMS is read
@@ -1350,16 +1807,16 @@ class MQTTPublisher:
                                     except Exception as e:
                                         logger.error(f"Error auto-deleting SMS: {e}")
 
-                        # If we auto-deleted any SMS, update capacity and get new count
-                        if auto_delete and deleted_count > 0:
+                        # If we deleted any SMS (delivery reports or auto-delete), update capacity and get new count
+                        if deleted_count > 0:
                             try:
                                 capacity = self.track_gammu_operation("GetSMSStatus", gammu_machine.GetSMSStatus)
                                 self.publish_sms_capacity(capacity)
                                 # Update count to reflect deleted SMS
                                 current_count = capacity.get('SIMUsed', 0) + capacity.get('PhoneUsed', 0)
-                                logger.info(f"📊 After auto-delete: {current_count} SMS remaining on SIM")
+                                logger.info(f"📊 After deleting {deleted_count} SMS: {current_count} remaining on SIM")
                             except Exception as e:
-                                logger.warning(f"Could not update SMS capacity after auto-delete: {e}")
+                                logger.warning(f"Could not update SMS capacity after deletion: {e}")
 
                     last_sms_count = current_count
 

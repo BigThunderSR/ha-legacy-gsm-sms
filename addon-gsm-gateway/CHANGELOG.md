@@ -7,14 +7,12 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Base Image Update** - Updated to Alpine 3.22 base image
-
   - Security improvements and CVE patches
   - Performance optimizations
   - Updated Python versions (3.13.x)
   - Modernized tooling (pip 25.2, Bashio 0.17.5)
 
 - **Docker Configuration** - Fixed multi-architecture build support
-
   - Removed hardcoded architecture from Dockerfile
   - Proper ARG BUILD_FROM usage for multi-arch builds
   - Updated Dockerfile labels with correct version and maintainer
@@ -26,13 +24,12 @@ All notable changes to this project will be documented in this file.
 
 - **Documentation Corrections** - Fixed incorrect service documentation
   - Removed incorrect `notify.sms_gateway` service (addons cannot create notify services)
-  - Added `shell_command` wrapper as alternative for service-like interface
+  - Added `rest_command` wrapper as alternative for service-like interface
   - Updated all automation examples to use correct methods
 
 ### Added
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant
-
   - USSD Code text field - Enter USSD codes (validates format: starts with \*, e.g., \*225#, \*#100#)
   - Send USSD button - Execute USSD code and receive network response
   - USSD Response sensor - Displays network response with timestamp
@@ -41,7 +38,6 @@ All notable changes to this project will be documented in this file.
   - Error handling with user-friendly messages
 
 - **SMS History Tracking** - Received messages stored with persistence
-
   - Messages include phone number, full message text, and timestamp
   - Available as JSON attributes on Last SMS Received sensor
   - Persistent storage survives addon restarts

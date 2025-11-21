@@ -40,23 +40,25 @@ mqtt_host: "core-mosquitto"
 3. Fill **Message Text**
 4. Click **Send SMS**
 
-### Method 2: Shell Command (Service-like)
+### Method 2: REST Command (Recommended)
 
 Add to `configuration.yaml`:
 
 ```yaml
-shell_command:
-  send_sms: >
-    curl -X POST "http://localhost:5000/sms" 
-    -u "admin:password" 
-    -H "Content-Type: application/json" 
-    -d '{"number":"{{ number }}","text":"{{ message }}"}'
+rest_command:
+  send_sms:
+    url: "http://localhost:5000/sms"
+    method: POST
+    content_type: "application/json"
+    username: "admin"
+    password: "password"
+    payload: '{"number": "{{ number }}", "text": "{{ message }}"}'
 ```
 
 Then use in automations:
 
 ```yaml
-service: shell_command.send_sms
+service: rest_command.send_sms
 data:
   number: "+420123456789"
   message: "Your message here"
@@ -195,7 +197,7 @@ automation:
       entity_id: binary_sensor.front_door
       to: "on"
     action:
-      service: shell_command.send_sms
+      service: rest_command.send_sms
       data:
         number: "+420123456789"
         message: "ALERT: Front door opened!"
@@ -211,7 +213,7 @@ automation:
       entity_id: sensor.outside_temperature
       below: 0
     action:
-      service: shell_command.send_sms
+      service: rest_command.send_sms
       data:
         number: "+420123456789"
         message: "Warning: Freezing temperature! Current: {{ states('sensor.outside_temperature') }}°C"
@@ -227,7 +229,7 @@ automation:
       entity_id: sensor.ups_status
       to: "on_battery"
     action:
-      service: shell_command.send_sms
+      service: rest_command.send_sms
       data:
         number: "+420123456789"
         message: "Power failure detected! UPS on battery."

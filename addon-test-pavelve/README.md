@@ -17,6 +17,7 @@ This add-on provides a complete SMS gateway solution for Home Assistant, replaci
 ## 🌟 Key Features
 
 ### 📱 SMS Management
+
 - **Send SMS** via REST API, MQTT, or Home Assistant UI
 - **Receive SMS** with automatic MQTT notifications
 - **Text Input Fields** directly in Home Assistant device
@@ -29,6 +30,7 @@ This add-on provides a complete SMS gateway solution for Home Assistant, replaci
 - **Message Length Limit** - 255 characters max (longer messages split automatically by modem)
 
 ### 📊 Device Monitoring
+
 - **Signal Strength** sensor with percentage display
 - **Network Info** showing operator name and status
 - **Last SMS Received** sensor with full message details
@@ -42,6 +44,7 @@ This add-on provides a complete SMS gateway solution for Home Assistant, replaci
 - **Real-time Updates** via MQTT with auto-discovery
 
 ### 🔧 Integration Options
+
 - **REST API** with Swagger documentation at `/docs/`
 - **MQTT Integration** with Home Assistant auto-discovery
 - **Native HA Service** `send_sms` for automations
@@ -58,9 +61,11 @@ This add-on provides a complete SMS gateway solution for Home Assistant, replaci
 ## Installation
 
 1. Add repository to your Home Assistant:
-   ```
+
+   ```text
    https://github.com/pavelve/home-assistant-addons
    ```
+
 2. Find **SMS Gammu Gateway** in add-on store
 3. Click Install
 4. Configure the add-on (see below)
@@ -70,55 +75,60 @@ This add-on provides a complete SMS gateway solution for Home Assistant, replaci
 
 ### Basic Settings
 
-| Option | Default | Description |
-|--------|---------|-------------|
+| Option        | Default        | Description                                                   |
+| ------------- | -------------- | ------------------------------------------------------------- |
 | `device_path` | `/dev/ttyUSB0` | Path to your GSM modem device (see Device Path Options below) |
-| `pin` | `""` | SIM card PIN (leave empty if no PIN) |
-| `port` | `5000` | API port |
-| `ssl` | `false` | Enable HTTPS |
-| `username` | `admin` | API username |
-| `password` | `password` | API password (change this!) |
+| `pin`         | `""`           | SIM card PIN (leave empty if no PIN)                          |
+| `port`        | `5000`         | API port                                                      |
+| `ssl`         | `false`        | Enable HTTPS                                                  |
+| `username`    | `admin`        | API username                                                  |
+| `password`    | `password`     | API password (change this!)                                   |
 
 #### Device Path Options
 
 You can specify the modem path in two ways:
 
-**Option 1: By device name (simple, but may change)**
-```
+##### Option 1: By device name (simple, but may change)
+
+```text
 /dev/ttyUSB0
 ```
+
 ⚠️ **Warning:** This path can change if you disconnect/reconnect the modem or add other USB devices.
 
-**Option 2: By device ID (recommended, stable)**
-```
+##### Option 2: By device ID (recommended, stable)
+
+```text
 /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0
 ```
+
 ✅ **Recommended:** This path is unique and persistent across reboots and reconnections.
 
 To find your modem's stable ID, run in Home Assistant terminal:
+
 ```bash
 ls -la /dev/serial/by-id/
 ```
 
 ### MQTT Settings (Optional)
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `mqtt_enabled` | `false` | Enable MQTT integration |
-| `mqtt_host` | `core-mosquitto` | MQTT broker hostname |
-| `mqtt_port` | `1883` | MQTT broker port |
-| `mqtt_username` | `""` | MQTT username |
-| `mqtt_password` | `""` | MQTT password |
-| `mqtt_topic_prefix` | `homeassistant/sensor/sms_gateway` | Topic prefix |
-| `sms_monitoring_enabled` | `true` | Auto-detect incoming SMS |
-| `sms_check_interval` | `60` | SMS check interval (seconds) |
+| Option                   | Default                            | Description                  |
+| ------------------------ | ---------------------------------- | ---------------------------- |
+| `mqtt_enabled`           | `false`                            | Enable MQTT integration      |
+| `mqtt_host`              | `core-mosquitto`                   | MQTT broker hostname         |
+| `mqtt_port`              | `1883`                             | MQTT broker port             |
+| `mqtt_username`          | `""`                               | MQTT username                |
+| `mqtt_password`          | `""`                               | MQTT password                |
+| `mqtt_topic_prefix`      | `homeassistant/sensor/sms_gateway` | Topic prefix                 |
+| `sms_monitoring_enabled` | `true`                             | Auto-detect incoming SMS     |
+| `sms_check_interval`     | `60`                               | SMS check interval (seconds) |
 
 ### Advanced Settings
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `sms_cost_per_message` | `0.0` | Cost per SMS (set to 0 to disable cost tracking sensor) |
-| `auto_delete_read_sms` | `true` | Automatically delete SMS after reading |
+| Option                 | Default | Description                                             |
+| ---------------------- | ------- | ------------------------------------------------------- |
+| `sms_cost_per_message` | `0.0`   | Cost per SMS (set to 0 to disable cost tracking sensor) |
+| `auto_delete_read_sms` | `true`  | Automatically delete SMS after reading                  |
 
 ### Example Configuration
 
@@ -147,8 +157,9 @@ sms_check_interval: 60
 ### Method 1: MQTT with Auto-Discovery (Recommended)
 
 Enable MQTT in configuration and the add-on will automatically create:
+
 - 📊 **GSM Signal Strength** sensor
-- 🌐 **GSM Network** sensor  
+- 🌐 **GSM Network** sensor
 - 💬 **Last SMS Received** sensor
 - ✅ **SMS Send Status** sensor
 - 📱 **Phone Number** text input
@@ -192,6 +203,7 @@ data:
 ## 📝 Usage Examples
 
 ### Send SMS via Button
+
 1. Go to **SMS Gateway** device in Home Assistant
 2. Fill **Phone Number** field (e.g., +420123456789)
 3. Fill **Message Text** field (max 255 characters)
@@ -208,12 +220,12 @@ automation:
     trigger:
       platform: state
       entity_id: binary_sensor.door
-      to: 'on'
+      to: "on"
     action:
-      service: notify.sms_gateway
+      service: rest_command.send_sms
       data:
-        message: 'Door opened!'
-        target: '+420123456789'
+        number: "+420123456789"
+        message: "Door opened!"
 ```
 
 ### REST API Example
@@ -228,47 +240,54 @@ curl -X POST http://192.168.1.x:5000/sms \
 ## 🔧 API Documentation
 
 ### Swagger UI
+
 Access full API documentation at: `http://your-ha-ip:5000/docs/`
 
 ![Swagger UI Documentation](https://raw.githubusercontent.com/pavelve/home-assistant-addons/main/sms-gammu-gateway/images/swagger-ui.png)
 
 ### Main Endpoints
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/sms` | Send SMS | Yes |
-| GET | `/sms` | Get all SMS | Yes |
-| GET | `/sms/{id}` | Get specific SMS | Yes |
-| DELETE | `/sms/{id}` | Delete SMS | Yes |
-| GET | `/status/signal` | Signal strength | No |
-| GET | `/status/network` | Network info | No |
-| GET | `/status/reset` | Reset modem | No |
+| Method | Endpoint          | Description      | Auth |
+| ------ | ----------------- | ---------------- | ---- |
+| POST   | `/sms`            | Send SMS         | Yes  |
+| GET    | `/sms`            | Get all SMS      | Yes  |
+| GET    | `/sms/{id}`       | Get specific SMS | Yes  |
+| DELETE | `/sms/{id}`       | Delete SMS       | Yes  |
+| GET    | `/status/signal`  | Signal strength  | No   |
+| GET    | `/status/network` | Network info     | No   |
+| GET    | `/status/reset`   | Reset modem      | No   |
 
 ## 🚨 Troubleshooting
 
 ### Device Not Found
+
 - Check USB connection: `ls /dev/ttyUSB*`
 - **Recommended:** Use stable device ID instead of `/dev/ttyUSB0`:
+
   ```bash
   ls -la /dev/serial/by-id/
   ```
+
 - Verify device permissions
 - Try different USB ports
 - Check `dmesg | grep tty` for device detection
 
 ### SMS Not Sending
+
 - Check signal strength (should be > 20%)
 - Verify SIM card has credit
 - Ensure PIN is correct or disabled
 - Check network registration status
 
 ### MQTT Not Working
+
 - Verify MQTT broker is running
 - Check MQTT credentials
 - Look for connection errors in add-on logs
 - Ensure topic prefix doesn't conflict
 
 ### Code 69 Error
+
 - This is SMSC (SMS Center) issue
 - Add-on automatically uses Location 1 fallback
 - Works same as REST API

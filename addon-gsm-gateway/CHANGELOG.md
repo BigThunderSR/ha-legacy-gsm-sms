@@ -2,22 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.1.1] - 2025-11-21
-
-### Changed
-
-- **API Enhancements** - Added legacy notify service compatibility
-  - REST API now accepts `target` as alias for `number` parameter
-  - REST API now accepts `message` as alias for `text` parameter
-  - Enables drop-in replacement for legacy `notify.sms_gateway` workflows
-  - Fixed JSON body parsing for REST command integration
-
-- **Documentation Updates** - Corrected service documentation
-  - Removed incorrect `notify.sms_gateway` service references
-  - Added `rest_command` configuration as recommended method
-  - Updated all automation examples to use `rest_command.send_sms`
-  - All examples now use `target` and `message` parameters for consistency
-
 ## [2.1.0] - 2025-11-20
 
 ### Changed
@@ -42,11 +26,6 @@ All notable changes to this project will be documented in this file.
   - Removed incorrect `notify.sms_gateway` service (addons cannot create notify services)
   - Added `rest_command` wrapper as alternative for service-like interface
   - Updated all automation examples to use correct methods
-
-- **API Enhancements** - Added legacy notify service compatibility
-  - REST API now accepts `target` as alias for `number` parameter
-  - REST API now accepts `message` as alias for `text` parameter
-  - Enables drop-in replacement for legacy `notify.sms_gateway` workflows
 
 ### Added
 

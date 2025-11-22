@@ -40,6 +40,8 @@ mqtt_host: "core-mosquitto"
 
 ### Method 2: REST Command (Recommended)
 
+> **Note:** The API accepts both `target`/`number` and `text`/`message` as interchangeable parameter names. We use `target` in examples for consistency with Home Assistant's notify service conventions.
+
 Add to `configuration.yaml`:
 
 ```yaml
@@ -50,7 +52,7 @@ rest_command:
     content_type: "application/json"
     username: "admin"
     password: "password"
-    payload: '{"number": {{ number | tojson }}, "text": {{ message | tojson }}}'
+    payload: '{"target": {{ target | tojson }}, "text": {{ message | tojson }}}'
 ```
 
 Then use in automations:
@@ -174,8 +176,8 @@ automation:
     action:
       service: rest_command.send_sms
       data:
-        number: "+420123456789"
-        message: "ALERT: Front door opened!"
+        target: "+420123456789"
+        message: "Door was opened!"
 ```
 
 ### SMS on Low Temperature

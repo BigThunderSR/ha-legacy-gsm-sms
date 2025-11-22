@@ -1018,12 +1018,14 @@ class MQTTPublisher:
             "state": sms_data.get('State', 'UnRead')
         }
         
+        logger.info(f"🔔 Attempting to fire HA event for SMS from {event_data['sender']}")
+        
         try:
             # Use Home Assistant Supervisor API to fire event
             # Addons can access HA via the supervisor token
             supervisor_token = os.environ.get('SUPERVISOR_TOKEN')
             if not supervisor_token:
-                logger.warning("No SUPERVISOR_TOKEN found - cannot fire HA event")
+                logger.error("❌ No SUPERVISOR_TOKEN found - cannot fire HA event")
                 return
             
             url = "http://supervisor/core/api/events/sms_gateway_message_received"
@@ -1032,15 +1034,18 @@ class MQTTPublisher:
                 "Content-Type": "application/json"
             }
             
+            logger.debug(f"Posting to {url} with data: {event_data}")
             response = requests.post(url, headers=headers, json=event_data, timeout=5)
             
             if response.status_code in [200, 201]:
-                logger.info(f"🔔 Fired Home Assistant event: sms_gateway_message_received from {event_data['sender']}")
+                logger.info(f"✅ Successfully fired Home Assistant event: sms_gateway_message_received from {event_data['sender']}")
             else:
-                logger.warning(f"Failed to fire HA event: HTTP {response.status_code} - {response.text}")
+                logger.error(f"❌ Failed to fire HA event: HTTP {response.status_code} - {response.text}")
                 
+        except requests.exceptions.RequestException as e:
+            logger.error(f"❌ Network error firing HA event: {e}")
         except Exception as e:
-            logger.error(f"Error firing HA event: {e}")
+            logger.error(f"❌ Unexpected error firing HA event: {e}", exc_info=True)
     
     def publish_device_status(self):
         """Publish USB device connectivity status"""

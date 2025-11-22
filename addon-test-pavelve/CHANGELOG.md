@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.6] - 2025-11-22
+
+### Added
+
+- **Enhanced Event System Logging** 🔍 - Improved visibility for event firing process
+  - Clear emoji indicators (🔔 attempting, ✅ success, ❌ error)
+  - Detailed debug messages for troubleshooting
+  - Better error handling for network and authentication issues
+  - Makes it easier to diagnose why events might not be firing
+
 ## [1.5.5] - 2025-11-22
 
 ### Added

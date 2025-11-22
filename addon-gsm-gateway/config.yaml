@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: 2.1.4
+version: 2.1.5
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup and comprehensive diagnostics. 
@@ -22,6 +22,7 @@ ingress: true
 ingress_port: 5000
 panel_icon: "mdi:cellphone-message"
 homeassistant: "2022.1.1"
+homeassistant_api: true
 devices:
   - /dev/ttyUSB0
   - /dev/ttyUSB1

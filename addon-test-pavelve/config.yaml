@@ -1,5 +1,5 @@
 name: "SMS Gammu Gateway (PavelVe Test)"
-version: 1.5.7
+version: 1.5.8
 slug: "sms_gammu_gateway_pavelve_test"
 description: "TEST VERSION - PavelVe's SMS Gammu Gateway for testing"
 startup: services
@@ -10,6 +10,7 @@ arch:
 panel_icon: "mdi:cellphone-message"
 url: "https://github.com/PavelVe/home-assistant-addons/blob/main/sms-gammu-gateway/README.md"
 homeassistant: "2022.1.1"
+homeassistant_api: true
 init: false
 ingress: true
 ingress_port: 5000

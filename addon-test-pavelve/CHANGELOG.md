@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.8] - 2025-11-22
+
+### Fixed
+
+- **Event System API Access** 🔐 - Added required Home Assistant API permission
+  - Added `homeassistant_api: true` to config.yaml
+  - This grants addon permission to call Home Assistant Core API
+  - Fixes HTTP 401 Unauthorized error when firing events
+  - Uses supervisor proxy: `http://supervisor/core/api/events/`
+
 ## [1.5.7] - 2025-11-22
 
 ### Fixed

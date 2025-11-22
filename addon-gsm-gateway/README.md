@@ -381,6 +381,19 @@ This project maintains the Apache License 2.0 from the original works:
 
 ## Changelog
 
+### Version 2.1.2 (2025-11-22)
+
+**Event-Based SMS Notifications** 🆕
+
+- New reliable notification system using Home Assistant events
+- Fires `sms_gateway_message_received` event for every received SMS
+- No duplicate notifications after addon restarts (unlike state-based triggers)
+- Event data includes: sender, text, timestamp, date, state
+- Use `platform: event` with `event_type: sms_gateway_message_received` in automations
+- Access data via `{{ trigger.event.data.sender }}` and `{{ trigger.event.data.text }}`
+- Published to `homeassistant/event/sms_gateway_message_received` MQTT topic
+- Example automations: filter by sender, filter by keyword
+
 ### Version 2.1.1 (2025-11-22)
 
 **API Enhancements - Multiple Recipients Support:**

@@ -1349,7 +1349,7 @@ class MQTTPublisher:
         logger.info(f"📡 Published network info to MQTT: {network_data.get('NetworkName', 'Unknown')}")
     
     def publish_sms_received(self, sms_data: Dict[str, Any]):
-        """Publish received SMS data"""
+        """Publish received SMS data and fire Home Assistant event"""
         if not self.connected:
             return
             
@@ -1370,7 +1370,35 @@ class MQTTPublisher:
         topic = f"{self.topic_prefix}/sms/state"
         self.client.publish(topic, json.dumps(sms_data), qos=1)
         
+        # Fire Home Assistant event for reliable automation triggering
+        self.fire_ha_event(sms_data)
+        
         logger.info(f"📡 Published SMS to MQTT: {sms_data.get('Number', 'Unknown')} -> {sms_data.get('Text', '')}")
+    
+    def fire_ha_event(self, sms_data: Dict[str, Any]):
+        """Fire a Home Assistant event for received SMS"""
+        if not self.connected:
+            return
+        
+        # Prepare event data (exclude history to keep event payload clean)
+        event_data = {
+            "sender": sms_data.get('Number', 'Unknown'),
+            "text": sms_data.get('Text', ''),
+            "timestamp": sms_data.get('timestamp', ''),
+            "date": sms_data.get('Date', ''),
+            "state": sms_data.get('State', 'UnRead')
+        }
+        
+        # Publish event to homeassistant/event topic
+        # Home Assistant automatically subscribes to this and fires events
+        event_topic = "homeassistant/event/sms_gateway_message_received"
+        event_payload = {
+            "event_type": "sms_gateway_message_received",
+            "event_data": event_data
+        }
+        
+        self.client.publish(event_topic, json.dumps(event_payload), qos=1)
+        logger.info(f"🔔 Fired Home Assistant event: sms_gateway_message_received from {event_data['sender']}")
     
     def publish_device_status(self):
         """Publish USB device connectivity status"""

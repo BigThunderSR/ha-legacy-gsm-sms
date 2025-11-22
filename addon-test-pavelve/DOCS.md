@@ -164,6 +164,59 @@ After enabling MQTT, these entities are automatically created:
 
 ## 🎯 Automation Examples
 
+### Notify on Received SMS (Event-Based) 🆕
+
+**Recommended:** Use event triggers for reliable SMS notifications that won't duplicate after addon restarts:
+
+```yaml
+automation:
+  - alias: "Notify on SMS Received"
+    trigger:
+      platform: event
+      event_type: sms_gateway_message_received
+    action:
+      - service: notify.persistent_notification
+        data:
+          title: "SMS from {{ trigger.event.data.sender }}"
+          message: "{{ trigger.event.data.text }}"
+```
+
+### Filter SMS by Sender
+
+```yaml
+automation:
+  - alias: "Alert on SMS from Specific Number"
+    trigger:
+      platform: event
+      event_type: sms_gateway_message_received
+    condition:
+      - condition: template
+        value_template: "{{ trigger.event.data.sender == '+420123456789' }}"
+    action:
+      - service: notify.persistent_notification
+        data:
+          title: "Important SMS"
+          message: "{{ trigger.event.data.text }}"
+```
+
+### Filter SMS by Keyword
+
+```yaml
+automation:
+  - alias: "Alert on Password Reset SMS"
+    trigger:
+      platform: event
+      event_type: sms_gateway_message_received
+    condition:
+      - condition: template
+        value_template: "{{ 'password' in trigger.event.data.text | lower }}"
+    action:
+      - service: persistent_notification.create
+        data:
+          title: "Security Alert"
+          message: "Password reset SMS received: {{ trigger.event.data.text }}"
+```
+
 ### SMS on Door Open
 
 ```yaml

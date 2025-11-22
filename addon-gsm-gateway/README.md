@@ -405,12 +405,12 @@ This project maintains the Apache License 2.0 from the original works:
 ```yaml
 rest_command:
   send_sms:
-    payload: '{"number": {{ number | tojson }}, "text": {{ message | tojson }}}'
+    payload: '{"target": {{ target | tojson }}, "text": {{ message | tojson }}}'
 
 # Then use with list:
 service: rest_command.send_sms
 data:
-  number:
+  target:
     - "+12345678901"
     - "+12345678902"
   message: "Broadcast message"

@@ -59,13 +59,13 @@ Then use in automations:
 # Single recipient
 service: rest_command.send_sms
 data:
-  number: "+420123456789"
+  target: "+420123456789"
   message: "Your message here"
 
 # Multiple recipients (🆕 v1.5.4)
 service: rest_command.send_sms
 data:
-  number:
+  target:
     - "+420123456789"
     - "+420987654321"
   message: "Broadcast message"
@@ -396,12 +396,12 @@ rest_command:
     content_type: "application/json"
     username: "admin"
     password: "password"
-    payload: '{"number": {{ number | tojson }}, "text": {{ message | tojson }}}'
+    payload: '{"target": {{ target | tojson }}, "text": {{ message | tojson }}}'
 
 # Then call with a list:
 service: rest_command.send_sms
 data:
-  number:
+  target:
     - "+420111111111"
     - "+420222222222"
   message: "Broadcast message"

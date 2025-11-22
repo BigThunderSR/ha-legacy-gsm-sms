@@ -381,23 +381,39 @@ This project maintains the Apache License 2.0 from the original works:
 
 ## Changelog
 
-### Version 2.1.1 (2025-11-21)
+### Version 2.1.1 (2025-11-22)
 
-**API Enhancements:**
+**API Enhancements - Multiple Recipients Support:**
 
-- Added support for phone numbers as JSON array in REST API
-- Now accepts three formats: single string, comma-separated string, or JSON array
-- Use `{{ target | tojson }}` in rest_command for YAML list support
-- Enables cleaner automation syntax with list of recipients
+- Fixed REST API to properly handle phone numbers as JSON array
+- Improved request parsing using `request.get_json()` for correct JSON array handling
+- Now supports four formats:
+  - Single number string: `"number": "+1234567890"`
+  - Comma-separated string: `"number": "+123,+456"`
+  - JSON array: `"number": ["+123", "+456"]` (recommended)
+  - String representation of lists (for compatibility)
+- Use `{{ target | tojson }}` in rest_command payload for proper JSON serialization
+- Enables cleaner YAML list syntax in Home Assistant automations
+
+**Bug Fixes:**
+
+- Fixed 500 Internal Server Error when sending to multiple recipients via JSON array
+- Fixed reqparse not properly handling JSON array payloads
 
 **Example:**
 
 ```yaml
+rest_command:
+  send_sms:
+    payload: '{"number": {{ number | tojson }}, "text": {{ message | tojson }}}'
+
+# Then use with list:
+service: rest_command.send_sms
 data:
-  message: Test
-  target:
+  number:
     - "+12345678901"
     - "+12345678902"
+  message: "Broadcast message"
 ```
 
 ### Version 2.1.0 (2025-11-20)

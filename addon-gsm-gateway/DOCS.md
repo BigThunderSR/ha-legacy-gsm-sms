@@ -52,16 +52,25 @@ rest_command:
     content_type: "application/json"
     username: "admin"
     password: "password"
-    payload: '{"number": "{{ number }}", "text": "{{ message }}"}'
+    payload: '{"number": {{ number | tojson }}, "text": {{ message | tojson }}}'
 ```
 
 Then use in automations:
 
 ```yaml
+# Single recipient
 service: rest_command.send_sms
 data:
   number: "+420123456789"
   message: "Your message here"
+
+# Multiple recipients (🆕 v2.1.1)
+service: rest_command.send_sms
+data:
+  number:
+    - "+420123456789"
+    - "+420987654321"
+  message: "Broadcast message"
 ```
 
 ### Method 3: MQTT
@@ -487,13 +496,47 @@ New sensors provide detailed diagnostics:
 - `sensor.sms_gateway_sim_imsi` - SIM card identification
 - `sensor.sms_gateway_sms_storage_used` - Track SIM capacity usage
 
-### Multiple Recipients
+### Multiple Recipients (🆕 v2.1.1)
+
+The addon supports multiple formats for sending to multiple recipients:
+
+#### Format 1: Comma-separated string
 
 ```json
 {
   "number": "+420111111111,+420222222222",
   "text": "Broadcast message"
 }
+```
+
+#### Format 2: JSON array (Recommended)
+
+```json
+{
+  "number": ["+420111111111", "+420222222222"],
+  "text": "Broadcast message"
+}
+```
+
+#### Using with rest_command
+
+```yaml
+rest_command:
+  send_sms:
+    url: "http://localhost:5000/sms"
+    method: POST
+    content_type: "application/json"
+    username: "admin"
+    password: "password"
+    payload: '{"number": {{ number | tojson }}, "text": {{ message | tojson }}}'
+
+# Then call with a list:
+service: rest_command.send_sms
+data:
+  number:
+    - "+420111111111"
+    - "+420222222222"
+  message: "Broadcast message"
 ```
 
 ### Unicode Support (Special Characters)

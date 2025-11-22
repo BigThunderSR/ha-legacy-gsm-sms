@@ -396,23 +396,30 @@ class SmsCollection(Resource):
     @auth.login_required
     def post(self):
         """Send SMS message(s)"""
-        parser = reqparse.RequestParser()
-        parser.add_argument('text', required=False, help='SMS message text')
-        parser.add_argument('message', required=False, help='SMS message text (alias for text)')
-        parser.add_argument('number', required=False, help='Phone number(s), comma separated')
-        parser.add_argument('target', required=False, help='Phone number (alias for number)')
-        parser.add_argument('smsc', required=False, help='SMS Center number (optional)')
-        parser.add_argument('unicode', type=bool, required=False, default=False, help='Use Unicode encoding')
+        # Use request.get_json() to handle JSON arrays properly instead of reqparse
+        data = request.get_json() or {}
         
-        args = parser.parse_args()
+        # Also check query parameters and form data as fallback
+        if not data:
+            parser = reqparse.RequestParser()
+            parser.add_argument('text', required=False, help='SMS message text')
+            parser.add_argument('message', required=False, help='SMS message text (alias for text)')
+            parser.add_argument('number', required=False, help='Phone number(s), comma separated')
+            parser.add_argument('target', required=False, help='Phone number (alias for number)')
+            parser.add_argument('smsc', required=False, help='SMS Center number (optional)')
+            parser.add_argument('unicode', type=bool, required=False, default=False, help='Use Unicode encoding')
+            data = parser.parse_args()
+        else:
+            # Ensure unicode has a default value when using JSON
+            data.setdefault('unicode', False)
         
         # Support both 'text' and 'message' parameters
-        sms_text = args.get('text') or args.get('message')
+        sms_text = data.get('text') or data.get('message')
         if not sms_text:
             return {"status": 400, "message": "Missing required field: text or message"}, 400
         
         # Support both 'number' and 'target' parameters
-        sms_number = args.get('number') or args.get('target')
+        sms_number = data.get('number') or data.get('target')
         if not sms_number:
             return {"status": 400, "message": "Missing required field: number or target"}, 400
         
@@ -422,11 +429,28 @@ class SmsCollection(Resource):
         if isinstance(sms_number, list):
             numbers = sms_number
         else:
-            numbers = [n.strip() for n in sms_number.split(',')]
+            # Check if it's a string representation of a list (e.g., "['phone1', 'phone2']")
+            sms_number_str = str(sms_number).strip()
+            if sms_number_str.startswith('[') and sms_number_str.endswith(']'):
+                try:
+                    # Try to parse as JSON array first
+                    import json
+                    numbers = json.loads(sms_number_str)
+                except:
+                    # If JSON parsing fails, try Python literal eval
+                    try:
+                        import ast
+                        numbers = ast.literal_eval(sms_number_str)
+                    except:
+                        # Fall back to treating as single number
+                        numbers = [sms_number_str]
+            else:
+                # Comma-separated string
+                numbers = [n.strip() for n in sms_number_str.split(',')]
         
         smsinfo = {
             "Class": -1,
-            "Unicode": args.get('unicode', False),
+            "Unicode": data.get('unicode', False),
             "Entries": [
                 {
                     "ID": "ConcatenatedTextLong",
@@ -437,7 +461,7 @@ class SmsCollection(Resource):
         messages = []
         for number in numbers:
             for message in encodeSms(smsinfo):
-                message["SMSC"] = {'Number': args.get("smsc")} if args.get("smsc") else {'Location': 1}
+                message["SMSC"] = {'Number': data.get("smsc")} if data.get("smsc") else {'Location': 1}
                 message["Number"] = number.strip()
                 messages.append(message)
         result = [mqtt_publisher.track_gammu_operation("SendSMS", machine.SendSMS, message) for message in messages]

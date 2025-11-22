@@ -2,21 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.1.1] - 2025-11-21
+## [2.1.1] - 2025-11-22
 
 ### Added
 
-- **List Support for Phone Numbers** - REST API now accepts phone numbers as JSON array
+- **List Support for Multiple Recipients** - REST API now properly accepts phone numbers as JSON array
   - Supports single number string: `"number": "+1234567890"`
   - Supports comma-separated string: `"number": "+123,+456"`
-  - Supports JSON array: `"number": ["+123", "+456"]`
-  - Use `{{ target | tojson }}` in rest_command payload for list support
+  - Supports JSON array: `"number": ["+123", "+456"]` (recommended for multiple recipients)
+  - Supports string representation of lists for compatibility
+  - Use `{{ target | tojson }}` in rest_command payload for proper JSON serialization
   - Enables cleaner YAML list format in Home Assistant automations
 
 ### Changed
 
+- **Improved JSON Parsing** - Fixed request handling to properly parse JSON arrays
+  - Now uses `request.get_json()` first for proper JSON body parsing
+  - Falls back to reqparse for query parameters and form data
+  - Correctly handles all phone number formats without errors
 - Added debug logging for SMS send requests (text, numbers, type)
-- Improved number parsing to handle both string and list formats
+- Enhanced number parsing with multiple fallback strategies
+
+### Fixed
+
+- Fixed 500 Internal Server Error when sending to multiple recipients via JSON array
+- Fixed reqparse not properly handling JSON array payloads
 
 ## [2.1.0] - 2025-11-20
 

@@ -341,8 +341,10 @@ def verify(user, pwd):
 
 # API Models for Swagger documentation
 sms_model = api.model('SMS', {
-    'text': fields.String(required=True, description='SMS message text', example='Hello, how are you?'),
-    'number': fields.String(required=True, description='Phone number (international format)', example='+420123456789'),
+    'text': fields.String(required=False, description='SMS message text', example='Hello, how are you?'),
+    'message': fields.String(required=False, description='SMS message text (alias for text)', example='Hello, how are you?'),
+    'number': fields.String(required=False, description='Phone number (international format)', example='+420123456789'),
+    'target': fields.String(required=False, description='Phone number (alias for number, matches notify service)', example='+420123456789'),
     'smsc': fields.String(required=False, description='SMS Center number (optional)', example='+420603052000'),
     'unicode': fields.Boolean(required=False, description='Use Unicode encoding', default=False)
 })
@@ -422,12 +424,12 @@ class SmsCollection(Resource):
     def post(self):
         """Send SMS message(s)"""
         parser = reqparse.RequestParser()
-        parser.add_argument('text', required=False, help='SMS message text')
-        parser.add_argument('message', required=False, help='SMS message text (alias for text)')
-        parser.add_argument('number', required=False, help='Phone number(s), comma separated')
-        parser.add_argument('target', required=False, help='Phone number (alias for number)')
-        parser.add_argument('smsc', required=False, help='SMS Center number (optional)')
-        parser.add_argument('unicode', type=bool, required=False, default=False, help='Use Unicode encoding')
+        parser.add_argument('text', required=False, location='json', help='SMS message text')
+        parser.add_argument('message', required=False, location='json', help='SMS message text (alias for text)')
+        parser.add_argument('number', required=False, location='json', help='Phone number(s), comma separated')
+        parser.add_argument('target', required=False, location='json', help='Phone number (alias for number)')
+        parser.add_argument('smsc', required=False, location='json', help='SMS Center number (optional)')
+        parser.add_argument('unicode', type=bool, required=False, default=False, location='json', help='Use Unicode encoding')
         
         args = parser.parse_args()
         

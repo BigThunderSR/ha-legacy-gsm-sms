@@ -44,11 +44,11 @@ RUN chmod +x run.sh
 EXPOSE 5000
 
 # Labels
+# Note: Version is read from config.yaml by Home Assistant Supervisor, not from Docker labels
 LABEL \
     io.hass.name="SMS Gammu Gateway" \
     io.hass.description="REST API SMS Gateway using python-gammu for USB GSM modems" \
     io.hass.type="addon" \
-    io.hass.version="1.2.9" \
     maintainer="PavelVe"
 
 # Run

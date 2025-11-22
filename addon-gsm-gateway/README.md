@@ -381,6 +381,22 @@ This project maintains the Apache License 2.0 from the original works:
 
 ## Changelog
 
+### Version 2.1.1 (2025-11-21)
+
+**API Enhancements:**
+
+- Added `target` as alias for `number` parameter in REST API (matches legacy notify service)
+- Added `message` as alias for `text` parameter in REST API
+- Fixed JSON body parsing for proper `rest_command` integration
+- Enables drop-in replacement for legacy `notify.sms_gateway` workflows
+
+**Documentation Updates:**
+
+- Removed incorrect `notify.sms_gateway` service references (addons cannot create notify services)
+- Added `rest_command` configuration as recommended method for service-like interface
+- Updated all automation examples to use `rest_command.send_sms`
+- All examples now use `target` and `message` parameters for consistency with HA notify conventions
+
 ### Version 2.1.0 (2025-11-20)
 
 **Infrastructure Updates:**

@@ -224,7 +224,7 @@ automation:
     action:
       service: rest_command.send_sms
       data:
-        number: "+420123456789"
+        target: "+420123456789"
         message: "Door opened!"
 ```
 

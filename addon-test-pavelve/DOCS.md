@@ -50,7 +50,7 @@ rest_command:
     content_type: "application/json"
     username: "admin"
     password: "password"
-    payload: '{"number": "{{ number }}", "text": "{{ message }}"}'
+    payload: '{"number": "{{ target }}", "text": "{{ message }}"}'
 ```
 
 Then use in automations:
@@ -58,7 +58,7 @@ Then use in automations:
 ```yaml
 service: rest_command.send_sms
 data:
-  number: "+420123456789"
+  target: "+420123456789"
   message: "Your message here"
 ```
 
@@ -165,7 +165,7 @@ automation:
     action:
       service: rest_command.send_sms
       data:
-        number: "+420123456789"
+        target: "+420123456789"
         message: "ALERT: Front door opened!"
 ```
 
@@ -181,7 +181,7 @@ automation:
     action:
       service: rest_command.send_sms
       data:
-        number: "+420123456789"
+        target: "+420123456789"
         message: "Warning: Freezing temperature! Current: {{ states('sensor.outside_temperature') }}°C"
 ```
 
@@ -197,7 +197,7 @@ automation:
     action:
       service: rest_command.send_sms
       data:
-        number: "+420123456789"
+        target: "+420123456789"
         message: "Power failure detected! UPS on battery."
 ```
 

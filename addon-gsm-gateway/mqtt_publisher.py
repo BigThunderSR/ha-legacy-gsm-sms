@@ -230,6 +230,109 @@ class SMSDeliveryTracker:
         """Get all tracked deliveries"""
         return self.pending_deliveries
 
+class BalanceSMSParser:
+    """Parses SMS messages from network providers to extract account balance information"""
+    
+    def __init__(self, balance_file='/data/balance_data.json'):
+        self.balance_file = balance_file
+        self.balance_data = {
+            "account_balance": None,
+            "data_remaining": None,
+            "minutes_remaining": None,
+            "messages_remaining": None,
+            "plan_expiry": None,
+            "last_updated": None,
+            "raw_message": None
+        }
+        self._load()
+    
+    def _load(self):
+        """Load saved balance data from JSON file"""
+        try:
+            if os.path.exists(self.balance_file):
+                with open(self.balance_file, 'r') as f:
+                    data = json.load(f)
+                    self.balance_data.update(data)
+                    logger.info(f"💰 Loaded balance data from {self.balance_file}")
+        except Exception as e:
+            logger.error(f"Error loading balance data: {e}")
+    
+    def _save(self):
+        """Save balance data to JSON file"""
+        try:
+            with open(self.balance_file, 'w') as f:
+                json.dump(self.balance_data, f, indent=2)
+            logger.debug(f"💰 Saved balance data")
+        except Exception as e:
+            logger.error(f"Error saving balance data: {e}")
+    
+    def parse_balance_sms(self, message_text: str) -> Dict[str, Any]:
+        """Parse balance information from SMS text
+        
+        Example messages:
+        - "You have 200.00 MB of High Speed Data Remaining 200 Minutes & 934 Messages."
+        - "Your plan expires on 2025-12-20. You have balance of $3.00"
+        """
+        import re
+        
+        updated = False
+        self.balance_data["last_updated"] = time.strftime('%Y-%m-%d %H:%M:%S')
+        self.balance_data["raw_message"] = message_text
+        
+        # Parse data remaining (MB or GB)
+        data_match = re.search(r'([\d.]+)\s*(MB|GB)\s*(?:of\s*)?(?:High\s*Speed\s*)?Data', message_text, re.IGNORECASE)
+        if data_match:
+            amount = float(data_match.group(1))
+            unit = data_match.group(2).upper()
+            # Convert to MB for consistency
+            if unit == "GB":
+                amount *= 1024
+            self.balance_data["data_remaining"] = f"{amount} MB"
+            updated = True
+            logger.info(f"💰 Parsed data: {self.balance_data['data_remaining']}")
+        
+        # Parse minutes remaining
+        minutes_match = re.search(r'([\d,]+)\s*Minutes', message_text, re.IGNORECASE)
+        if minutes_match:
+            minutes = int(minutes_match.group(1).replace(',', ''))
+            self.balance_data["minutes_remaining"] = minutes
+            updated = True
+            logger.info(f"💰 Parsed minutes: {minutes}")
+        
+        # Parse messages remaining
+        messages_match = re.search(r'([\d,]+)\s*Messages', message_text, re.IGNORECASE)
+        if messages_match:
+            messages = int(messages_match.group(1).replace(',', ''))
+            self.balance_data["messages_remaining"] = messages
+            updated = True
+            logger.info(f"💰 Parsed messages: {messages}")
+        
+        # Parse account balance (dollar amount)
+        balance_match = re.search(r'balance\s*of\s*\$?([\d.]+)', message_text, re.IGNORECASE)
+        if balance_match:
+            balance = float(balance_match.group(1))
+            self.balance_data["account_balance"] = f"${balance:.2f}"
+            updated = True
+            logger.info(f"💰 Parsed account balance: {self.balance_data['account_balance']}")
+        
+        # Parse plan expiry date
+        expiry_match = re.search(r'expires?\s*on\s*([\d-]+)', message_text, re.IGNORECASE)
+        if expiry_match:
+            expiry_date = expiry_match.group(1)
+            self.balance_data["plan_expiry"] = expiry_date
+            updated = True
+            logger.info(f"💰 Parsed expiry: {expiry_date}")
+        
+        if updated:
+            self._save()
+            logger.info(f"💰 Balance data updated from SMS")
+        
+        return self.balance_data
+    
+    def get_balance_data(self) -> Dict[str, Any]:
+        """Get current balance data"""
+        return self.balance_data
+
 class DeviceConnectivityTracker:
     """Tracks USB GSM device connectivity status based on gammu communication"""
 
@@ -326,6 +429,12 @@ class MQTTPublisher:
         
         # Initialize delivery tracking
         self.delivery_tracker = SMSDeliveryTracker()  # SMS delivery report tracking
+        
+        # Initialize balance SMS parser if enabled
+        self.balance_parser = None
+        if config.get('balance_sms_enabled', False):
+            self.balance_parser = BalanceSMSParser()
+            logger.info("💰 Balance SMS parsing enabled")
 
         if config.get('mqtt_enabled', False):
             self._setup_client()
@@ -1266,6 +1375,59 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
 
+        # Balance sensors (only added if balance_sms_enabled is true)
+        balance_account_config = {
+            "name": "Account Balance",
+            "unique_id": "sms_gateway_account_balance",
+            "state_topic": f"{self.topic_prefix}/balance/state",
+            "value_template": "{{ value_json.account_balance }}",
+            "icon": "mdi:cash",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
+        balance_data_config = {
+            "name": "Data Remaining",
+            "unique_id": "sms_gateway_data_remaining",
+            "state_topic": f"{self.topic_prefix}/balance/state",
+            "value_template": "{{ value_json.data_remaining }}",
+            "icon": "mdi:database",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
+        balance_minutes_config = {
+            "name": "Minutes Remaining",
+            "unique_id": "sms_gateway_minutes_remaining",
+            "state_topic": f"{self.topic_prefix}/balance/state",
+            "value_template": "{{ value_json.minutes_remaining }}",
+            "unit_of_measurement": "min",
+            "icon": "mdi:phone",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
+        balance_messages_config = {
+            "name": "Messages Remaining",
+            "unique_id": "sms_gateway_messages_remaining",
+            "state_topic": f"{self.topic_prefix}/balance/state",
+            "value_template": "{{ value_json.messages_remaining }}",
+            "unit_of_measurement": "messages",
+            "icon": "mdi:message-text",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
+        balance_expiry_config = {
+            "name": "Plan Expiry Date",
+            "unique_id": "sms_gateway_plan_expiry",
+            "state_topic": f"{self.topic_prefix}/balance/state",
+            "value_template": "{{ value_json.plan_expiry }}",
+            "icon": "mdi:calendar-end",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
         # Publish discovery configs - all using consistent node_id "sms_gateway" for proper grouping
         discoveries = [
             # Signal sensors
@@ -1303,6 +1465,17 @@ class MQTTPublisher:
             ("homeassistant/sensor/sms_gateway/ussd_response/config", ussd_response_config)
         ]
 
+        # Add balance sensors if enabled
+        if self.config.get('balance_sms_enabled', False):
+            discoveries.extend([
+                ("homeassistant/sensor/sms_gateway/account_balance/config", balance_account_config),
+                ("homeassistant/sensor/sms_gateway/data_remaining/config", balance_data_config),
+                ("homeassistant/sensor/sms_gateway/minutes_remaining/config", balance_minutes_config),
+                ("homeassistant/sensor/sms_gateway/messages_remaining/config", balance_messages_config),
+                ("homeassistant/sensor/sms_gateway/plan_expiry/config", balance_expiry_config),
+            ])
+            logger.info("💰 Added balance sensors to Home Assistant discovery")
+        
         # Add cost sensor only if cost is configured (> 0)
         if sms_cost_per_message > 0:
             sms_cost_currency = self.config.get('sms_cost_currency', 'CZK')
@@ -1357,6 +1530,20 @@ class MQTTPublisher:
         # Add timestamp
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
         sms_data['timestamp'] = timestamp
+        
+        # Check if this is a balance SMS and parse it
+        if self.balance_parser:
+            sender = sms_data.get('Number', '')
+            message_text = sms_data.get('Text', '')
+            expected_sender = self.config.get('balance_sms_sender', '7069')
+            balance_keywords = self.config.get('balance_keywords', ['Balance', 'balance'])
+            
+            # Check if SMS is from balance sender and contains balance keywords
+            if sender == expected_sender and any(keyword in message_text for keyword in balance_keywords):
+                logger.info(f"💰 Detected balance SMS from {sender}")
+                balance_data = self.balance_parser.parse_balance_sms(message_text)
+                # Publish balance data immediately
+                self.publish_balance_info(balance_data)
         
         # Add message to history
         self.sms_history.add_message(
@@ -1492,6 +1679,30 @@ class MQTTPublisher:
         topic = f"{self.topic_prefix}/sms_capacity/state"
         self.client.publish(topic, json.dumps(capacity_data), retain=True)
         logger.info(f"📡 Published SMS capacity to MQTT: {capacity_data.get('SIMUsed', 0)}/{capacity_data.get('SIMSize', 0)}")
+    
+    def publish_balance_info(self, balance_data: Dict[str, Any]):
+        """Publish account balance information parsed from SMS"""
+        if not self.connected:
+            return
+        
+        topic = f"{self.topic_prefix}/balance/state"
+        self.client.publish(topic, json.dumps(balance_data), retain=True)
+        
+        # Log readable summary
+        summary_parts = []
+        if balance_data.get('account_balance'):
+            summary_parts.append(f"Balance: {balance_data['account_balance']}")
+        if balance_data.get('data_remaining'):
+            summary_parts.append(f"Data: {balance_data['data_remaining']}")
+        if balance_data.get('minutes_remaining'):
+            summary_parts.append(f"Minutes: {balance_data['minutes_remaining']}")
+        if balance_data.get('messages_remaining'):
+            summary_parts.append(f"Messages: {balance_data['messages_remaining']}")
+        if balance_data.get('plan_expiry'):
+            summary_parts.append(f"Expires: {balance_data['plan_expiry']}")
+        
+        summary = ", ".join(summary_parts) if summary_parts else "No data parsed"
+        logger.info(f"💰 Published balance info to MQTT: {summary}")
     
     def publish_delivery_pending(self, message_refs, number):
         """Publish pending delivery status"""

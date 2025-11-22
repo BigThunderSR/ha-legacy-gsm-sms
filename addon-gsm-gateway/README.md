@@ -41,6 +41,11 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 - **Delivery Reports** - Optional delivery status tracking (disabled by default, some carriers charge)
 - **Send USSD Codes** - Check balance, query data/minutes, activate services
 - **USSD Response Display** - View network responses in sensor
+- **Balance SMS Tracking** 💰 (🆕 v2.1.7) - Automatic parsing of balance SMS from providers
+  - Extracts: account balance, data remaining, minutes, messages, plan expiry
+  - Creates dedicated sensors for each metric
+  - Example: Send "Balance" or "Getinfo" to provider number to update sensors
+  - Supports multiple message formats from different providers
 - **Text Input Fields** directly in Home Assistant device
 - **Smart Buttons** for easy SMS/USSD sending from UI
 - **Phone Number Persistence** - keeps number for multiple messages

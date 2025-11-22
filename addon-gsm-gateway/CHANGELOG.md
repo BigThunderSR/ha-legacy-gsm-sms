@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.7] - 2025-11-22
+
+### Added
+
+- **SMS-Based Balance Tracking** 💰 - Parse account balance info from provider SMS
+  - Automatically detects and parses balance SMS from configured sender
+  - Extracts: account balance, data remaining (MB), minutes remaining, messages remaining, plan expiry date
+  - Creates dedicated Home Assistant sensors for each balance metric
+  - Configurable via `balance_sms_enabled`, `balance_sms_sender`, and `balance_keywords` options
+  - Example: Send "Balance" or "Getinfo" to provider number (e.g., 7039) to receive balance information
+  - Persistent storage of balance data in `/data/balance_data.json`
+  - Regex-based parsing supports multiple provider message formats
+
 ## [2.1.6] - 2025-11-22
 
 ### Changed

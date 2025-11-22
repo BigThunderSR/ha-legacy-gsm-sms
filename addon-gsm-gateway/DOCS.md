@@ -126,6 +126,39 @@ curl -X POST http://192.168.1.x:5000/sms \
 | `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                |
 | `sms_delivery_reports`     | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0) |
 
+### Balance SMS Tracking Settings (🆕 v2.1.7)
+
+| Parameter             | Default                         | Description                                                       |
+| --------------------- | ------------------------------- | ----------------------------------------------------------------- |
+| `balance_sms_enabled` | `false`                         | Enable automatic parsing of balance SMS messages                  |
+| `balance_sms_sender`  | `7069`                          | Phone number that sends balance information (the response sender) |
+| `balance_keywords`    | `["Remaining", "expires", ...]` | Keywords in the response message to detect balance SMS            |
+
+**How it works:**
+
+1. You send "Balance" or "Getinfo" to your provider (e.g., 7039)
+2. Provider responds from a different number (e.g., 7069)
+3. Addon checks: Is sender = `balance_sms_sender` AND does message contain any `balance_keywords`?
+4. If yes → Automatically parse and update balance sensors
+
+**Example response messages that will be detected:**
+
+From 7069 after sending "Balance" to 7039:
+
+- "You have 200.00 MB of High Speed Data **Remaining** 200 Minutes & 934 Messages." (keyword: "Remaining")
+
+From 7069 after sending "Getinfo" to 7039:
+
+- "Your plan **expires** on 2025-12-20. You have **balance of** $3.00" (keywords: "expires", "balance of")
+
+When enabled, the addon will automatically detect SMS messages from `balance_sms_sender` containing any of the `balance_keywords`, parse the data, and create dedicated sensors for:
+
+- Account balance (dollar amount)
+- Data remaining (MB/GB converted to MB)
+- Minutes remaining
+- Messages remaining
+- Plan expiry date
+
 ### Example Configuration with v2.1.0 Features
 
 ```yaml
@@ -183,6 +216,25 @@ After enabling MQTT, these entities are automatically created:
 | ----------------------------------- | ------ | ------------------------------------------------------ |
 | `sensor.sms_gateway_sms_sent_count` | Sensor | Total SMS sent through addon                           |
 | `sensor.sms_gateway_total_cost`     | Sensor | Total cost of sent SMS (if `sms_cost_per_message > 0`) |
+
+### Balance Sensors (🆕 v2.1.7)
+
+These sensors are created when `balance_sms_enabled: true`:
+
+| Entity                                  | Type   | Description                                   |
+| --------------------------------------- | ------ | --------------------------------------------- |
+| `sensor.sms_gateway_account_balance`    | Sensor | Account balance (e.g., "$3.00")               |
+| `sensor.sms_gateway_data_remaining`     | Sensor | High-speed data remaining (e.g., "200.00 MB") |
+| `sensor.sms_gateway_minutes_remaining`  | Sensor | Voice minutes remaining                       |
+| `sensor.sms_gateway_messages_remaining` | Sensor | SMS messages remaining                        |
+| `sensor.sms_gateway_plan_expiry`        | Sensor | Plan expiration date (e.g., "2025-12-20")     |
+
+**Usage:**
+
+- Send "Balance" to your provider's number (e.g., 7039) → Gets data/minutes/messages remaining
+- Send "Getinfo" to your provider's number (e.g., 7039) → Gets account balance and plan expiry date
+
+The addon automatically detects, parses, and updates the sensors when responses arrive.
 
 ### Controls
 
@@ -341,6 +393,73 @@ automation:
       - service: button.press
         target:
           entity_id: button.sms_gateway_send_ussd_button
+```
+
+### Balance Tracking via SMS (🆕 v2.1.7)
+
+```yaml
+automation:
+  # Automatically check balance weekly (detailed usage info)
+  - alias: "Check Balance Weekly"
+    trigger:
+      platform: time
+      at: "08:00:00"
+    condition:
+      - condition: time
+        weekday:
+          - mon
+    action:
+      - service: rest_command.send_sms
+        data:
+          target: "XXXX" # Your provider's balance query number (e.g., 7039)
+          message: "Balance" # Gets data/minutes/messages remaining
+
+  # Check account balance and expiry monthly
+  - alias: "Check Account Info Monthly"
+    trigger:
+      platform: time
+      at: "09:00:00"
+    condition:
+      - condition: template
+        value_template: "{{ now().day == 1 }}" # First day of month
+    action:
+      - service: rest_command.send_sms
+        data:
+          target: "XXXX" # Your provider's balance query number (e.g., 7039)
+          message: "Getinfo" # Gets account balance and plan expiry
+
+  # Alert when data is low
+  - alias: "Alert on Low Data"
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.sms_gateway_data_remaining
+      below: 50
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Low Data Warning"
+          message: "Only {{ states('sensor.sms_gateway_data_remaining') }} remaining!"
+
+  # Alert when plan expires soon
+  - alias: "Plan Expiry Reminder"
+    trigger:
+      platform: time
+      at: "09:00:00"
+    condition:
+      - condition: template
+        value_template: >
+          {% set expiry = states('sensor.sms_gateway_plan_expiry') %}
+          {% if expiry not in ['unknown', 'unavailable', ''] %}
+            {% set days_left = (as_timestamp(expiry) - now().timestamp()) / 86400 %}
+            {{ days_left <= 7 and days_left > 0 }}
+          {% else %}
+            false
+          {% endif %}
+    action:
+      - service: persistent_notification.create
+        data:
+          title: "Plan Expiring Soon"
+          message: "Your plan expires on {{ states('sensor.sms_gateway_plan_expiry') }}"
 ```
 
 ### Access SMS History

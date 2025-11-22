@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: 2.1.6
+version: 2.1.7
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup and comprehensive diagnostics. 
@@ -70,6 +70,12 @@ options:
   auto_delete_read_sms: true
   sms_history_max_messages: 10
   sms_delivery_reports: false
+  balance_sms_enabled: false
+  balance_sms_sender: "7069"
+  balance_keywords:
+    - "Remaining"
+    - "expires"
+    - "balance of"
 schema:
   device_path: str
   pin: str?
@@ -90,3 +96,7 @@ schema:
   auto_delete_read_sms: bool
   sms_history_max_messages: int(1,100)
   sms_delivery_reports: bool
+  balance_sms_enabled: bool
+  balance_sms_sender: str
+  balance_keywords:
+    - str

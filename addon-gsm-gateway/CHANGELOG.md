@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.4] - 2025-11-22
+
+### Fixed
+
+- **Event System Authentication** 🔐 - Fixed HTTP 401 Unauthorized error
+  - Changed to use single quotes for headers
+  - Use default empty string for token
+  - Split URL construction for better clarity
+  - Log token length instead of full token for security
+
 ## [2.1.3] - 2025-11-22
 
 ### Added

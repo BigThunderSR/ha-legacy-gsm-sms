@@ -1390,20 +1390,21 @@ class MQTTPublisher:
         logger.info(f"🔔 Attempting to fire HA event for SMS from {event_data['sender']}")
         
         try:
-            # Use Home Assistant Supervisor API to fire event
-            # Addons can access HA via the supervisor token
-            supervisor_token = os.environ.get('SUPERVISOR_TOKEN')
-            if not supervisor_token:
+            # Use Home Assistant Supervisor API to fire event (same method as standalone addon)
+            ha_token = os.environ.get('SUPERVISOR_TOKEN', '')
+            if not ha_token:
                 logger.error("❌ No SUPERVISOR_TOKEN found - cannot fire HA event")
                 return
             
-            url = "http://supervisor/core/api/events/sms_gateway_message_received"
+            # Match standalone addon exactly - use same URL and header format
+            ha_url = "http://supervisor/core/api"
+            url = f"{ha_url}/events/sms_gateway_message_received"
             headers = {
-                "Authorization": f"Bearer {supervisor_token}",
-                "Content-Type": "application/json"
+                'Authorization': f'Bearer {ha_token}',
+                'Content-Type': 'application/json'
             }
             
-            logger.debug(f"Posting to {url} with data: {event_data}")
+            logger.debug(f"Posting to {url} with token length: {len(ha_token)}")
             response = requests.post(url, headers=headers, json=event_data, timeout=5)
             
             if response.status_code in [200, 201]:

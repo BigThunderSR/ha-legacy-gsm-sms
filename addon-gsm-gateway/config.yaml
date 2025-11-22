@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: 2.1.2
+version: 2.1.2 
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup and comprehensive diagnostics. 

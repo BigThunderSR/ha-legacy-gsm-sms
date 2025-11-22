@@ -1020,15 +1020,15 @@ class MQTTPublisher:
             "state": sms_data.get('State', 'UnRead')
         }
         
-        # Publish event to homeassistant/event topic
-        # Home Assistant automatically subscribes to this and fires events
-        event_topic = "homeassistant/event/sms_gateway_message_received"
+        # Publish event using Home Assistant's MQTT event format
+        # Topic format: homeassistant/event with JSON payload containing event_type
+        event_topic = "homeassistant/event"
         event_payload = {
             "event_type": "sms_gateway_message_received",
             "event_data": event_data
         }
         
-        self.client.publish(event_topic, json.dumps(event_payload), qos=1)
+        self.client.publish(event_topic, json.dumps(event_payload), qos=1, retain=False)
         logger.info(f"🔔 Fired Home Assistant event: sms_gateway_message_received from {event_data['sender']}")
     
     def publish_device_status(self):

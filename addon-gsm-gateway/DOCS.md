@@ -284,7 +284,7 @@ automation:
     action:
       - service: notify.persistent_notification
         data:
-          title: "SMS from {{ trigger.event.data.sender }}"
+          title: "SMS from {{ trigger.event.data.phone }}"
           message: "{{ trigger.event.data.text }}"
 ```
 
@@ -298,7 +298,7 @@ automation:
       event_type: sms_gateway_message_received
     condition:
       - condition: template
-        value_template: "{{ trigger.event.data.sender == '+420123456789' }}"
+        value_template: "{{ trigger.event.data.phone == '+420123456789' }}"
     action:
       - service: notify.persistent_notification
         data:

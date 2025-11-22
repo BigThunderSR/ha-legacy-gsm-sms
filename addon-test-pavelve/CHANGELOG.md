@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.9] - 2025-11-22
+
+### Changed
+
+- **Event Data Field Names** - Updated to match deprecated integration for backwards compatibility
+  - Changed `sender` to `phone` to match `legacy_gsm_sms.incoming_sms` event format
+  - Kept `text` field name (already compatible)
+  - Kept `date` field name (already compatible)
+  - Added extra fields: `timestamp` (unix timestamp) and `state` (SMS read state)
+  - Old automations using deprecated integration can now work without changes
+
 ## [1.5.8] - 2025-11-22
 
 ### Fixed

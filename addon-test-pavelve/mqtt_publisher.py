@@ -1009,16 +1009,17 @@ class MQTTPublisher:
     
     def fire_ha_event(self, sms_data: Dict[str, Any]):
         """Fire a Home Assistant event for received SMS using HTTP API"""
-        # Prepare event data (clean payload)
+        # Prepare event data - field names match deprecated legacy_gsm_sms integration
+        # for backwards compatibility: phone, text, date (+ timestamp, state for extra info)
         event_data = {
-            "sender": sms_data.get('Number', 'Unknown'),
-            "text": sms_data.get('Text', ''),
-            "timestamp": sms_data.get('timestamp', ''),
-            "date": sms_data.get('Date', ''),
-            "state": sms_data.get('State', 'UnRead')
+            "phone": sms_data.get('Number', 'Unknown'),  # Matches deprecated integration
+            "text": sms_data.get('Text', ''),            # Matches deprecated integration
+            "date": sms_data.get('Date', ''),            # Matches deprecated integration
+            "timestamp": sms_data.get('timestamp', ''),  # Additional field for unix timestamp
+            "state": sms_data.get('State', 'UnRead')     # Additional field for SMS state
         }
         
-        logger.info(f"🔔 Attempting to fire HA event for SMS from {event_data['sender']}")
+        logger.info(f"🔔 Attempting to fire HA event for SMS from {event_data['phone']}")
         
         try:
             # Use Home Assistant API - requires homeassistant_api: true in config.yaml
@@ -1039,7 +1040,7 @@ class MQTTPublisher:
             response = requests.post(url, headers=headers, json=event_data, timeout=5)
             
             if response.status_code in [200, 201]:
-                logger.info(f"✅ Successfully fired Home Assistant event: sms_gateway_message_received from {event_data['sender']}")
+                logger.info(f"✅ Successfully fired Home Assistant event: sms_gateway_message_received from {event_data['phone']}")
             else:
                 logger.error(f"❌ Failed to fire HA event: HTTP {response.status_code} - {response.text}")
                 

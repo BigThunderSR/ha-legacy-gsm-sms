@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.6] - 2025-11-22
+
+### Changed
+
+- **Event Data Field Names** - Updated to match deprecated integration for backwards compatibility
+  - Changed `sender` to `phone` to match `legacy_gsm_sms.incoming_sms` event format
+  - Kept `text` field name (already compatible)
+  - Kept `date` field name (already compatible)
+  - Added extra fields: `timestamp` (unix timestamp) and `state` (SMS read state)
+  - Old automations using deprecated integration can now work without changes
+
 ## [2.1.5] - 2025-11-22
 
 ### Fixed
@@ -38,10 +49,10 @@ All notable changes to this project will be documented in this file.
 
 - **Event-Based SMS Notifications** 🆕 - Reliable notification system using Home Assistant events
   - Fires `sms_gateway_message_received` event for every received SMS via Home Assistant REST API
-  - Event data includes: sender, text, timestamp, date, state
+  - Event data includes: phone, text, date, timestamp, state
   - No duplicate notifications after addon restarts (unlike state-based triggers)
   - Use `platform: event` with `event_type: sms_gateway_message_received` in automations
-  - Access data via `{{ trigger.event.data.sender }}` and `{{ trigger.event.data.text }}`
+  - Access data via `{{ trigger.event.data.phone }}` and `{{ trigger.event.data.text }}`
   - Uses supervisor token to directly fire events (same method as standalone addon)
   - Example automations included in documentation (filter by sender, filter by keyword)
 

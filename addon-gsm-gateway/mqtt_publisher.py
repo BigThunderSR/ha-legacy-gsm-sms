@@ -15,6 +15,7 @@ import time
 import logging
 import threading
 import os
+import requests
 from typing import Optional, Dict, Any
 import paho.mqtt.client as mqtt
 import concurrent.futures
@@ -1376,10 +1377,7 @@ class MQTTPublisher:
         logger.info(f"📡 Published SMS to MQTT: {sms_data.get('Number', 'Unknown')} -> {sms_data.get('Text', '')}")
     
     def fire_ha_event(self, sms_data: Dict[str, Any]):
-        """Fire a Home Assistant event for received SMS"""
-        if not self.connected:
-            return
-        
+        """Fire a Home Assistant event for received SMS using HTTP API"""
         # Prepare event data (exclude history to keep event payload clean)
         event_data = {
             "sender": sms_data.get('Number', 'Unknown'),
@@ -1389,16 +1387,29 @@ class MQTTPublisher:
             "state": sms_data.get('State', 'UnRead')
         }
         
-        # Publish event using Home Assistant's MQTT event format
-        # Topic format: homeassistant/event with JSON payload containing event_type
-        event_topic = "homeassistant/event"
-        event_payload = {
-            "event_type": "sms_gateway_message_received",
-            "event_data": event_data
-        }
-        
-        self.client.publish(event_topic, json.dumps(event_payload), qos=1, retain=False)
-        logger.info(f"🔔 Fired Home Assistant event: sms_gateway_message_received from {event_data['sender']}")
+        try:
+            # Use Home Assistant Supervisor API to fire event
+            # Addons can access HA via the supervisor token
+            supervisor_token = os.environ.get('SUPERVISOR_TOKEN')
+            if not supervisor_token:
+                logger.warning("No SUPERVISOR_TOKEN found - cannot fire HA event")
+                return
+            
+            url = "http://supervisor/core/api/events/sms_gateway_message_received"
+            headers = {
+                "Authorization": f"Bearer {supervisor_token}",
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.post(url, headers=headers, json=event_data, timeout=5)
+            
+            if response.status_code in [200, 201]:
+                logger.info(f"🔔 Fired Home Assistant event: sms_gateway_message_received from {event_data['sender']}")
+            else:
+                logger.warning(f"Failed to fire HA event: HTTP {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            logger.error(f"Error firing HA event: {e}")
     
     def publish_device_status(self):
         """Publish USB device connectivity status"""

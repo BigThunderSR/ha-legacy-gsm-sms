@@ -416,6 +416,14 @@ class SmsCollection(Resource):
         if not sms_number:
             return {"status": 400, "message": "Missing required field: number or target"}, 400
         
+        logging.info(f"SMS send request - Text: '{sms_text}', Numbers: '{sms_number}', Type: {type(sms_number)}")
+        
+        # Handle both string (comma-separated) and list formats
+        if isinstance(sms_number, list):
+            numbers = sms_number
+        else:
+            numbers = [n.strip() for n in sms_number.split(',')]
+        
         smsinfo = {
             "Class": -1,
             "Unicode": args.get('unicode', False),
@@ -427,7 +435,7 @@ class SmsCollection(Resource):
             ],
         }
         messages = []
-        for number in sms_number.split(','):
+        for number in numbers:
             for message in encodeSms(smsinfo):
                 message["SMSC"] = {'Number': args.get("smsc")} if args.get("smsc") else {'Location': 1}
                 message["Number"] = number.strip()

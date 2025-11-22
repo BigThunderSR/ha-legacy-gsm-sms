@@ -381,6 +381,25 @@ This project maintains the Apache License 2.0 from the original works:
 
 ## Changelog
 
+### Version 2.1.1 (2025-11-21)
+
+**API Enhancements:**
+
+- Added support for phone numbers as JSON array in REST API
+- Now accepts three formats: single string, comma-separated string, or JSON array
+- Use `{{ target | tojson }}` in rest_command for YAML list support
+- Enables cleaner automation syntax with list of recipients
+
+**Example:**
+
+```yaml
+data:
+  message: Test
+  target:
+    - "+12345678901"
+    - "+12345678902"
+```
+
 ### Version 2.1.0 (2025-11-20)
 
 **Infrastructure Updates:**

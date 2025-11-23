@@ -64,6 +64,7 @@ automation:
 ## Sensors
 
 The addon creates a sensor `sensor.gsm_modem_status` with:
+
 - State: `connected` or `disconnected`
 - Attributes: `signal_strength`, `last_check`, etc.
 

@@ -109,8 +109,8 @@ automation:
     action:
       - service: rest_command.send_sms
         data:
-            number: "+1234567890"
-            message: "Motion detected!"
+          number: "+1234567890"
+          message: "Motion detected!"
 ```
 
 ### Events

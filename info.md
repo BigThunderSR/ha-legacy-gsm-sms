@@ -29,7 +29,7 @@ After installation, add the integration through the UI or manually in your `conf
 
 ```yaml
 legacy_gsm_sms:
-  device: /dev/ttyUSB0  # Update with your modem's device path
+  device: /dev/ttyUSB0 # Update with your modem's device path
 ```
 
 ## Usage

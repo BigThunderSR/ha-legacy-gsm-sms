@@ -6,17 +6,17 @@ A new Home Assistant addon located in `/addon-gsm-gateway/` that is a customized
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `config.yaml` | Addon configuration with your custom name, slug, and repository URL |
-| `README.md` | Comprehensive documentation with attribution to original authors |
-| `CHANGELOG.md` | Version history and credits |
-| `mqtt_publisher.py` | Enhanced MQTT publisher with attribution header |
-| `run.py` | Main Flask application with attribution header |
-| `network_codes.py` | Network operator database (your enhancement) |
-| `build.yaml` | Docker build configuration with proper labels |
-| `LICENSE` | Apache License 2.0 (maintained from original) |
-| `icon.png` | Addon icon |
+| File                | Purpose                                                             |
+| ------------------- | ------------------------------------------------------------------- |
+| `config.yaml`       | Addon configuration with your custom name, slug, and repository URL |
+| `README.md`         | Comprehensive documentation with attribution to original authors    |
+| `CHANGELOG.md`      | Version history and credits                                         |
+| `mqtt_publisher.py` | Enhanced MQTT publisher with attribution header                     |
+| `run.py`            | Main Flask application with attribution header                      |
+| `network_codes.py`  | Network operator database (your enhancement)                        |
+| `build.yaml`        | Docker build configuration with proper labels                       |
+| `LICENSE`           | Apache License 2.0 (maintained from original)                       |
+| `icon.png`          | Addon icon                                                          |
 
 ### Attribution Summary
 
@@ -202,15 +202,15 @@ A new Home Assistant addon located in `/addon-gsm-gateway/` that is a customized
 
 ## Differences from Test Version
 
-| Aspect | addon-test-pavelve | addon-gsm-gateway |
-|--------|-------------------|-------------------|
-| Purpose | Testing PavelVe's addon | Your production addon |
-| Name | "SMS Gammu Gateway (PavelVe Test)" | "GSM SMS Gateway Enhanced" |
-| Slug | `sms_gammu_gateway_pavelve_test` | `gsm_sms_gateway_enhanced` |
-| URL | Points to PavelVe's repo | Points to your repo |
-| Documentation | PavelVe's original README | Your enhanced README with full attribution |
-| Attribution | Minimal | Comprehensive (README, CHANGELOG, code headers) |
-| Status | Test/development | Production-ready |
+| Aspect        | addon-test-pavelve                 | addon-gsm-gateway                               |
+| ------------- | ---------------------------------- | ----------------------------------------------- |
+| Purpose       | Testing PavelVe's addon            | Your production addon                           |
+| Name          | "SMS Gammu Gateway (PavelVe Test)" | "GSM SMS Gateway Enhanced"                      |
+| Slug          | `sms_gammu_gateway_pavelve_test`   | `gsm_sms_gateway_enhanced`                      |
+| URL           | Points to PavelVe's repo           | Points to your repo                             |
+| Documentation | PavelVe's original README          | Your enhanced README with full attribution      |
+| Attribution   | Minimal                            | Comprehensive (README, CHANGELOG, code headers) |
+| Status        | Test/development                   | Production-ready                                |
 
 ## What to Keep and What to Remove
 

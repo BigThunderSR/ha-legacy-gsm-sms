@@ -9,7 +9,6 @@
 - **SMS Sending** via HTTP API (REST command)
   - POST to `http://addon_hostname:8099/send_sms`
   - Thread-safe queue processing
-  
 - **SMS Receiving** via +CMTI notifications
   - Real-time SMS notifications
   - Fires `legacy_gsm_sms_received` events to Home Assistant

@@ -2,8 +2,10 @@ name: "GSM SMS Gateway Enhanced"
 version: 2.1.7
 slug: "gsm_sms_gateway_enhanced"
 description: |
-  Enhanced SMS Gammu Gateway with network provider lookup and comprehensive diagnostics. 
+  Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
   Based on PavelVe's SMS Gammu Gateway (https://github.com/PavelVe/hassio-addons).
+  
+  Features: Network diagnostics, USSD support, SMS history, delivery reports, automatic balance parsing from provider SMS.
   
   ⚠️ IMPORTANT: Do not run this add-on and the HACS Legacy GSM SMS integration simultaneously!
   Both will try to access the same serial device, causing conflicts.

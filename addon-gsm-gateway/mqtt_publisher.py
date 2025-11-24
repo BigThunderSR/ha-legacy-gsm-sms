@@ -1070,7 +1070,7 @@ class MQTTPublisher:
         
         # Signal strength dBm sensor (diagnostic - shows actual dBm value, not percent)
         signal_dbm_config = {
-            "name": "GSM Signal Strength",
+            "name": "GSM Signal Strength (dBm)",
             "unique_id": "sms_gateway_signal_dbm",
             "state_topic": f"{self.topic_prefix}/signal/state",
             "value_template": "{{ value_json.SignalStrength }}",
@@ -1942,14 +1942,14 @@ class MQTTPublisher:
             logger.info("📡 Published initial modem status: offline (waiting for first successful communication)")
 
             # Publish initial signal strength with connectivity tracking
-            signal = self.track_gammu_operation("GetSignalQuality", gammu_machine.GetSignalQuality)
+            signal = self.track_gammu_operation("GetSignalQuality", self.gammu_machine.GetSignalQuality)
             # Filter out invalid BER value (-1 means not available)
             if signal.get("BitErrorRate") == -1:
                 signal["BitErrorRate"] = None
             self.publish_signal_strength(signal)
 
             # Publish initial network info with connectivity tracking
-            network = self.track_gammu_operation("GetNetworkInfo", gammu_machine.GetNetworkInfo)
+            network = self.track_gammu_operation("GetNetworkInfo", self.gammu_machine.GetNetworkInfo)
             network_code = network.get("NetworkCode", "")
             network_name = network.get("NetworkName")
             
@@ -1990,12 +1990,12 @@ class MQTTPublisher:
             # Publish modem info
             try:
                 modem_info = {
-                    "IMEI": self.track_gammu_operation("GetIMEI", gammu_machine.GetIMEI),
-                    "Manufacturer": self.track_gammu_operation("GetManufacturer", gammu_machine.GetManufacturer),
-                    "Model": self.track_gammu_operation("GetModel", gammu_machine.GetModel)
+                    "IMEI": self.track_gammu_operation("GetIMEI", self.gammu_machine.GetIMEI),
+                    "Manufacturer": self.track_gammu_operation("GetManufacturer", self.gammu_machine.GetManufacturer),
+                    "Model": self.track_gammu_operation("GetModel", self.gammu_machine.GetModel)
                 }
                 try:
-                    modem_info["Firmware"] = self.track_gammu_operation("GetFirmware", gammu_machine.GetFirmware)[0]
+                    modem_info["Firmware"] = self.track_gammu_operation("GetFirmware", self.gammu_machine.GetFirmware)[0]
                 except Exception:
                     modem_info["Firmware"] = "Unknown"
                 self.publish_modem_info(modem_info)
@@ -2004,14 +2004,14 @@ class MQTTPublisher:
 
             # Publish SIM info
             try:
-                sim_info = {"IMSI": self.track_gammu_operation("GetSIMIMSI", gammu_machine.GetSIMIMSI)}
+                sim_info = {"IMSI": self.track_gammu_operation("GetSIMIMSI", self.gammu_machine.GetSIMIMSI)}
                 self.publish_sim_info(sim_info)
             except Exception as e:
                 logger.warning(f"Could not publish SIM info: {e}")
 
             # Publish SMS capacity
             try:
-                capacity = self.track_gammu_operation("GetSMSStatus", gammu_machine.GetSMSStatus)
+                capacity = self.track_gammu_operation("GetSMSStatus", self.gammu_machine.GetSMSStatus)
                 self.publish_sms_capacity(capacity)
             except Exception as e:
                 logger.warning(f"Could not publish SMS capacity: {e}")
@@ -2038,7 +2038,7 @@ class MQTTPublisher:
 
                 # Check for new SMS with connectivity tracking (this will handle errors and update status)
                 try:
-                    all_sms = self.track_gammu_operation("retrieveAllSms", retrieveAllSms, gammu_machine)
+                    all_sms = self.track_gammu_operation("retrieveAllSms", retrieveAllSms, self.gammu_machine)
                     current_count = len(all_sms)
                     # Only log routine polling in verbose mode to reduce log spam
                     if self.log_level == 'verbose':
@@ -2056,7 +2056,7 @@ class MQTTPublisher:
                         logger.warning(f"🔄 Attempting modem soft reset after {failures} failures...")
                         try:
                             # Soft reset: AT+CFUN=1,1 (restart modem software, keep SIM state)
-                            self.track_gammu_operation("Reset", gammu_machine.Reset, False)
+                            self.track_gammu_operation("Reset", self.gammu_machine.Reset, False)
                             logger.info("✅ Modem soft reset completed, waiting 5s for recovery...")
                             time.sleep(5)
                         except Exception as reset_err:
@@ -2091,7 +2091,7 @@ class MQTTPublisher:
                                     
                                     # Auto-delete delivery report
                                     try:
-                                        self.track_gammu_operation("deleteSms", deleteSms, gammu_machine, all_sms[i])
+                                        self.track_gammu_operation("deleteSms", deleteSms, self.gammu_machine, all_sms[i])
                                         logger.debug(f"🗑️ Auto-deleted delivery report (ref={message_ref})")
                                         deleted_count += 1
                                     except Exception as e:
@@ -2117,7 +2117,7 @@ class MQTTPublisher:
                         # If we deleted any delivery reports, update SMS capacity
                         if deleted_count > 0:
                             try:
-                                capacity = self.track_gammu_operation("GetSMSStatus", gammu_machine.GetSMSStatus)
+                                capacity = self.track_gammu_operation("GetSMSStatus", self.gammu_machine.GetSMSStatus)
                                 self.publish_sms_capacity(capacity)
                                 # Update count to reflect deleted delivery reports
                                 current_count = capacity.get('SIMUsed', 0) + capacity.get('PhoneUsed', 0)
@@ -2162,7 +2162,7 @@ class MQTTPublisher:
                                         # Don't publish delivery reports as regular SMS
                                         # Auto-delete delivery report
                                         try:
-                                            self.track_gammu_operation("deleteSms", deleteSms, gammu_machine, all_sms[i])
+                                            self.track_gammu_operation("deleteSms", deleteSms, self.gammu_machine, all_sms[i])
                                             logger.debug(f"🗑️ Auto-deleted delivery report (ref={message_ref})")
                                             deleted_count += 1
                                         except Exception as e:
@@ -2175,7 +2175,7 @@ class MQTTPublisher:
                                 # Auto-delete if enabled and SMS is read
                                 if auto_delete and sms.get('State') in ['Read', 'UnRead']:
                                     try:
-                                        self.track_gammu_operation("deleteSms", deleteSms, gammu_machine, all_sms[i])
+                                        self.track_gammu_operation("deleteSms", deleteSms, self.gammu_machine, all_sms[i])
                                         logger.info(f"🗑️ Auto-deleted SMS from {sms.get('Number', 'Unknown')}")
                                         deleted_count += 1
                                     except Exception as e:
@@ -2184,7 +2184,7 @@ class MQTTPublisher:
                         # If we deleted any SMS (delivery reports or auto-delete), update capacity and get new count
                         if deleted_count > 0:
                             try:
-                                capacity = self.track_gammu_operation("GetSMSStatus", gammu_machine.GetSMSStatus)
+                                capacity = self.track_gammu_operation("GetSMSStatus", self.gammu_machine.GetSMSStatus)
                                 self.publish_sms_capacity(capacity)
                                 # Update count to reflect deleted SMS
                                 current_count = capacity.get('SIMUsed', 0) + capacity.get('PhoneUsed', 0)
@@ -2218,7 +2218,7 @@ class MQTTPublisher:
                 
                 # Get signal strength with connectivity tracking
                 try:
-                    signal = self.track_gammu_operation("GetSignalQuality", gammu_machine.GetSignalQuality)
+                    signal = self.track_gammu_operation("GetSignalQuality", self.gammu_machine.GetSignalQuality)
                     # Filter out invalid BER value (-1 means not available)
                     if signal.get("BitErrorRate") == -1:
                         signal["BitErrorRate"] = None
@@ -2229,7 +2229,7 @@ class MQTTPublisher:
                 # Get network info with connectivity tracking
                 try:
                     from gammu import GSMNetworks
-                    network = self.track_gammu_operation("GetNetworkInfo", gammu_machine.GetNetworkInfo)
+                    network = self.track_gammu_operation("GetNetworkInfo", self.gammu_machine.GetNetworkInfo)
                     network_code = network.get("NetworkCode", "")
                     network_name = network.get("NetworkName")
                     

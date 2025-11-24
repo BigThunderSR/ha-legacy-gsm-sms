@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.1] - 2025-11-24
+
+### Fixed
+
+- **Auto-Recovery Bug** 🐛 - Critical fix for automatic modem recovery
+  - Fixed issue where background threads continued using old broken Gammu connection after recovery
+  - All operations now use `self.gammu_machine` instead of function parameter
+  - SMS monitoring, status publishing, and initial states now pick up new connection immediately
+  - Recovery now actually works instead of appearing successful but continuing to fail
+  - Eliminates conflict between auto_recovery and old soft reset mechanisms
+
+- **Sensor Name Disambiguation** - Fixed duplicate sensor name
+  - Changed dBm signal sensor name from "GSM Signal Strength" to "GSM Signal Strength (dBm)"
+  - Makes it easier to distinguish between percentage and dBm sensors in Home Assistant
+
 ## [2.4.0] - 2025-11-24
 
 ### Added

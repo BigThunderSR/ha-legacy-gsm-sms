@@ -387,6 +387,14 @@ This project maintains the Apache License 2.0 from the original works:
 
 ## Changelog
 
+### Version 2.4.1 (2025-11-24)
+
+**Critical Bugfixes** 🐛
+
+- Fixed auto-recovery not actually working (threads continued using old broken connection)
+- All Gammu operations now use `self.gammu_machine` to pick up new connection after recovery
+- Fixed duplicate sensor name: dBm sensor now named "GSM Signal Strength (dBm)"
+
 ### Version 2.4.0 (2025-11-24)
 
 **Automatic Modem Recovery** 🔄

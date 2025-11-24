@@ -2195,9 +2195,6 @@ class MQTTPublisher:
                     self.publish_signal_strength(signal)
                 elif network:
                     self.publish_network_info(network)
-                except Exception as e:
-                    # track_gammu_operation already recorded the failure
-                    pass  # Warning already logged by track_gammu_operation
 
                 time.sleep(interval)
         

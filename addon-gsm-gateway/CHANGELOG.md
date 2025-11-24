@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.1] - 2025-11-23
+
+### Fixed
+
+- **Syntax Error** 🐛 - Critical fix for startup crash
+  - Removed orphaned `except` block in periodic status publisher
+  - Fixes Python syntax error preventing add-on from starting
+  - Resolves "SyntaxError: invalid syntax" on line 2198
+
 ## [2.3.0] - 2025-11-23
 
 ### Improved

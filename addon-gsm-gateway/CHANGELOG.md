@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.1] - 2025-11-23
+
+### Improved
+
+- **Enhanced Status Logging** 📊 - Better visibility of sensor updates
+  - Normal mode now shows both signal sensors: percentage and dBm values
+  - Verbose mode displays all sensor data for complete diagnostics
+  - Signal strength: Shows Percent, dBm, and BER (Bit Error Rate)
+  - Network info: Shows NetworkCode, State, LAC, and CID
+  - Example: `📡 Published signal strength to MQTT: 75% (-65 dBm)`
+  - Verbose example: `Signal details: Percent=75%, dBm=-65, BER=0`
+
 ## [2.2.0] - 2025-11-23
 
 ### Added

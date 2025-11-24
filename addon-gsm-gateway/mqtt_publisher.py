@@ -1512,7 +1512,16 @@ class MQTTPublisher:
             
         topic = f"{self.topic_prefix}/signal/state"
         self.client.publish(topic, json.dumps(signal_data), retain=True)
-        logger.info(f"📡 Published signal strength to MQTT: {signal_data.get('SignalPercent', 'N/A')}%")
+        
+        # Normal logging: show both signal level sensors
+        signal_percent = signal_data.get('SignalPercent', 'N/A')
+        signal_dbm = signal_data.get('SignalStrength', 'N/A')
+        logger.info(f"📡 Published signal strength to MQTT: {signal_percent}% ({signal_dbm} dBm)")
+        
+        # Verbose logging: show all sensor data
+        if self.log_level == "verbose":
+            ber = signal_data.get('BitErrorRate', 'N/A')
+            logger.debug(f"   Signal details: Percent={signal_percent}%, dBm={signal_dbm}, BER={ber}")
     
     def publish_network_info(self, network_data: Dict[str, Any]):
         """Publish network information"""
@@ -1522,6 +1531,14 @@ class MQTTPublisher:
         topic = f"{self.topic_prefix}/network/state"
         self.client.publish(topic, json.dumps(network_data), retain=True)
         logger.info(f"📡 Published network info to MQTT: {network_data.get('NetworkName', 'Unknown')}")
+        
+        # Verbose logging: show all network sensor data
+        if self.log_level == "verbose":
+            network_code = network_data.get('NetworkCode', 'N/A')
+            state = network_data.get('State', 'N/A')
+            lac = network_data.get('LAC', 'N/A')
+            cell_id = network_data.get('CID', 'N/A')
+            logger.debug(f"   Network details: Code={network_code}, State={state}, LAC={lac}, CID={cell_id}")
     
     def publish_sms_received(self, sms_data: Dict[str, Any]):
         """Publish received SMS data and fire Home Assistant event"""

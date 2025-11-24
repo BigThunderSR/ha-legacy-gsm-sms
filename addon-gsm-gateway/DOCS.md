@@ -128,7 +128,7 @@ curl -X POST http://192.168.1.x:5000/sms \
 | `sms_delivery_reports`     | `false`  | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0) |
 | `log_level`                | `normal` | Logging verbosity: `minimal`, `normal`, or `verbose` (🆕 v2.1.8)    |
 
-### Logging Levels (🆕 v2.1.8)
+### Logging Levels (🆕 v2.1.8, Enhanced v2.2.1)
 
 The `log_level` setting controls how much information appears in the add-on logs:
 
@@ -141,11 +141,15 @@ The `log_level` setting controls how much information appears in the add-on logs
 - **`normal`** (default) - Standard operational logging
 
   - Shows all useful information (SMS received/sent, signal strength, network info, connection changes)
+  - **Signal strength logs both sensors**: `📡 Published signal strength to MQTT: 75% (-65 dBm)` _(Enhanced v2.2.1)_
   - **Only suppresses**: Repetitive "SMS monitoring cycle OK" messages when no new SMS arrives
   - Recommended for most users - keeps logs clean without hiding important events
 
 - **`verbose`** - Full debug logging
-  - Shows everything including "SMS monitoring cycle OK" messages every 10-60 seconds
+  - Shows everything including "SMS monitoring cycle OK" messages every 5-10 seconds
+  - **Displays all sensor details** for signal and network data _(Enhanced v2.2.1)_:
+    - Signal: `Signal details: Percent=75%, dBm=-65, BER=0`
+    - Network: `Network details: Code=310260, State=HomeNetwork, LAC=1234, CID=5678`
   - Useful for troubleshooting connection issues or development
   - May generate large log files
 

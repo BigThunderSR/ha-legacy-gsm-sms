@@ -39,8 +39,14 @@ configuration:
     name: Activer la surveillance SMS
     description: Détecter automatiquement et publier les SMS entrants sur MQTT
   sms_check_interval:
-    name: Intervalle de vérification SMS
-    description: À quelle fréquence vérifier les nouveaux messages SMS (secondes, 10-300)
+    name: Intervalle de vérification des SMS
+    description: Fréquence de vérification des nouveaux messages SMS (secondes, 5-300)
+  status_update_interval:
+    name: Intervalle de mise à jour de l'état
+    description: Fréquence de mise à jour de la force du signal et des informations réseau (secondes, 30-3600)
+  log_level:
+    name: Niveau de journalisation
+    description: Verbosité de la journalisation (minimal=erreurs seulement, normal=standard, verbose=débogage)
   sms_cost_per_message:
     name: Coût par SMS
     description: Coût par message SMS envoyé. Définir à 0 pour désactiver le suivi des coûts.
@@ -49,4 +55,19 @@ configuration:
     description: Devise pour l'affichage du coût des SMS (par ex. USD, EUR, GBP, CZK)
   auto_delete_read_sms:
     name: Supprimer automatiquement les SMS lus
-    description: Supprimer automatiquement les SMS de la carte SIM après lecture (libère de l'espace SIM)
+    description: Supprimer automatiquement les messages SMS de la carte SIM après lecture (libère de l'espace)
+  sms_history_max_messages:
+    name: Nombre maximum de messages dans l'historique
+    description: Nombre maximum de messages SMS reçus à conserver dans l'historique (1-100)
+  sms_delivery_reports:
+    name: Activer les rapports de livraison
+    description: Demander des rapports de livraison pour les SMS envoyés (peut entraîner des frais)
+  balance_sms_enabled:
+    name: Activer l'analyse des SMS de solde
+    description: Analyser automatiquement les informations de solde de compte depuis les SMS du fournisseur
+  balance_sms_sender:
+    name: Numéro d'expéditeur SMS de solde
+    description: Numéro de téléphone qui envoie les informations de solde (l'expéditeur de réponse)
+  balance_keywords:
+    name: Mots-clés de solde
+    description: Mots-clés pour détecter les SMS de solde (ex: Restant, expire, solde de)

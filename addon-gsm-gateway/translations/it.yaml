@@ -40,7 +40,13 @@ configuration:
     description: Rileva automaticamente e pubblica messaggi SMS in arrivo su MQTT
   sms_check_interval:
     name: Intervallo di controllo SMS
-    description: Frequenza di controllo per nuovi messaggi SMS (secondi, 10-300)
+    description: Frequenza di controllo di nuovi messaggi SMS (secondi, 5-300)
+  status_update_interval:
+    name: Intervallo di aggiornamento dello stato
+    description: Frequenza di aggiornamento della potenza del segnale e delle informazioni di rete (secondi, 30-3600)
+  log_level:
+    name: Livello di registrazione
+    description: Verbosità della registrazione (minimal=solo errori, normal=standard, verbose=debug)
   sms_cost_per_message:
     name: Costo per SMS
     description: Costo per messaggio SMS inviato. Impostare a 0 per disabilitare il monitoraggio dei costi.
@@ -49,4 +55,19 @@ configuration:
     description: Valuta per la visualizzazione del costo SMS (es. USD, EUR, GBP, CZK)
   auto_delete_read_sms:
     name: Elimina automaticamente SMS letti
-    description: Elimina automaticamente i messaggi SMS dalla scheda SIM dopo la lettura (libera spazio SIM)
+    description: Elimina automaticamente i messaggi SMS dalla scheda SIM dopo la lettura (libera spazio)
+  sms_history_max_messages:
+    name: Messaggi massimi nella cronologia
+    description: Numero massimo di messaggi SMS ricevuti da conservare nella cronologia (1-100)
+  sms_delivery_reports:
+    name: Abilita rapporti di consegna
+    description: Richiedi rapporti di consegna per SMS inviati (può comportare costi dell'operatore)
+  balance_sms_enabled:
+    name: Abilita analisi SMS saldo
+    description: Analizza automaticamente le informazioni sul saldo dell'account dagli SMS del provider
+  balance_sms_sender:
+    name: Numero mittente SMS saldo
+    description: Numero di telefono che invia le informazioni sul saldo (il mittente di risposta)
+  balance_keywords:
+    name: Parole chiave saldo
+    description: Parole chiave per rilevare SMS di saldo (es: Rimanente, scade, saldo di)

@@ -40,7 +40,13 @@ configuration:
     description: Automatisch inkomende SMS-berichten detecteren en publiceren naar MQTT
   sms_check_interval:
     name: SMS-controle-interval
-    description: Hoe vaak controleren op nieuwe SMS-berichten (seconden, 10-300)
+    description: Hoe vaak controleren op nieuwe SMS-berichten (seconden, 5-300)
+  status_update_interval:
+    name: Status update-interval
+    description: Hoe vaak signaalsterkte en netwerkinformatie worden bijgewerkt (seconden, 30-3600)
+  log_level:
+    name: Logniveau
+    description: Logboekdetail (minimal=alleen fouten, normal=standaard, verbose=debug)
   sms_cost_per_message:
     name: Kosten per SMS
     description: Kosten per verzonden SMS-bericht. Stel in op 0 om kostenbewaking uit te schakelen.
@@ -49,4 +55,19 @@ configuration:
     description: Valuta voor weergave van SMS-kosten (bijv. USD, EUR, GBP, CZK)
   auto_delete_read_sms:
     name: Gelezen SMS automatisch verwijderen
-    description: SMS-berichten automatisch van SIM-kaart verwijderen na lezen (maakt SIM-ruimte vrij)
+    description: SMS-berichten automatisch van de SIM-kaart verwijderen na het lezen (bespaart SIM-ruimte)
+  sms_history_max_messages:
+    name: Maximale berichten in geschiedenis
+    description: Maximaal aantal ontvangen SMS-berichten in de geschiedenis (1-100)
+  sms_delivery_reports:
+    name: Bezorgingsrapporten inschakelen
+    description: Bezorgingsrapporten aanvragen voor verzonden SMS (kan kosten met zich meebrengen)
+  balance_sms_enabled:
+    name: Saldo SMS-analyse inschakelen
+    description: Rekeningsaldo-informatie automatisch analyseren uit provider SMS-berichten
+  balance_sms_sender:
+    name: Saldo SMS-afzendernummer
+    description: Telefoonnummer dat saldo-informatie verzendt (de antwoordafzender)
+  balance_keywords:
+    name: Saldo trefwoorden
+    description: Trefwoorden om saldo SMS-berichten te detecteren (bijv: Resterend, verloopt, saldo van)

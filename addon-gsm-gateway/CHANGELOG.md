@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.1.9] - 2025-11-23
+## [2.2.0] - 2025-11-23
 
 ### Added
 
@@ -14,6 +14,15 @@ All notable changes to this project will be documented in this file.
   - Recommended: 60-120s for mobile/weak signal, 300-600s for stationary setups
   - Displays configured interval at startup
 
+- **Configurable Logging Levels** 📋 - Control log verbosity to reduce spam
+  - New `log_level` option with three levels: `minimal`, `normal` (default), `verbose`
+  - `minimal` - Only warnings and errors
+  - `normal` - All useful info, suppresses repetitive SMS polling "OK" messages
+  - `verbose` - Full debug logging including all polling cycles
+  - Solves log overflow from SMS monitoring cycles (every 5-10 seconds)
+  - All important events (SMS received/sent, signal strength, network info) remain visible in normal mode
+  - Documented in DOCS.md with clear explanations of each level
+
 ### Changed
 
 - **SMS Check Interval** - Reduced minimum from 10 to 5 seconds
@@ -21,18 +30,11 @@ All notable changes to this project will be documented in this file.
   - Default changed to 5 seconds for faster SMS detection
   - Allows near-instant SMS notifications for time-sensitive use cases
 
-## [2.1.8] - 2025-11-23
-
-### Added
-
-- **Configurable Logging Levels** 📋 - Control log verbosity to reduce spam
-  - New `log_level` option with three levels: `minimal`, `normal` (default), `verbose`
-  - `minimal` - Only warnings and errors
-  - `normal` - All useful info, suppresses repetitive SMS polling "OK" messages
-  - `verbose` - Full debug logging including all polling cycles
-  - Solves log overflow from SMS monitoring cycles (every 10-60 seconds)
-  - All important events (SMS received/sent, signal strength, network info) remain visible in normal mode
-  - Documented in DOCS.md with clear explanations of each level
+- **Translation Updates** 🌍 - Complete localization coverage
+  - Updated all 10 translation files (cs, de, en, es, fr, it, nl, pl, pt, sk)
+  - Added missing configuration items: `status_update_interval`, `log_level`, `sms_history_max_messages`, `sms_delivery_reports`, `balance_sms_enabled`, `balance_sms_sender`, `balance_keywords`
+  - Updated `sms_check_interval` range description to reflect new 5-300s range
+  - All UI strings now properly localized for better user experience
 
 ## [2.1.7] - 2025-11-22
 

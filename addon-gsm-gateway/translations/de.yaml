@@ -40,7 +40,13 @@ configuration:
     description: Eingehende SMS-Nachrichten automatisch erkennen und an MQTT veröffentlichen
   sms_check_interval:
     name: SMS-Prüfintervall
-    description: Wie oft nach neuen SMS-Nachrichten gesucht werden soll (Sekunden, 10-300)
+    description: Wie oft nach neuen SMS-Nachrichten gesucht werden soll (Sekunden, 5-300)
+  status_update_interval:
+    name: Statusaktualisierungsintervall
+    description: Wie oft Signalstärke und Netzwerkinformationen aktualisiert werden (Sekunden, 30-3600)
+  log_level:
+    name: Protokollstufe
+    description: Protokollierungsausführlichkeit (minimal=nur Fehler, normal=standard, verbose=debug)
   sms_cost_per_message:
     name: SMS-Kosten pro Nachricht
     description: Kosten pro gesendete SMS-Nachricht. Auf 0 setzen, um die Kostenverfolgung zu deaktivieren.
@@ -50,3 +56,18 @@ configuration:
   auto_delete_read_sms:
     name: Gelesene SMS automatisch löschen
     description: SMS-Nachrichten nach dem Lesen automatisch von der SIM-Karte löschen (spart SIM-Speicher)
+  sms_history_max_messages:
+    name: Maximale SMS-Verlaufsnachrichten
+    description: Maximale Anzahl empfangener SMS-Nachrichten im Verlauf (1-100)
+  sms_delivery_reports:
+    name: SMS-Zustellberichte aktivieren
+    description: Zustellberichte für gesendete SMS anfordern (kann Gebühren verursachen)
+  balance_sms_enabled:
+    name: Balance SMS-Analyse aktivieren
+    description: Kontoguthaben-Informationen aus Provider-SMS automatisch analysieren
+  balance_sms_sender:
+    name: Balance SMS-Absendernummer
+    description: Telefonnummer, die Guthaben-Informationen sendet (der Antwortabsender)
+  balance_keywords:
+    name: Balance-Schlüsselwörter
+    description: Schlüsselwörter zum Erkennen von Guthaben-SMS (z.B. Verbleibend, läuft ab, Guthaben von)

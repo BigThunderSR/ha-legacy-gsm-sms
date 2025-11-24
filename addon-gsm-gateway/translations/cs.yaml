@@ -39,8 +39,14 @@ configuration:
     name: Povolit SMS Monitoring
     description: Automaticky detekovat a publikovat příchozí SMS zprávy do MQTT
   sms_check_interval:
-    name: Interval Kontroly SMS
-    description: Jak často kontrolovat nové SMS zprávy (sekundy, 10-300)
+    name: Interval kontroly SMS
+    description: Jak často kontrolovat nové SMS zprávy (sekundy, 5-300)
+  status_update_interval:
+    name: Interval aktualizace stavu
+    description: Jak často aktualizovat sílu signálu a síťové informace (sekundy, 30-3600)
+  log_level:
+    name: Úroveň protokolování
+    description: Podrobnost protokolování (minimal=pouze chyby, normal=standardní, verbose=ladění)
   sms_cost_per_message:
     name: Cena za SMS
     description: Cena za jednu odeslanou SMS zprávu. Nastavte 0 pro vypnutí sledování nákladů.
@@ -49,4 +55,19 @@ configuration:
     description: Měna pro zobrazení nákladů za SMS (např. USD, EUR, GBP, CZK)
   auto_delete_read_sms:
     name: Automaticky mazat přečtené SMS
-    description: Automaticky smazat SMS zprávy ze SIM karty po jejich přečtení (uvolní místo na SIM)
+    description: Automaticky mazat SMS zprávy z SIM karty po přečtení (uvolní místo na SIM)
+  sms_history_max_messages:
+    name: Maximální počet zpráv v historii
+    description: Maximální počet přijatých SMS zpráv v historii (1-100)
+  sms_delivery_reports:
+    name: Povolit potvrzení o doručení
+    description: Požadovat potvrzení o doručení pro odeslané SMS (může způsobit poplatky operátora)
+  balance_sms_enabled:
+    name: Povolit analýzu SMS zůstatku
+    description: Automaticky analyzovat informace o zůstatku účtu ze SMS poskytovatele
+  balance_sms_sender:
+    name: Číslo odesílatele SMS zůstatku
+    description: Telefonní číslo, které posílá informace o zůstatku (odesílatel odpovědi)
+  balance_keywords:
+    name: Klíčová slova zůstatku
+    description: Klíčová slova pro detekci SMS zůstatku (např: Zbývající, vyprší, zůstatek)

@@ -40,7 +40,13 @@ configuration:
     description: Automatycznie wykrywaj i publikuj przychodzące wiadomości SMS do MQTT
   sms_check_interval:
     name: Interwał sprawdzania SMS
-    description: Jak często sprawdzać nowe wiadomości SMS (sekundy, 10-300)
+    description: Jak często sprawdzać nowe wiadomości SMS (sekundy, 5-300)
+  status_update_interval:
+    name: Interwał aktualizacji statusu
+    description: Jak często aktualizować siłę sygnału i informacje o sieci (sekundy, 30-3600)
+  log_level:
+    name: Poziom logowania
+    description: Szczegółowość logów (minimal=tylko błędy, normal=standardowy, verbose=debugowanie)
   sms_cost_per_message:
     name: Koszt za SMS
     description: Koszt za wysłaną wiadomość SMS. Ustaw 0, aby wyłączyć śledzenie kosztów.
@@ -48,5 +54,20 @@ configuration:
     name: Waluta
     description: Waluta do wyświetlania kosztów SMS (np. USD, EUR, GBP, PLN)
   auto_delete_read_sms:
-    name: Automatycznie usuwaj przeczytane SMS
-    description: Automatycznie usuwaj wiadomości SMS z karty SIM po przeczytaniu (zwalnia miejsce na SIM)
+    name: Automatyczne usuwanie przeczytanych SMS
+    description: Automatyczne usuwanie wiadomości SMS z karty SIM po przeczytaniu (zwalnia miejsce)
+  sms_history_max_messages:
+    name: Maksymalna liczba wiadomości w historii
+    description: Maksymalna liczba odebranych wiadomości SMS w historii (1-100)
+  sms_delivery_reports:
+    name: Włącz raporty dostarczenia
+    description: Żądaj raportów dostarczenia dla wysłanych SMS (może generować opłaty operatora)
+  balance_sms_enabled:
+    name: Włącz analizę SMS salda
+    description: Automatyczna analiza informacji o saldzie konta z SMS dostawcy
+  balance_sms_sender:
+    name: Numer nadawcy SMS salda
+    description: Numer telefonu wysyłający informacje o saldzie (nadawca odpowiedzi)
+  balance_keywords:
+    name: Słowa kluczowe salda
+    description: Słowa kluczowe do wykrywania SMS salda (np: Pozostało, wygasa, saldo)

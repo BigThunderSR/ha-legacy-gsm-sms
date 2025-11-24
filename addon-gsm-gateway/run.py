@@ -704,7 +704,9 @@ if __name__ == '__main__':
         mqtt_publisher.publish_initial_states_with_machine(machine)
         
         # Start periodic MQTT publishing
-        mqtt_publisher.publish_status_periodic(machine, interval=300)  # 5 minutes
+        status_interval = config.get('status_update_interval', 300)
+        mqtt_publisher.publish_status_periodic(machine, interval=status_interval)
+        print(f"📊 Status Updates: Every {status_interval}s (signal, network)")
         
         # Start SMS monitoring if enabled
         if config.get('sms_monitoring_enabled', True):

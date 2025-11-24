@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: 2.1.8
+version: 2.1.9
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
@@ -66,7 +66,8 @@ options:
   mqtt_password: ""
   mqtt_topic_prefix: "homeassistant/sensor/sms_gateway"
   sms_monitoring_enabled: true
-  sms_check_interval: 10
+  sms_check_interval: 5
+  status_update_interval: 300
   sms_cost_per_message: 0.0
   sms_cost_currency: "USD"
   auto_delete_read_sms: true
@@ -93,7 +94,8 @@ schema:
   mqtt_password: str?
   mqtt_topic_prefix: str
   sms_monitoring_enabled: bool
-  sms_check_interval: int(10,300)
+  sms_check_interval: int(5,300)
+  status_update_interval: int(30,3600)
   sms_cost_per_message: float?
   sms_cost_currency: str
   auto_delete_read_sms: bool

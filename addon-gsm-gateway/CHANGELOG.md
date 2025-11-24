@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.9] - 2025-11-23
+
+### Added
+
+- **Configurable Status Update Interval** 📊 - Control how often signal and network info updates
+  - New `status_update_interval` option (default: 300 seconds / 5 minutes)
+  - Range: 30-3600 seconds (30 seconds to 1 hour)
+  - Controls update frequency for signal strength, network info, and BER
+  - Lower values = more frequent updates, higher values = less modem load
+  - Recommended: 60-120s for mobile/weak signal, 300-600s for stationary setups
+  - Displays configured interval at startup
+
+### Changed
+
+- **SMS Check Interval** - Reduced minimum from 10 to 5 seconds
+  - `sms_check_interval` now accepts 5-300 seconds (previously 10-300)
+  - Default changed to 5 seconds for faster SMS detection
+  - Allows near-instant SMS notifications for time-sensitive use cases
+
 ## [2.1.8] - 2025-11-23
 
 ### Added

@@ -106,15 +106,16 @@ curl -X POST http://192.168.1.x:5000/sms \
 
 ### MQTT Settings
 
-| Parameter                | Default          | Description                         |
-| ------------------------ | ---------------- | ----------------------------------- |
-| `mqtt_enabled`           | `true`           | Enable MQTT integration             |
-| `mqtt_host`              | `core-mosquitto` | MQTT broker hostname                |
-| `mqtt_port`              | `1883`           | MQTT broker port                    |
-| `mqtt_username`          | `""`             | MQTT username (empty for no auth)   |
-| `mqtt_password`          | `""`             | MQTT password (empty for no auth)   |
-| `sms_monitoring_enabled` | `true`           | Detect incoming SMS automatically   |
-| `sms_check_interval`     | `10`             | SMS check interval (10-300 seconds) |
+| Parameter                | Default          | Description                                                             |
+| ------------------------ | ---------------- | ----------------------------------------------------------------------- |
+| `mqtt_enabled`           | `true`           | Enable MQTT integration                                                 |
+| `mqtt_host`              | `core-mosquitto` | MQTT broker hostname                                                    |
+| `mqtt_port`              | `1883`           | MQTT broker port                                                        |
+| `mqtt_username`          | `""`             | MQTT username (empty for no auth)                                       |
+| `mqtt_password`          | `""`             | MQTT password (empty for no auth)                                       |
+| `sms_monitoring_enabled` | `true`           | Detect incoming SMS automatically                                       |
+| `sms_check_interval`     | `5`              | SMS check interval (5-300 seconds) (🆕 v2.1.8: min reduced to 5s)       |
+| `status_update_interval` | `300`            | Status update interval (30-3600 seconds) - signal & network (🆕 v2.1.8) |
 
 ### SMS Management Settings
 
@@ -147,6 +148,29 @@ The `log_level` setting controls how much information appears in the add-on logs
   - Shows everything including "SMS monitoring cycle OK" messages every 10-60 seconds
   - Useful for troubleshooting connection issues or development
   - May generate large log files
+
+### Status Update Interval (🆕 v2.1.8)
+
+The `status_update_interval` setting controls how often the addon queries and publishes:
+
+- Signal strength (percentage and dBm)
+- Network information (operator, state, cell tower)
+- Bit Error Rate (BER)
+
+**Important Notes:**
+
+- GSM modems don't support event-driven notifications for signal changes
+- The addon must actively poll the modem using AT commands
+- Default: 300 seconds (5 minutes) - reasonable balance between freshness and modem load
+- Range: 30-3600 seconds (30 seconds to 1 hour)
+- Lower values = more frequent updates but more modem queries
+- Higher values = less modem load but less frequent updates
+
+**Recommendations:**
+
+- **Mobile users / weak signal areas**: 60-120 seconds for more frequent updates
+- **Stationary setups with stable signal**: 300-600 seconds (default or higher)
+- **Battery-powered modems**: 600-1800 seconds to reduce power consumption
 
 ### Balance SMS Tracking Settings (🆕 v2.1.7)
 
@@ -181,7 +205,7 @@ When enabled, the addon will automatically detect SMS messages from `balance_sms
 - Messages remaining
 - Plan expiry date
 
-### Example Configuration with v2.1.0+ Features
+### Example Configuration with v2.1.8+ Features
 
 ```yaml
 device_path: "/dev/ttyUSB0"
@@ -191,7 +215,8 @@ password: "change_this_password"
 mqtt_enabled: true
 mqtt_host: "core-mosquitto"
 sms_monitoring_enabled: true
-sms_check_interval: 10
+sms_check_interval: 5 # Check for new SMS every 5 seconds (min: 5s, default: 5s)
+status_update_interval: 300 # Update signal/network every 5 minutes (default)
 auto_delete_read_sms: true
 sms_history_max_messages: 20 # Keep last 20 received SMS (default: 10)
 sms_delivery_reports: false # Keep disabled to avoid carrier charges

@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2025-11-24
+
+### Added
+
+- **Automatic Modem Recovery** 🔄 - Recover from modem communication failures without restart
+  - New `auto_recovery` option (default: `true`) - configurable automatic recovery
+  - Monitors modem communication for consecutive failures
+  - Triggers reconnection after 5 consecutive failures
+  - 60-second cooldown between reconnection attempts
+  - Re-initializes Gammu state machine to restore modem communication
+  - Publishes device status (offline → online) when reconnection succeeds
+  - **Eliminates need for external automation** to restart addon on modem disconnect
+  - Can be disabled by setting `auto_recovery: false` if needed
+
+- **Modem Firmware Sensor** 🔧 - New diagnostic sensor showing modem firmware version
+  - Displays modem firmware version at startup and in Home Assistant
+  - Marked as diagnostic entity (appears in diagnostics section)
+  - Useful for troubleshooting and support
+  - Uses chip icon (mdi:chip)
+
 ## [2.3.1] - 2025-11-23
 
 ### Fixed
@@ -35,7 +55,6 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Configurable Status Update Interval** 📊 - Control how often signal and network info updates
-
   - New `status_update_interval` option (default: 300 seconds / 5 minutes)
   - Range: 30-3600 seconds (30 seconds to 1 hour)
   - Controls update frequency for signal strength, network info, and BER
@@ -56,7 +75,6 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **SMS Check Interval** - Reduced minimum from 10 to 5 seconds
-
   - `sms_check_interval` now accepts 5-300 seconds (previously 10-300)
   - Default changed to 5 seconds for faster SMS detection
   - Allows near-instant SMS notifications for time-sensitive use cases
@@ -165,20 +183,17 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Base Image Update** - Updated to Alpine 3.22 base image
-
   - Security improvements and CVE patches
   - Performance optimizations
   - Updated Python versions (3.13.x)
   - Modernized tooling (pip 25.2, Bashio 0.17.5)
 
 - **Docker Configuration** - Fixed multi-architecture build support
-
   - Removed hardcoded architecture from Dockerfile
   - Proper ARG BUILD_FROM usage for multi-arch builds
   - Updated Dockerfile labels with correct version and maintainer
 
 - **Startup Logging & Dependencies** - Enhanced version visibility and fixed dependencies
-
   - Added version display in startup logs
   - Fixed version loading to read from config.yaml
   - Added PyYAML and requests to dependencies
@@ -191,7 +206,6 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant
-
   - USSD Code text field - Enter USSD codes (validates format: starts with \*, e.g., \*225#, \*#100#)
   - Send USSD button - Execute USSD code and receive network response
   - USSD Response sensor - Displays network response with timestamp
@@ -200,7 +214,6 @@ All notable changes to this project will be documented in this file.
   - Error handling with user-friendly messages
 
 - **SMS History Tracking** - Received messages stored with persistence
-
   - Messages include phone number, full message text, and timestamp
   - Available as JSON attributes on Last SMS Received sensor
   - Persistent storage survives addon restarts

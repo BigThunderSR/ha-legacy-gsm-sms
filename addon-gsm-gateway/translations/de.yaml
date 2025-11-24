@@ -46,7 +46,10 @@ configuration:
     description: Wie oft Signalstärke und Netzwerkinformationen aktualisiert werden (Sekunden, 30-3600)
   log_level:
     name: Protokollstufe
-    description: Protokollstufe (warning=nur Fehler, info=standard, debug=ausführlich)
+    description: Protokollierungsstufe (warning=nur Fehler, info=standard, debug=ausführlich)
+  auto_recovery:
+    name: Automatische Wiederherstellung
+    description: Automatische Wiederherstellung nach Modem-Kommunikationsfehlern (empfohlen)
   sms_cost_per_message:
     name: SMS-Kosten pro Nachricht
     description: Kosten pro gesendete SMS-Nachricht. Auf 0 setzen, um die Kostenverfolgung zu deaktivieren.

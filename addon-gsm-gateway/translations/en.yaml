@@ -47,6 +47,9 @@ configuration:
   log_level:
     name: Log Level
     description: Logging level (warning=errors only, info=standard, debug=verbose)
+  auto_recovery:
+    name: Auto-Recovery
+    description: Automatically recover from modem communication failures (recommended)
   sms_cost_per_message:
     name: SMS Cost per Message
     description: Cost per sent SMS message. Set to 0 to disable cost tracking.

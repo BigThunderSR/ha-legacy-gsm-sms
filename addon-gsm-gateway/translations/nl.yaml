@@ -47,6 +47,9 @@ configuration:
   log_level:
     name: Logniveau
     description: Logniveau (warning=alleen fouten, info=standaard, debug=uitgebreid)
+  auto_recovery:
+    name: Automatisch Herstel
+    description: Automatisch herstel na modemcommunicatiefouten (aanbevolen)
   sms_cost_per_message:
     name: Kosten per SMS
     description: Kosten per verzonden SMS-bericht. Stel in op 0 om kostenbewaking uit te schakelen.

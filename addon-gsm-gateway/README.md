@@ -78,6 +78,7 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 - **GSM Location Area Code** - Network area code
 - **Modem IMEI** - Device identifier
 - **Modem Model** - Manufacturer and model info
+- **Modem Firmware** - Modem firmware version (🆕 v2.4.0)
 - **SIM IMSI** - SIM card identifier
 
 **Optional:**
@@ -385,6 +386,24 @@ This project maintains the Apache License 2.0 from the original works:
 - [pajikos/sms-gammu-gateway](https://github.com/pajikos/sms-gammu-gateway)
 
 ## Changelog
+
+### Version 2.4.0 (2025-11-24)
+
+**Automatic Modem Recovery** 🔄
+
+- New `auto_recovery` option (default: `true`) - configurable automatic recovery
+- Monitors modem communication for consecutive failures
+- Triggers reconnection after 5 consecutive failures
+- 60-second cooldown between reconnection attempts
+- Re-initializes Gammu state machine to restore modem communication
+- Publishes device status (offline → online) when reconnection succeeds
+- **Eliminates need for external automation** to restart addon on modem disconnect
+- Can be disabled by setting `auto_recovery: false` if needed
+
+**Modem Firmware Sensor** 🔧
+
+- New diagnostic sensor showing modem firmware version
+- Useful for troubleshooting and support
 
 ### Version 2.1.2 (2025-11-22)
 

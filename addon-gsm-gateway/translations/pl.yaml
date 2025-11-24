@@ -45,8 +45,11 @@ configuration:
     name: Interwał aktualizacji statusu
     description: Jak często aktualizować siłę sygnału i informacje o sieci (sekundy, 30-3600)
   log_level:
-    name: Poziom logowania
-    description: Poziom logowania (warning=tylko błędy, info=standardowy, debug=debugowanie)
+    name: Poziom Logowania
+    description: Poziom logowania (warning=tylko błędy, info=standardowy, debug=szczegółowy)
+  auto_recovery:
+    name: Automatyczne Przywracanie
+    description: Automatyczne przywracanie po błędach komunikacji modemu (zalecane)
   sms_cost_per_message:
     name: Koszt za SMS
     description: Koszt za wysłaną wiadomość SMS. Ustaw 0, aby wyłączyć śledzenie kosztów.

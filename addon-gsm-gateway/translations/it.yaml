@@ -45,8 +45,11 @@ configuration:
     name: Intervallo di aggiornamento dello stato
     description: Frequenza di aggiornamento della potenza del segnale e delle informazioni di rete (secondi, 30-3600)
   log_level:
-    name: Livello di registrazione
-    description: Livello di registrazione (warning=solo errori, info=standard, debug=verboso)
+    name: Livello di Registro
+    description: Livello di registrazione (warning=solo errori, info=standard, debug=dettagliato)
+  auto_recovery:
+    name: Recupero Automatico
+    description: Recupero automatico da errori di comunicazione del modem (consigliato)
   sms_cost_per_message:
     name: Costo per SMS
     description: Costo per messaggio SMS inviato. Impostare a 0 per disabilitare il monitoraggio dei costi.

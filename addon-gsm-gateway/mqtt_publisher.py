@@ -424,6 +424,13 @@ class MQTTPublisher:
         self.sms_counter = SMSCounter()  # SMS counter with persistence
         self.log_level = config.get('log_level', 'normal')  # Store log level for conditional logging
         
+        # Reconnection settings
+        self.auto_recovery = config.get('auto_recovery', True)
+        self.consecutive_failures = 0
+        self.reconnect_threshold = 5  # Try to reconnect after 5 consecutive failures
+        self.last_reconnect_attempt = 0
+        self.reconnect_cooldown = 60  # Wait 60 seconds between reconnect attempts
+        
         # Initialize SMS history with configurable max messages (default: 10)
         max_history = config.get('sms_history_max_messages', 10)
         self.sms_history = SMSHistory(max_messages=max_history)  # SMS history with persistence
@@ -1352,6 +1359,18 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
 
+        # Modem Firmware sensor
+        modem_firmware_config = {
+            "name": "Modem Firmware",
+            "unique_id": "sms_gateway_modem_firmware",
+            "state_topic": f"{self.topic_prefix}/modem_info/state",
+            "value_template": "{{ value_json.Firmware }}",
+            "icon": "mdi:chip",
+            "entity_category": "diagnostic",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
         # SIM IMSI sensor
         sim_imsi_config = {
             "name": "SIM IMSI",
@@ -1453,6 +1472,7 @@ class MQTTPublisher:
             ("homeassistant/sensor/sms_gateway/modem_status/config", device_status_config),
             ("homeassistant/sensor/sms_gateway/modem_imei/config", modem_imei_config),
             ("homeassistant/sensor/sms_gateway/modem_model/config", modem_model_config),
+            ("homeassistant/sensor/sms_gateway/modem_firmware/config", modem_firmware_config),
             ("homeassistant/sensor/sms_gateway/sim_imsi/config", sim_imsi_config),
             # Controls
             ("homeassistant/button/sms_gateway/send_button/config", button_config),
@@ -1781,6 +1801,51 @@ class MQTTPublisher:
         }
         self.client.publish(topic, json.dumps(status_data), retain=True)
         logger.info(f"📬 Published delivery report: ref={message_ref}, status={status}")
+    
+    def _attempt_reconnect_if_needed(self):
+        """Attempt to reconnect to modem if auto_recovery is enabled and threshold is reached"""
+        if not self.auto_recovery:
+            return
+        
+        if self.consecutive_failures < self.reconnect_threshold:
+            return
+        
+        current_time = time.time()
+        if current_time - self.last_reconnect_attempt < self.reconnect_cooldown:
+            return  # Still in cooldown period
+        
+        self.last_reconnect_attempt = current_time
+        logger.warning(f"🔄 Attempting automatic modem reconnection after {self.consecutive_failures} failures...")
+        
+        if self._reconnect_gammu():
+            logger.info("✅ Automatic modem reconnection successful!")
+            self.consecutive_failures = 0
+        else:
+            logger.error(f"❌ Automatic modem reconnection failed. Will retry in {self.reconnect_cooldown}s")
+    
+    def _reconnect_gammu(self):
+        """Attempt to re-initialize Gammu state machine"""
+        try:
+            from support import init_state_machine
+            pin = self.config.get('pin', '')
+            device_path = self.config.get('device_path', '/dev/ttyUSB0')
+            
+            logger.info(f"🔌 Re-initializing Gammu with device: {device_path}")
+            new_machine = init_state_machine(pin, device_path)
+            
+            # Test the new connection with a simple operation
+            try:
+                new_machine.GetManufacturer()
+                # Success! Update the machine
+                self.gammu_machine = new_machine
+                return True
+            except Exception as e:
+                logger.error(f"❌ Reconnected machine failed test: {e}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to re-initialize Gammu: {e}")
+            return False
         
     def track_gammu_operation(self, operation_name, gammu_function, *args, **kwargs):
         """Execute gammu operation with connectivity tracking, thread safety, and Python-level timeout"""
@@ -1793,6 +1858,7 @@ class MQTTPublisher:
                     # Primary defense is Gammu commtimeout=10s in config
                     result = future.result(timeout=15)
                     self.device_tracker.record_success()
+                    self.consecutive_failures = 0  # Reset failure counter on success
                     self.publish_device_status()
                     logger.debug(f"✅ Gammu operation '{operation_name}' succeeded")
 
@@ -1803,14 +1869,18 @@ class MQTTPublisher:
                     return result
                 except concurrent.futures.TimeoutError:
                     # Operation timed out at Python level
+                    self.consecutive_failures += 1
                     self.device_tracker.record_failure(f"{operation_name}: Python timeout (15s)")
                     self.publish_device_status()
+                    self._attempt_reconnect_if_needed()
                     logger.error(f"⏱️ Gammu operation '{operation_name}' timed out after 15s")
                     raise TimeoutError(f"Gammu operation '{operation_name}' timed out after 15s")
                 except Exception as e:
                     # All other errors (including Gammu commtimeout errors)
+                    self.consecutive_failures += 1
                     self.device_tracker.record_failure(f"{operation_name}: {str(e)}")
                     self.publish_device_status()
+                    self._attempt_reconnect_if_needed()
                     raise
     
     def _publish_initial_states(self):

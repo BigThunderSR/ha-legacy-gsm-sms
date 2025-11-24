@@ -45,8 +45,11 @@ configuration:
     name: Interval aktualizácie stavu
     description: Ako často aktualizovať silu signálu a sieťové informácie (sekundy, 30-3600)
   log_level:
-    name: Úroveň protokolovania
-    description: Úroveň protokolovania (warning=len chyby, info=štandardné, debug=ladenie)
+    name: Úroveň Protokolovania
+    description: Úroveň protokolovania (warning=len chyby, info=štandardné, debug=podrobné)
+  auto_recovery:
+    name: Automatické Obnovenie
+    description: Automatické obnovenie po zlyhaniach komunikácie modemu (odporúčané)
   sms_cost_per_message:
     name: Cena za SMS
     description: Cena za jednu odoslanú SMS správu. Nastavte 0 pre vypnutie sledovania nákladov.

@@ -127,19 +127,18 @@ curl -X POST http://192.168.1.x:5000/sms \
 | `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                |
 | `sms_delivery_reports`     | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0) |
 | `log_level`                | `info`  | Logging level: `warning`, `info`, or `debug` (🆕 v2.1.8)            |
+| `auto_recovery`            | `true`  | Automatically recover from modem failures (🆕 v2.4.0)               |
 
 ### Logging Levels (🆕 v2.1.8, Enhanced v2.2.1)
 
 The `log_level` setting uses Python's standard logging levels:
 
 - **`warning`** - Only warnings, errors, and critical messages (Python WARNING level)
-
   - Best for production when everything is working smoothly
   - Suppresses all routine status messages
   - Reduces log file size significantly
 
 - **`info`** (default) - Standard operational logging (Python INFO level)
-
   - Shows all useful information (SMS received/sent, signal strength, network info, connection changes)
   - **Signal strength logs both sensors**: `📡 Published signal strength to MQTT: 75% (-65 dBm)` _(Enhanced v2.2.1)_
   - **Only suppresses**: Repetitive "SMS monitoring cycle OK" messages when no new SMS arrives
@@ -152,6 +151,25 @@ The `log_level` setting uses Python's standard logging levels:
     - Network: `Network details: Code=310260, State=HomeNetwork, LAC=1234, CID=5678`
   - Useful for troubleshooting connection issues or development
   - May generate large log files
+
+### Automatic Modem Recovery (🆕 v2.4.0)
+
+The `auto_recovery` setting enables automatic recovery from modem communication failures:
+
+- **`true`** (default) - Automatically reconnects to modem after connection loss
+  - Monitors modem communication for consecutive failures
+  - Triggers reconnection after **5 consecutive failures**
+  - Waits **60 seconds** between reconnection attempts (cooldown period)
+  - Re-initializes Gammu state machine to restore modem communication
+  - Publishes device status (offline → online) when reconnection succeeds
+  - **Recommended**: Enables addon to recover from modem failures without external restart
+
+- **`false`** - Manual recovery required
+  - Addon will not attempt automatic recovery
+  - Requires external automation or manual restart to recover
+  - Use only if automatic recovery causes issues with your specific modem
+
+**Use Case**: If your GSM modem loses USB connection (power loss, physical disconnect, driver issues), the addon will automatically attempt to recover without requiring a full addon restart or external automation.
 
 ### Status Update Interval (🆕 v2.1.8)
 

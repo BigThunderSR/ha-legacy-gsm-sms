@@ -45,8 +45,11 @@ configuration:
     name: Intervalle de mise à jour de l'état
     description: Fréquence de mise à jour de la force du signal et des informations réseau (secondes, 30-3600)
   log_level:
-    name: Niveau de journalisation
-    description: Niveau de journalisation (warning=erreurs seulement, info=standard, debug=débogage)
+    name: Niveau de Journal
+    description: Niveau de journalisation (warning=erreurs uniquement, info=standard, debug=détaillé)
+  auto_recovery:
+    name: Récupération Automatique
+    description: Récupération automatique après échecs de communication du modem (recommandé)
   sms_cost_per_message:
     name: Coût par SMS
     description: Coût par message SMS envoyé. Définir à 0 pour désactiver le suivi des coûts.

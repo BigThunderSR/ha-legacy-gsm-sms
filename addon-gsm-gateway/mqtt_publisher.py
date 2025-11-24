@@ -1505,7 +1505,7 @@ class MQTTPublisher:
         import time
         time.sleep(1)
     
-    def publish_signal_strength(self, signal_data: Dict[str, Any]):
+    def publish_signal_strength(self, signal_data: Dict[str, Any], silent: bool = False):
         """Publish signal strength data"""
         if not self.connected:
             return
@@ -1513,32 +1513,57 @@ class MQTTPublisher:
         topic = f"{self.topic_prefix}/signal/state"
         self.client.publish(topic, json.dumps(signal_data), retain=True)
         
-        # Normal logging: show both signal level sensors
-        signal_percent = signal_data.get('SignalPercent', 'N/A')
-        signal_dbm = signal_data.get('SignalStrength', 'N/A')
-        logger.info(f"📡 Published signal strength to MQTT: {signal_percent}% ({signal_dbm} dBm)")
-        
-        # Verbose logging: show all sensor data
-        if self.log_level == "verbose":
+        if not silent:
+            # Normal logging: show both signal level sensors
+            signal_percent = signal_data.get('SignalPercent', 'N/A')
+            signal_dbm = signal_data.get('SignalStrength', 'N/A')
+            logger.info(f"📡 Published signal strength to MQTT: {signal_percent}% ({signal_dbm} dBm)")
+            
+            # Verbose/debug logging: show all sensor data
             ber = signal_data.get('BitErrorRate', 'N/A')
-            logger.debug(f"   Signal details: Percent={signal_percent}%, dBm={signal_dbm}, BER={ber}")
+            logger.debug(f"   📊 Signal details: Percent={signal_percent}%, dBm={signal_dbm}, BER={ber}")
     
-    def publish_network_info(self, network_data: Dict[str, Any]):
+    def publish_network_info(self, network_data: Dict[str, Any], silent: bool = False):
         """Publish network information"""
         if not self.connected:
             return
             
         topic = f"{self.topic_prefix}/network/state"
         self.client.publish(topic, json.dumps(network_data), retain=True)
-        logger.info(f"📡 Published network info to MQTT: {network_data.get('NetworkName', 'Unknown')}")
         
-        # Verbose logging: show all network sensor data
-        if self.log_level == "verbose":
+        if not silent:
+            logger.info(f"📡 Published network info to MQTT: {network_data.get('NetworkName', 'Unknown')}")
+            
+            # Verbose/debug logging: show all network sensor data
             network_code = network_data.get('NetworkCode', 'N/A')
             state = network_data.get('State', 'N/A')
             lac = network_data.get('LAC', 'N/A')
             cell_id = network_data.get('CID', 'N/A')
-            logger.debug(f"   Network details: Code={network_code}, State={state}, LAC={lac}, CID={cell_id}")
+            logger.debug(f"   📡 Network details: Code={network_code}, State={state}, LAC={lac}, CID={cell_id}")
+    
+    def publish_status_combined(self, signal_data: Dict[str, Any], network_data: Dict[str, Any]):
+        """Publish both signal strength and network info with combined logging"""
+        if not self.connected:
+            return
+        
+        # Publish both silently
+        self.publish_signal_strength(signal_data, silent=True)
+        self.publish_network_info(network_data, silent=True)
+        
+        # Combined log message
+        signal_percent = signal_data.get('SignalPercent', 'N/A')
+        signal_dbm = signal_data.get('SignalStrength', 'N/A')
+        network_name = network_data.get('NetworkName', 'Unknown')
+        logger.info(f"📡 Status update: {signal_percent}% ({signal_dbm} dBm) | {network_name}")
+        
+        # Verbose/debug logging: show all sensor details
+        ber = signal_data.get('BitErrorRate', 'N/A')
+        network_code = network_data.get('NetworkCode', 'N/A')
+        state = network_data.get('State', 'N/A')
+        lac = network_data.get('LAC', 'N/A')
+        cell_id = network_data.get('CID', 'N/A')
+        logger.debug(f"   📊 Signal: Percent={signal_percent}%, dBm={signal_dbm}, BER={ber}")
+        logger.debug(f"   📡 Network: Code={network_code}, State={state}, LAC={lac}, CID={cell_id}")
     
     def publish_sms_received(self, sms_data: Dict[str, Any]):
         """Publish received SMS data and fire Home Assistant event"""
@@ -2118,18 +2143,20 @@ class MQTTPublisher:
             
         def _publish_loop():
             while self.connected and not self.disconnecting:
-                # Publish signal strength with connectivity tracking
+                signal = None
+                network = None
+                
+                # Get signal strength with connectivity tracking
                 try:
                     signal = self.track_gammu_operation("GetSignalQuality", gammu_machine.GetSignalQuality)
                     # Filter out invalid BER value (-1 means not available)
                     if signal.get("BitErrorRate") == -1:
                         signal["BitErrorRate"] = None
-                    self.publish_signal_strength(signal)
                 except Exception as e:
                     # track_gammu_operation already recorded the failure
                     pass  # Warning already logged by track_gammu_operation
 
-                # Publish network info with connectivity tracking
+                # Get network info with connectivity tracking
                 try:
                     from gammu import GSMNetworks
                     network = self.track_gammu_operation("GetNetworkInfo", gammu_machine.GetNetworkInfo)
@@ -2157,7 +2184,16 @@ class MQTTPublisher:
                         "Unknown": "Unknown",
                     }
                     network["State"] = state_map.get(state, state)
-                    
+                except Exception as e:
+                    # track_gammu_operation already recorded the failure
+                    pass  # Warning already logged by track_gammu_operation
+                
+                # Publish combined status if we have both
+                if signal and network:
+                    self.publish_status_combined(signal, network)
+                elif signal:
+                    self.publish_signal_strength(signal)
+                elif network:
                     self.publish_network_info(network)
                 except Exception as e:
                     # track_gammu_operation already recorded the failure

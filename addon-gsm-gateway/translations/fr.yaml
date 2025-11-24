@@ -46,7 +46,7 @@ configuration:
     description: Fréquence de mise à jour de la force du signal et des informations réseau (secondes, 30-3600)
   log_level:
     name: Niveau de journalisation
-    description: Verbosité de la journalisation (minimal=erreurs seulement, normal=standard, verbose=débogage)
+    description: Niveau de journalisation (warning=erreurs seulement, info=standard, debug=débogage)
   sms_cost_per_message:
     name: Coût par SMS
     description: Coût par message SMS envoyé. Définir à 0 pour désactiver le suivi des coûts.

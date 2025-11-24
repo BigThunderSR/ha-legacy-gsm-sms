@@ -46,7 +46,7 @@ configuration:
     description: Jak často aktualizovat sílu signálu a síťové informace (sekundy, 30-3600)
   log_level:
     name: Úroveň protokolování
-    description: Podrobnost protokolování (minimal=pouze chyby, normal=standardní, verbose=ladění)
+    description: Úroveň protokolování (warning=pouze chyby, info=standardní, debug=ladění)
   sms_cost_per_message:
     name: Cena za SMS
     description: Cena za jednu odeslanou SMS zprávu. Nastavte 0 pro vypnutí sledování nákladů.

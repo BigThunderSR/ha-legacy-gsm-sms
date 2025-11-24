@@ -46,7 +46,7 @@ configuration:
     description: Frequência de atualização da força do sinal e informações de rede (segundos, 30-3600)
   log_level:
     name: Nível de registro
-    description: Verbosidade do registro (minimal=apenas erros, normal=padrão, verbose=depuração)
+    description: Nível de registro (warning=apenas erros, info=padrão, debug=depuração)
   sms_cost_per_message:
     name: Custo por SMS
     description: Custo por mensagem SMS enviada. Defina como 0 para desativar o rastreamento de custos.

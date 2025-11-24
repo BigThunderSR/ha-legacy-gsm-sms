@@ -46,7 +46,7 @@ configuration:
     description: Hoe vaak signaalsterkte en netwerkinformatie worden bijgewerkt (seconden, 30-3600)
   log_level:
     name: Logniveau
-    description: Logboekdetail (minimal=alleen fouten, normal=standaard, verbose=debug)
+    description: Logniveau (warning=alleen fouten, info=standaard, debug=uitgebreid)
   sms_cost_per_message:
     name: Kosten per SMS
     description: Kosten per verzonden SMS-bericht. Stel in op 0 om kostenbewaking uit te schakelen.

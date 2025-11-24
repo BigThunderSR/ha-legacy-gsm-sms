@@ -2,23 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.2.1] - 2025-11-23
+## [2.3.0] - 2025-11-23
 
 ### Improved
 
-- **Enhanced Status Logging** 📊 - Better visibility of sensor updates
-  - Normal mode now shows both signal sensors: percentage and dBm values
-  - Verbose mode displays all sensor data for complete diagnostics
-  - Signal strength: Shows Percent, dBm, and BER (Bit Error Rate)
-  - Network info: Shows NetworkCode, State, LAC, and CID
-  - Example: `📡 Published signal strength to MQTT: 75% (-65 dBm)`
-  - Verbose example: `Signal details: Percent=75%, dBm=-65, BER=0`
+- **Combined Status Logging** 📊 - Reduced log overflow
+  - Single line for status updates: `📡 Status update: 87% (-55 dBm) | T-Mobile/Metro by T-Mobile`
+  - INFO level shows signal and network info combined
+  - DEBUG level displays detailed sensor breakdowns
+  - Significantly reduces log verbosity during periodic updates
+
+### Changed
+
+- **Logging Level Names** ⚠️ BREAKING CHANGE - Now use Python's standard logging levels
+  - `warning` instead of `minimal` (Python WARNING level)
+  - `info` instead of `normal` (Python INFO level)
+  - `debug` instead of `verbose` (Python DEBUG level)
+  - Provides consistency with Python logging framework
+  - Old values still work but new names are recommended
 
 ## [2.2.0] - 2025-11-23
 
 ### Added
 
 - **Configurable Status Update Interval** 📊 - Control how often signal and network info updates
+
   - New `status_update_interval` option (default: 300 seconds / 5 minutes)
   - Range: 30-3600 seconds (30 seconds to 1 hour)
   - Controls update frequency for signal strength, network info, and BER
@@ -27,17 +35,19 @@ All notable changes to this project will be documented in this file.
   - Displays configured interval at startup
 
 - **Configurable Logging Levels** 📋 - Control log verbosity to reduce spam
-  - New `log_level` option with three levels: `minimal`, `normal` (default), `verbose`
-  - `minimal` - Only warnings and errors
-  - `normal` - All useful info, suppresses repetitive SMS polling "OK" messages
-  - `verbose` - Full debug logging including all polling cycles
+  - New `log_level` option with three levels: `warning`, `info` (default), `debug`
+  - `warning` - Only warnings and errors (Python WARNING level)
+  - `info` - All useful info, suppresses repetitive SMS polling "OK" messages (Python INFO level)
+  - `debug` - Full debug logging including all polling cycles (Python DEBUG level)
   - Solves log overflow from SMS monitoring cycles (every 5-10 seconds)
-  - All important events (SMS received/sent, signal strength, network info) remain visible in normal mode
+  - All important events (SMS received/sent, signal strength, network info) remain visible in info mode
+  - Uses Python's standard logging level names for consistency
   - Documented in DOCS.md with clear explanations of each level
 
 ### Changed
 
 - **SMS Check Interval** - Reduced minimum from 10 to 5 seconds
+
   - `sms_check_interval` now accepts 5-300 seconds (previously 10-300)
   - Default changed to 5 seconds for faster SMS detection
   - Allows near-instant SMS notifications for time-sensitive use cases

@@ -422,6 +422,7 @@ class MQTTPublisher:
         self.current_ussd_code = ""  # Current USSD code from text input
         self.device_tracker = DeviceConnectivityTracker()  # USB device connectivity tracking
         self.sms_counter = SMSCounter()  # SMS counter with persistence
+        self.log_level = config.get('log_level', 'normal')  # Store log level for conditional logging
         
         # Initialize SMS history with configurable max messages (default: 10)
         max_history = config.get('sms_history_max_messages', 10)
@@ -1927,7 +1928,11 @@ class MQTTPublisher:
                 try:
                     all_sms = self.track_gammu_operation("retrieveAllSms", retrieveAllSms, gammu_machine)
                     current_count = len(all_sms)
-                    logger.info(f"✅ SMS monitoring cycle OK: {current_count} messages on SIM")
+                    # Only log routine polling in verbose mode to reduce log spam
+                    if self.log_level == 'verbose':
+                        logger.info(f"✅ SMS monitoring cycle OK: {current_count} messages on SIM")
+                    else:
+                        logger.debug(f"SMS monitoring cycle OK: {current_count} messages on SIM")
                 except Exception as e:
                     # track_gammu_operation already recorded the failure and published status
                     logger.warning(f"❌ SMS monitoring cycle failed (modem offline): {e}")

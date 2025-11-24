@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.8] - 2025-11-23
+
+### Added
+
+- **Configurable Logging Levels** 📋 - Control log verbosity to reduce spam
+  - New `log_level` option with three levels: `minimal`, `normal` (default), `verbose`
+  - `minimal` - Only warnings and errors
+  - `normal` - All useful info, suppresses repetitive SMS polling "OK" messages
+  - `verbose` - Full debug logging including all polling cycles
+  - Solves log overflow from SMS monitoring cycles (every 10-60 seconds)
+  - All important events (SMS received/sent, signal strength, network info) remain visible in normal mode
+  - Documented in DOCS.md with clear explanations of each level
+
 ## [2.1.7] - 2025-11-22
 
 ### Added
@@ -100,17 +113,20 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Base Image Update** - Updated to Alpine 3.22 base image
+
   - Security improvements and CVE patches
   - Performance optimizations
   - Updated Python versions (3.13.x)
   - Modernized tooling (pip 25.2, Bashio 0.17.5)
 
 - **Docker Configuration** - Fixed multi-architecture build support
+
   - Removed hardcoded architecture from Dockerfile
   - Proper ARG BUILD_FROM usage for multi-arch builds
   - Updated Dockerfile labels with correct version and maintainer
 
 - **Startup Logging & Dependencies** - Enhanced version visibility and fixed dependencies
+
   - Added version display in startup logs
   - Fixed version loading to read from config.yaml
   - Added PyYAML and requests to dependencies
@@ -123,6 +139,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant
+
   - USSD Code text field - Enter USSD codes (validates format: starts with \*, e.g., \*225#, \*#100#)
   - Send USSD button - Execute USSD code and receive network response
   - USSD Response sensor - Displays network response with timestamp
@@ -131,6 +148,7 @@ All notable changes to this project will be documented in this file.
   - Error handling with user-friendly messages
 
 - **SMS History Tracking** - Received messages stored with persistence
+
   - Messages include phone number, full message text, and timestamp
   - Available as JSON attributes on Last SMS Received sensor
   - Persistent storage survives addon restarts

@@ -133,6 +133,18 @@ def load_ha_config():
 VERSION = load_version()
 config = load_ha_config()
 
+# Configure logging level based on config
+log_level = config.get('log_level', 'normal')
+if log_level == 'verbose':
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.info("🔍 Logging level set to VERBOSE (all messages)")
+elif log_level == 'minimal':
+    logging.getLogger().setLevel(logging.WARNING)
+    logging.warning("🔇 Logging level set to MINIMAL (warnings and errors only)")
+else:  # normal
+    logging.getLogger().setLevel(logging.INFO)
+    logging.info("📋 Logging level set to NORMAL (standard messages)")
+
 # Log version at startup
 logging.info(f"GSM SMS Gateway Enhanced v{VERSION}")
 

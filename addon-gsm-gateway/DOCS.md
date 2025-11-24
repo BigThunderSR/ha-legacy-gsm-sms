@@ -118,13 +118,35 @@ curl -X POST http://192.168.1.x:5000/sms \
 
 ### SMS Management Settings
 
-| Parameter                  | Default | Description                                                         |
-| -------------------------- | ------- | ------------------------------------------------------------------- |
-| `sms_cost_per_message`     | `0.0`   | Price per SMS (0 = cost tracking disabled)                          |
-| `sms_cost_currency`        | `USD`   | Currency code (EUR, USD, CZK, GBP, etc.)                            |
-| `auto_delete_read_sms`     | `true`  | Auto-delete SMS after reading (frees SIM space)                     |
-| `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                |
-| `sms_delivery_reports`     | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0) |
+| Parameter                  | Default  | Description                                                         |
+| -------------------------- | -------- | ------------------------------------------------------------------- |
+| `sms_cost_per_message`     | `0.0`    | Price per SMS (0 = cost tracking disabled)                          |
+| `sms_cost_currency`        | `USD`    | Currency code (EUR, USD, CZK, GBP, etc.)                            |
+| `auto_delete_read_sms`     | `true`   | Auto-delete SMS after reading (frees SIM space)                     |
+| `sms_history_max_messages` | `10`     | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                |
+| `sms_delivery_reports`     | `false`  | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0) |
+| `log_level`                | `normal` | Logging verbosity: `minimal`, `normal`, or `verbose` (🆕 v2.1.8)    |
+
+### Logging Levels (🆕 v2.1.8)
+
+The `log_level` setting controls how much information appears in the add-on logs:
+
+- **`minimal`** - Only warnings, errors, and critical messages
+
+  - Best for production when everything is working smoothly
+  - Suppresses all routine status messages
+  - Reduces log file size significantly
+
+- **`normal`** (default) - Standard operational logging
+
+  - Shows all useful information (SMS received/sent, signal strength, network info, connection changes)
+  - **Only suppresses**: Repetitive "SMS monitoring cycle OK" messages when no new SMS arrives
+  - Recommended for most users - keeps logs clean without hiding important events
+
+- **`verbose`** - Full debug logging
+  - Shows everything including "SMS monitoring cycle OK" messages every 10-60 seconds
+  - Useful for troubleshooting connection issues or development
+  - May generate large log files
 
 ### Balance SMS Tracking Settings (🆕 v2.1.7)
 
@@ -159,7 +181,7 @@ When enabled, the addon will automatically detect SMS messages from `balance_sms
 - Messages remaining
 - Plan expiry date
 
-### Example Configuration with v2.1.0 Features
+### Example Configuration with v2.1.0+ Features
 
 ```yaml
 device_path: "/dev/ttyUSB0"
@@ -175,6 +197,7 @@ sms_history_max_messages: 20 # Keep last 20 received SMS (default: 10)
 sms_delivery_reports: false # Keep disabled to avoid carrier charges
 sms_cost_per_message: 0.05
 sms_cost_currency: "USD"
+log_level: "normal" # minimal | normal | verbose (default: normal)
 ```
 
 ## 📊 MQTT Sensors

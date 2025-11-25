@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.1] - 2025-11-24
+
+### Fixed
+
+- Fixed SMS monitoring polling logs not appearing in debug mode (condition was checking for 'verbose' instead of 'debug')
+
 ## [2.6.0] - 2025-11-24
 
 ### Added

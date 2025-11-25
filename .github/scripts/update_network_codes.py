@@ -325,12 +325,18 @@ def update_file_preserving_structure(existing_file, new_codes):
     
     docstring, existing_entries, structure, functions, sections = result
     
-    # Merge: existing entries take priority, add only truly new codes
+    # Separate new codes into truly new ones and updates to existing ones
     updated_entries = existing_entries.copy()
     new_entries = {}
     
     for code, name in new_codes.items():
-        if code not in updated_entries:
+        if code in existing_entries:
+            # Code exists - check if name changed
+            if existing_entries[code] != name:
+                # Name changed - update it
+                updated_entries[code] = name
+        else:
+            # Code doesn't exist - it's a new entry
             updated_entries[code] = name
             new_entries[code] = name
     

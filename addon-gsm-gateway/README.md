@@ -52,7 +52,7 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 - **Automatic Unicode Detection** - special characters handled automatically
 - **Delete All SMS Button** - Clear SIM card storage with one click
 - **Auto-delete SMS** - Optional automatic deletion after reading
-- **Reset Counter Button** - Reset SMS statistics
+- **Reset Counter Buttons** - Reset SMS sent/received statistics
 - **Message Length Limit** - 255 characters max (longer messages split automatically by modem)
 
 ### 📊 Device Monitoring
@@ -66,6 +66,7 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 - **Last SMS Sender** - Phone number of last received SMS
 - **SMS Send Status** - Success/error tracking
 - **SMS Sent Count** - Persistent counter (survives restarts)
+- **SMS Received Count** - Persistent counter for received messages
 - **SMS Storage Used** - SIM card capacity monitoring
 - **Modem Status** - Device connectivity tracking
 

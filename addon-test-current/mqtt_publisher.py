@@ -35,11 +35,12 @@ def detect_unicode_needed(text: str) -> bool:
         return True
 
 class SMSCounter:
-    """Tracks sent SMS count with persistent storage"""
+    """Tracks sent and received SMS counts with persistent storage"""
 
     def __init__(self, counter_file: str = SMS_COUNTER_FILE):
         self.counter_file = counter_file
         self.sent_count = 0
+        self.received_count = 0
         self._load()
 
     def _load(self):
@@ -49,12 +50,14 @@ class SMSCounter:
                 with open(self.counter_file, 'r') as f:
                     data = json.load(f)
                     self.sent_count = data.get('sent_count', 0)
-                    logger.info(f"📊 Loaded SMS counter from file: {self.sent_count}")
+                    self.received_count = data.get('received_count', 0)
+                    logger.info(f"📊 Loaded SMS counters from file: sent={self.sent_count}, received={self.received_count}")
             else:
                 logger.info("📊 SMS counter file not found, starting from 0")
         except Exception as e:
             logger.error(f"Error loading SMS counter: {e}")
             self.sent_count = 0
+            self.received_count = 0
 
     def _save(self):
         """Save counter to JSON file"""
@@ -62,28 +65,60 @@ class SMSCounter:
             # Ensure /data directory exists
             os.makedirs(os.path.dirname(self.counter_file), exist_ok=True)
 
-            data = {'sent_count': self.sent_count}
+            data = {
+                'sent_count': self.sent_count,
+                'received_count': self.received_count
+            }
             with open(self.counter_file, 'w') as f:
                 json.dump(data, f)
-            logger.debug(f"📊 Saved SMS counter to file: {self.sent_count}")
+            logger.debug(f"📊 Saved SMS counters to file: sent={self.sent_count}, received={self.received_count}")
         except Exception as e:
             logger.error(f"Error saving SMS counter: {e}")
 
-    def increment(self):
-        """Increment counter and save"""
+    def increment_sent(self):
+        """Increment sent counter and save"""
         self.sent_count += 1
         self._save()
         return self.sent_count
 
-    def reset(self):
-        """Reset counter to 0"""
+    def increment_received(self):
+        """Increment received counter and save"""
+        self.received_count += 1
+        self._save()
+        return self.received_count
+
+    def increment(self):
+        """Increment sent counter (backward compatibility)"""
+        return self.increment_sent()
+
+    def reset_sent(self):
+        """Reset sent counter to 0"""
         self.sent_count = 0
         self._save()
-        logger.info("📊 SMS counter reset to 0")
+        logger.info("📊 SMS sent counter reset to 0")
         return self.sent_count
 
+    def reset_received(self):
+        """Reset received counter to 0"""
+        self.received_count = 0
+        self._save()
+        logger.info("📊 SMS received counter reset to 0")
+        return self.received_count
+
+    def reset(self):
+        """Reset sent counter (backward compatibility)"""
+        return self.reset_sent()
+
+    def get_sent_count(self):
+        """Get current sent count"""
+        return self.sent_count
+
+    def get_received_count(self):
+        """Get current received count"""
+        return self.received_count
+
     def get_count(self):
-        """Get current count"""
+        """Get sent count (backward compatibility)"""
         return self.sent_count
 
 class SMSHistory:
@@ -534,10 +569,15 @@ class MQTTPublisher:
             client.subscribe(button_topic)
             logger.info(f"Subscribed to SMS button topic: {button_topic}")
 
-            # Subscribe to reset counter button
+            # Subscribe to reset sent counter button
             reset_counter_topic = f"{self.topic_prefix}/reset_counter_button"
             client.subscribe(reset_counter_topic)
-            logger.info(f"Subscribed to reset counter topic: {reset_counter_topic}")
+            logger.info(f"Subscribed to reset sent counter topic: {reset_counter_topic}")
+
+            # Subscribe to reset received counter button
+            reset_received_counter_topic = f"{self.topic_prefix}/reset_received_counter_button"
+            client.subscribe(reset_received_counter_topic)
+            logger.info(f"Subscribed to reset received counter topic: {reset_received_counter_topic}")
 
             # Subscribe to delete all SMS button
             delete_all_sms_topic = f"{self.topic_prefix}/delete_all_sms_button"
@@ -593,6 +633,7 @@ class MQTTPublisher:
             send_topic = f"{self.topic_prefix}/send"
             button_topic = f"{self.topic_prefix}/send_button"
             reset_counter_topic = f"{self.topic_prefix}/reset_counter_button"
+            reset_received_counter_topic = f"{self.topic_prefix}/reset_received_counter_button"
             delete_all_sms_topic = f"{self.topic_prefix}/delete_all_sms_button"
             clear_delivery_reports_topic = f"{self.topic_prefix}/clear_delivery_reports_button"
             phone_topic = f"{self.topic_prefix}/phone_number/set"
@@ -609,8 +650,11 @@ class MQTTPublisher:
                 # Button pressed - send SMS using current text inputs
                 self._handle_button_sms_send()
             elif topic == reset_counter_topic and payload == "PRESS":
-                # Reset counter button pressed
+                # Reset sent counter button pressed
                 self._handle_reset_counter()
+            elif topic == reset_received_counter_topic and payload == "PRESS":
+                # Reset received counter button pressed
+                self._handle_reset_received_counter()
             elif topic == delete_all_sms_topic and payload == "PRESS":
                 # Delete all SMS button pressed
                 self._handle_delete_all_sms()
@@ -912,11 +956,18 @@ class MQTTPublisher:
             logger.error("Gammu machine not available for USSD sending")
     
     def _handle_reset_counter(self):
-        """Handle reset counter button press"""
-        logger.info("🔄 Reset counter button pressed")
-        self.sms_counter.reset()
+        """Handle reset sent counter button press"""
+        logger.info("🔄 Reset sent counter button pressed")
+        self.sms_counter.reset_sent()
         self.publish_sms_counter()
-        logger.info("✅ SMS counter reset to 0")
+        logger.info("✅ SMS sent counter reset to 0")
+
+    def _handle_reset_received_counter(self):
+        """Handle reset received counter button press"""
+        logger.info("🔄 Reset received counter button pressed")
+        self.sms_counter.reset_received()
+        self.publish_sms_received_counter()
+        logger.info("✅ SMS received counter reset to 0")
 
     def _handle_clear_delivery_reports(self):
         """Handle clear delivery reports button press"""
@@ -1116,6 +1167,7 @@ class MQTTPublisher:
             "value_template": "{{ value_json.SignalPercent }}",
             "unit_of_measurement": "%",
             "icon": "mdi:signal-cellular-3",
+            "state_class": "measurement",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
@@ -1376,7 +1428,7 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
 
-        # SMS Counter sensor
+        # SMS Sent Counter sensor
         sms_counter_config = {
             "name": "SMS Sent Count",
             "unique_id": "sms_gateway_sent_count",
@@ -1388,14 +1440,37 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
 
+        # SMS Received Counter sensor
+        sms_received_counter_config = {
+            "name": "SMS Received Count",
+            "unique_id": "sms_gateway_received_count",
+            "state_topic": f"{self.topic_prefix}/sms_received_counter/state",
+            "value_template": "{{ value_json.count }}",
+            "icon": "mdi:message-badge",
+            "state_class": "total_increasing",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
         # SMS Cost sensor (only if cost > 0)
         sms_cost_per_message = self.config.get('sms_cost_per_message', 0.0)
 
-        # Reset counter button
+        # Reset sent counter button
         reset_counter_button_config = {
-            "name": "Reset SMS Counter",
+            "name": "Reset SMS Sent Counter",
             "unique_id": "sms_gateway_reset_counter",
             "command_topic": f"{self.topic_prefix}/reset_counter_button",
+            "payload_press": "PRESS",
+            "icon": "mdi:restart",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
+        # Reset received counter button
+        reset_received_counter_button_config = {
+            "name": "Reset SMS Received Counter",
+            "unique_id": "sms_gateway_reset_received_counter",
+            "command_topic": f"{self.topic_prefix}/reset_received_counter_button",
             "payload_press": "PRESS",
             "icon": "mdi:restart",
             "device": DEVICE_CONFIG,
@@ -1478,6 +1553,7 @@ class MQTTPublisher:
             "json_attributes_topic": f"{self.topic_prefix}/sms_capacity/state",
             "unit_of_measurement": "messages",
             "icon": "mdi:email-multiple",
+            "state_class": "measurement",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
@@ -1510,6 +1586,7 @@ class MQTTPublisher:
             "value_template": "{{ value_json.minutes_remaining }}",
             "unit_of_measurement": "min",
             "icon": "mdi:phone",
+            "state_class": "measurement",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
@@ -1521,6 +1598,7 @@ class MQTTPublisher:
             "value_template": "{{ value_json.messages_remaining }}",
             "unit_of_measurement": "messages",
             "icon": "mdi:message-text",
+            "state_class": "measurement",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
@@ -1556,6 +1634,7 @@ class MQTTPublisher:
             ("homeassistant/sensor/sms_gateway/delete_status/config", delete_status_config),
             ("homeassistant/sensor/sms_gateway/delivery_status/config", delivery_report_config),
             ("homeassistant/sensor/sms_gateway/sent_count/config", sms_counter_config),
+            ("homeassistant/sensor/sms_gateway/received_count/config", sms_received_counter_config),
             ("homeassistant/sensor/sms_gateway/sms_capacity/config", sms_capacity_config),
             # Modem/SIM sensors
             ("homeassistant/sensor/sms_gateway/modem_status/config", device_status_config),
@@ -1566,6 +1645,7 @@ class MQTTPublisher:
             # Controls
             ("homeassistant/button/sms_gateway/send_button/config", button_config),
             ("homeassistant/button/sms_gateway/reset_counter/config", reset_counter_button_config),
+            ("homeassistant/button/sms_gateway/reset_received_counter/config", reset_received_counter_button_config),
             ("homeassistant/button/sms_gateway/delete_all_sms/config", delete_all_sms_button_config),
             ("homeassistant/button/sms_gateway/clear_delivery_reports/config", clear_delivery_reports_button_config),
             ("homeassistant/button/sms_gateway/send_ussd_button/config", ussd_button_config),
@@ -1693,6 +1773,11 @@ class MQTTPublisher:
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
         sms_data['timestamp'] = timestamp
         
+        # Increment received counter
+        new_count = self.sms_counter.increment_received()
+        self.publish_sms_received_counter()
+        logger.debug(f"📊 SMS received counter incremented to {new_count}")
+        
         # Check if this is a balance SMS and parse it
         if self.balance_parser:
             sender = sms_data.get('Number', '')
@@ -1798,11 +1883,11 @@ class MQTTPublisher:
             logger.debug("Device status changed but MQTT not connected, skipping publish")
 
     def publish_sms_counter(self):
-        """Publish SMS counter and cost data"""
+        """Publish SMS sent counter and cost data"""
         if not self.connected:
             return
 
-        count = self.sms_counter.get_count()
+        count = self.sms_counter.get_sent_count()
         sms_cost_per_message = self.config.get('sms_cost_per_message', 0.0)
         total_cost = count * sms_cost_per_message
 
@@ -1813,7 +1898,22 @@ class MQTTPublisher:
 
         topic = f"{self.topic_prefix}/sms_counter/state"
         self.client.publish(topic, json.dumps(counter_data), retain=True)
-        logger.debug(f"📊 Published SMS counter: {count}, cost: {total_cost}")
+        logger.debug(f"📊 Published SMS sent counter: {count}, cost: {total_cost}")
+
+    def publish_sms_received_counter(self):
+        """Publish SMS received counter data"""
+        if not self.connected:
+            return
+
+        count = self.sms_counter.get_received_count()
+
+        counter_data = {
+            "count": count
+        }
+
+        topic = f"{self.topic_prefix}/sms_received_counter/state"
+        self.client.publish(topic, json.dumps(counter_data), retain=True)
+        logger.debug(f"📊 Published SMS received counter: {count}")
 
     def publish_modem_info(self, modem_data: Dict[str, Any]):
         """Publish modem hardware information"""
@@ -2092,8 +2192,9 @@ class MQTTPublisher:
             # This preserves the last SMS value across restarts
             logger.info("📡 Skipping empty SMS state publish (preserves last SMS across restarts)")
 
-            # Publish initial SMS counter
+            # Publish initial SMS counters
             self.publish_sms_counter()
+            self.publish_sms_received_counter()
 
             # Publish modem info
             try:

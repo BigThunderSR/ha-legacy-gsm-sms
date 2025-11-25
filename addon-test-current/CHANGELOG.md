@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.0] - 2025-11-25
+
+### Added
+
+- **SMS Received Count Sensor** 📨 - New counter to track incoming SMS messages
+  - Separate counter from SMS Sent Count for better statistics
+  - Persistent storage survives addon restarts
+  - Automatically increments when SMS messages are received
+  - Includes dedicated reset button: "Reset SMS Received Counter"
+  - Both counters use `state_class: total_increasing` for proper Home Assistant statistics
+  - Enables tracking of SMS volume patterns over time
+
+### Improved
+
+- **Sensor State Classes** 📊 - Enhanced Home Assistant statistics support
+  - Added `state_class: "measurement"` to GSM Signal Strength (%) sensor
+  - Added `state_class: "measurement"` to SMS Storage Used sensor
+  - Added `state_class: "measurement"` to Minutes Remaining balance sensor
+  - Added `state_class: "measurement"` to Messages Remaining balance sensor
+  - These changes enable long-term statistics, trend analysis, and better automation support
+  - Follows Home Assistant best practices for numeric sensors
+
+### Changed
+
+- **Button Names Clarified** 🔘 - Improved naming for better clarity
+  - "Reset SMS Counter" renamed to "Reset SMS Sent Counter"
+  - Distinguishes between sent and received counter reset buttons
+
 ## [2.7.0] - 2025-11-25
 
 ### Added

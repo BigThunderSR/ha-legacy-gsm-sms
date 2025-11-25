@@ -282,10 +282,11 @@ After enabling MQTT, these entities are automatically created:
 
 ### SMS Counter & Cost Sensors
 
-| Entity                              | Type   | Description                                            |
-| ----------------------------------- | ------ | ------------------------------------------------------ |
-| `sensor.sms_gateway_sms_sent_count` | Sensor | Total SMS sent through addon                           |
-| `sensor.sms_gateway_total_cost`     | Sensor | Total cost of sent SMS (if `sms_cost_per_message > 0`) |
+| Entity                                  | Type   | Description                                            |
+| --------------------------------------- | ------ | ------------------------------------------------------ |
+| `sensor.sms_gateway_sms_sent_count`     | Sensor | Total SMS sent through addon                           |
+| `sensor.sms_gateway_sms_received_count` | Sensor | Total SMS received through addon (🆕 v2.8.0)           |
+| `sensor.sms_gateway_total_cost`         | Sensor | Total cost of sent SMS (if `sms_cost_per_message > 0`) |
 
 ### Balance Sensors (🆕 v2.1.7)
 
@@ -315,7 +316,8 @@ The addon automatically detects, parses, and updates the sensors when responses 
 | `text.sms_gateway_ussd_code`                | Text input | USSD code input (🆕 v2.1.0)              |
 | `button.sms_gateway_send_button`            | Button     | Send SMS button                          |
 | `button.sms_gateway_send_ussd_button`       | Button     | Send USSD code button (🆕 v2.1.0)        |
-| `button.sms_gateway_reset_counter`          | Button     | Reset SMS counter and costs              |
+| `button.sms_gateway_reset_sent_counter`     | Button     | Reset SMS sent counter (🆕 v2.8.0)       |
+| `button.sms_gateway_reset_received_counter` | Button     | Reset SMS received counter (🆕 v2.8.0)   |
 | `button.sms_gateway_delete_all_sms`         | Button     | Delete all SMS from SIM card             |
 | `button.sms_gateway_clear_delivery_reports` | Button     | Clear stuck delivery reports (🆕 v2.7.0) |
 
@@ -722,7 +724,7 @@ sms_cost_per_message: 0.10 # e.g., $0.10 per SMS
 sms_cost_currency: "USD"
 ```
 
-This creates a `sensor.sms_gateway_total_cost` showing cumulative costs. Reset anytime using the **Reset Counter** button.
+This creates a `sensor.sms_gateway_total_cost` showing cumulative costs. Reset the sent counter anytime using the **Reset SMS Sent Counter** button. The received counter can be reset independently with the **Reset SMS Received Counter** button.
 
 ### Automatic SIM Storage Management
 

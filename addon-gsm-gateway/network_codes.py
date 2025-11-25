@@ -16,6 +16,7 @@ Auto-update: Monthly via GitHub Actions
 # Format: "MCCMNC": "Operator Name"
 NETWORK_OPERATORS = {
 
+
     # United States (MCC 310-316)
     "310005": "Verizon",
     "310006": "Verizon",
@@ -183,10 +184,10 @@ NETWORK_OPERATORS = {
     # US MVNOs with unique codes
     "310032": "IT&E Wireless",
     "310053": "Virgin Mobile",
-    "310260": "Metro by T-Mobile",
+    "310260": "T-Mobile",
     "310890": "Verizon Wireless",
     "311230": "C Spire",
-    "311280": "Assurance Wireless",
+    "311280": "Verizon",
     "311290": "BLAZE",
     "311330": "Bug Tussel Wireless",
     "311380": "New Dimension Wireless Ltd.",
@@ -1450,8 +1451,8 @@ NETWORK_OPERATORS = {
     "24703": "TRIATEL",
     "24704": "Beta Telecom",
     "24705": "Bite",
-    "24706": "SIA UNISTARS",
-    "24707": "SIA MEGATEL",
+    "24706": "SIA "UNISTARS"",
+    "24707": "SIA "MEGATEL"",
     "24708": "VMT",
     "24709": "Xomobile",
     "24710": "LMT",
@@ -1492,7 +1493,7 @@ NETWORK_OPERATORS = {
     "25506": "lifecell",
     "25507": "3Mob; Lycamobile",
     "25508": "JSC Ukrtelecom",
-    "25509": "PRJSC Farlep-Invest",
+    "25509": "PRJSC "Farlep-Invest"",
     "25510": "Atlantis Telecom LLC",
     "25521": "PEOPLEnet",
     "25523": "CDMA Ukraine",

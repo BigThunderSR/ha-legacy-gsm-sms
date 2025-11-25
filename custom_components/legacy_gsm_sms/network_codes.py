@@ -183,7 +183,7 @@ NETWORK_OPERATORS = {
     # US MVNOs with unique codes
     "310032": "IT&E Wireless",
     "310053": "Virgin Mobile",
-    "310260": "Metro by T-Mobile",
+    "310260": "T-Mobile",
     "310890": "Verizon Wireless",
     "311230": "C Spire",
     "311280": "Assurance Wireless",

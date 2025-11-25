@@ -46,6 +46,60 @@ SOURCES = [
     },
 ]
 
+# Manual overrides for specific operator codes
+# These corrections will be applied after fetching from sources
+# to fix known issues in the upstream data or to preserve MVNO distinctions
+MANUAL_OVERRIDES = {
+    # USA MVNOs (MCC 310/311/312/313)
+    "310053": "Virgin Mobile",  # T-Mobile MVNO (former Sprint)
+    "310260": "T-Mobile",  # Main T-Mobile code (also used by Mint Mobile, Ting MVNOs)
+    "310440": "Numerex",  # M2M MVNO
+    "310640": "Numerex",  # M2M MVNO
+    "310650": "Jasper",  # M2M MVNO (Jasper Technologies)
+    "310840": "telna Mobile",  # MVNO (Telecom North America Mobile)
+    "310850": "Aeris",  # M2M MVNO (Aeris Communications)
+    "311660": "Metro by T-Mobile",  # Former MetroPCS, now T-Mobile MVNO brand
+    "311870": "T-Mobile",  # Former Sprint MVNO services
+    "311880": "T-Mobile",  # Former Sprint MVNO services
+    "311900": "GigSky",  # International MVNO
+    "311960": "Lycamobile",  # International MVNO
+    "312210": "Aspenta International",  # MVNO
+    "312300": "telna Mobile",  # MVNO (Telecom North America Mobile)
+    "312690": "Tecore Global Services",  # MVNO
+    "312870": "GigSky Mobile",  # International MVNO
+    "313260": "Expeto Wireless",  # MVNO
+    "313480": "Ready Wireless",  # MVNO
+    "313760": "Hologram",  # IoT/M2M MVNO
+    "313770": "Tango Extend",  # Tango Networks MVNO
+    "314340": "e/marconi",  # MVNO (E-Marconi LLC)
+    "314680": "Xfinity Mobile",  # Comcast MVNO
+    "314720": "OXIO",  # MVNO
+    "314730": "TextNow",  # MVNO
+    "314790": "Neuner Mobile Technologies",  # MVNO
+    
+    # Canada MVNOs (MCC 302)
+    "302100": "dotmobile",  # Data on Tap MVNO
+    "302160": "Sugar Mobile",  # Iristel MVNO
+    "302340": "Execulink",  # MVNO
+    "302370": "Fido",  # Rogers MVNO (former Microcell)
+    "302760": "Public Mobile",  # Telus MVNO
+    
+    # Mexico MVNOs (MCC 334)
+    "334030": "Movistar",  # MVNO on AT&T
+    "334110": "Maxcom Telecomunicaciones",  # MVNO
+    "334120": "Quickly Phone",  # MVNO
+    "334170": "OXIO Mobile",  # MVNO
+    "334180": "FreedomPop",  # MVNO
+    "334200": "Virgin Mobile",  # MVNO
+    "334210": "YO Mobile",  # Yonder Media Mobile MVNO
+    "334220": "Megamóvil",  # Mega Cable MVNO
+    
+    # Fix syntax errors from unescaped quotes in source data
+    "24706": "SIA UNISTARS",  # Latvia - Source has broken quotes
+    "24707": "SIA MEGATEL",   # Latvia - Source has broken quotes
+    "25509": "PRJSC Farlep-Invest",  # Ukraine - Source has broken quotes
+}
+
 
 def get_source_last_update(source, response):
     """Get the last update time for a source.
@@ -483,6 +537,19 @@ def main():
     if not new_codes:
         print("\n✗ ERROR: Could not fetch data from any source!")
         sys.exit(1)
+    
+    # Apply manual overrides to correct known issues in source data
+    print(f"\nApplying {len(MANUAL_OVERRIDES)} manual corrections...")
+    for code, corrected_name in MANUAL_OVERRIDES.items():
+        if code in new_codes:
+            old_name = new_codes[code]
+            if old_name != corrected_name:
+                new_codes[code] = corrected_name
+                print(f"  {code}: '{old_name}' → '{corrected_name}'")
+        else:
+            # Code doesn't exist in source data, add it
+            new_codes[code] = corrected_name
+            print(f"  {code}: Added '{corrected_name}' (missing from source)")
     
     # Update all network_codes.py files
     repo_root = Path(__file__).parent.parent.parent

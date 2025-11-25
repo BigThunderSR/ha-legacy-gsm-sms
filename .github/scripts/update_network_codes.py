@@ -12,6 +12,7 @@ import requests
 
 # Public data sources - multiple fallback options
 # Each source will be checked for availability and last update time
+# Only includes verified, currently available sources
 SOURCES = [
     {
         "name": "musalbas/mcc-mnc-table",
@@ -24,13 +25,6 @@ SOURCES = [
         "name": "pbakondy/mcc-mnc-list",
         "url": "https://raw.githubusercontent.com/pbakondy/mcc-mnc-list/master/mcc-mnc-list.json",
         "repo": "pbakondy/mcc-mnc-list",
-        "file": "mcc-mnc-list.json",
-        "format": "list",  # List of objects
-    },
-    {
-        "name": "musalbas/mcc-mnc-list (original)",
-        "url": "https://raw.githubusercontent.com/musalbas/mcc-mnc-list/master/mcc-mnc-list.json",
-        "repo": "musalbas/mcc-mnc-list",
         "file": "mcc-mnc-list.json",
         "format": "list",  # List of objects
     },

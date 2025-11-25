@@ -241,6 +241,13 @@ def fetch_mcc_mnc_data():
     return selected["data"]
 
 
+def get_mcc_prefix(code):
+    """Extract MCC prefix (first 3 digits) from a network code."""
+    if len(code) >= 3:
+        return code[:3]
+    return None
+
+
 def parse_existing_file(existing_file):
     """Parse existing file preserving all structure, comments, and docstrings."""
     content = existing_file.read_text()
@@ -258,17 +265,30 @@ def parse_existing_file(existing_file):
     
     if not dict_match:
         print("Error: Could not find NETWORK_OPERATORS in existing file")
-        return None, None, None
+        return None, None, None, None
     
     dict_content = dict_match.group(2)
     
     # Parse entries while preserving comments and structure
     entries = {}
     lines_with_comments = []
+    sections = {}  # Track which MCC prefixes appear in which sections
+    current_section_comment = None
+    current_section_codes = set()
     
     for line in dict_content.split('\n'):
         # Preserve comment lines
         if line.strip().startswith('#'):
+            # Save previous section if it exists
+            if current_section_comment and current_section_codes:
+                for code in current_section_codes:
+                    mcc = get_mcc_prefix(code)
+                    if mcc:
+                        if mcc not in sections:
+                            sections[mcc] = current_section_comment
+            
+            current_section_comment = line
+            current_section_codes = set()
             lines_with_comments.append(('comment', line))
         # Parse code entries
         else:
@@ -276,15 +296,24 @@ def parse_existing_file(existing_file):
             if match:
                 code, name = match.group(1), match.group(2)
                 entries[code] = name
+                current_section_codes.add(code)
                 lines_with_comments.append(('entry', code, name))
             elif line.strip() == '':
                 lines_with_comments.append(('blank', line))
+    
+    # Don't forget the last section
+    if current_section_comment and current_section_codes:
+        for code in current_section_codes:
+            mcc = get_mcc_prefix(code)
+            if mcc:
+                if mcc not in sections:
+                    sections[mcc] = current_section_comment
     
     # Extract function definitions after the dict
     func_match = re.search(r'(\n\ndef get_network_name.*)', content, re.DOTALL)
     functions = func_match.group(1) if func_match else ''
     
-    return docstring, entries, lines_with_comments, functions
+    return docstring, entries, lines_with_comments, functions, sections
 
 
 def update_file_preserving_structure(existing_file, new_codes):
@@ -294,54 +323,139 @@ def update_file_preserving_structure(existing_file, new_codes):
     if result[0] is None:
         return False
     
-    docstring, existing_entries, structure, functions = result
+    docstring, existing_entries, structure, functions, sections = result
     
     # Merge: existing entries take priority, add only truly new codes
     updated_entries = existing_entries.copy()
-    added_count = 0
+    new_entries = {}
     
     for code, name in new_codes.items():
         if code not in updated_entries:
             updated_entries[code] = name
-            added_count += 1
+            new_entries[code] = name
     
-    if added_count == 0:
+    if not new_entries:
         print(f"  No new entries to add to {existing_file.name}")
         return False
     
-    print(f"  Adding {added_count} new network codes to {existing_file.name}")
+    print(f"  Adding {len(new_entries)} new network codes to "
+          f"{existing_file.name}")
+    
+    # Group new entries by MCC prefix for insertion into correct sections
+    new_by_mcc = {}
+    orphaned_codes = []
+    
+    for code, name in new_entries.items():
+        mcc = get_mcc_prefix(code)
+        if mcc and mcc in sections:
+            if mcc not in new_by_mcc:
+                new_by_mcc[mcc] = []
+            new_by_mcc[mcc].append((code, name))
+        else:
+            orphaned_codes.append((code, name))
+    
+    # Sort entries within each MCC group
+    for mcc in new_by_mcc:
+        new_by_mcc[mcc].sort(key=lambda x: x[0])
+    orphaned_codes.sort(key=lambda x: x[0])
     
     # Rebuild the file with updated entries but preserving structure
     new_content_parts = [docstring, '\n\n']
     
     # Add comment about the database
-    new_content_parts.append('# Comprehensive database of mobile network operators by MCC+MNC\n')
+    new_content_parts.append(
+        '# Comprehensive database of mobile network operators by MCC+MNC\n'
+    )
     new_content_parts.append('# Format: "MCCMNC": "Operator Name"\n')
     new_content_parts.append('NETWORK_OPERATORS = {\n')
     
-    # Reconstruct with preserved comments and add new entries in appropriate sections
-    current_section_codes = set()
+    # Reconstruct with preserved comments and insert new entries
+    # in correct numerical order within their sections
+    current_section_mcc = None
+    section_entries_added = set()
+    pending_new_codes = []  # Track new codes to insert in this section
     
-    for item in structure:
+    for i, item in enumerate(structure):
         if item[0] == 'comment':
+            # Before writing this comment, finalize any pending section
+            if current_section_mcc and current_section_mcc in new_by_mcc:
+                section_entries_added.add(current_section_mcc)
+            
             # Write the comment
             new_content_parts.append(item[1] + '\n')
-            current_section_codes.clear()
+            
+            # Determine which MCC section this comment represents
+            current_section_mcc = None
+            pending_new_codes = []
+            for mcc, comment in sections.items():
+                if comment == item[1]:
+                    current_section_mcc = mcc
+                    # Prepare new codes for this section if any
+                    if mcc in new_by_mcc:
+                        pending_new_codes = list(new_by_mcc[mcc])
+                    break
+            
         elif item[0] == 'entry':
             code = item[1]
-            # Use updated name if exists
+            mcc = get_mcc_prefix(code)
+            
+            # Insert any pending new codes that come before this code
+            # in numerical order
+            if pending_new_codes and mcc == current_section_mcc:
+                codes_to_insert = []
+                remaining_codes = []
+                
+                for new_code, new_name in pending_new_codes:
+                    if new_code < code:
+                        codes_to_insert.append((new_code, new_name))
+                    else:
+                        remaining_codes.append((new_code, new_name))
+                
+                # Insert codes that come before current code
+                for new_code, new_name in codes_to_insert:
+                    new_content_parts.append(
+                        f'    "{new_code}": "{new_name}",\n'
+                    )
+                
+                # Update pending list with remaining codes
+                pending_new_codes = remaining_codes
+            
+            # Write the current entry
             name = updated_entries.get(code, item[2])
             new_content_parts.append(f'    "{code}": "{name}",\n')
-            current_section_codes.add(code)
+            
+            # Check if this is the last entry in this section
+            is_last_in_section = False
+            if i + 1 < len(structure):
+                next_item = structure[i + 1]
+                if next_item[0] == 'comment':
+                    is_last_in_section = True
+                elif next_item[0] == 'blank':
+                    if (i + 2 < len(structure) and
+                            structure[i + 2][0] == 'comment'):
+                        is_last_in_section = True
+            else:
+                is_last_in_section = True
+            
+            # If last entry in section, add any remaining pending codes
+            if (is_last_in_section and pending_new_codes and
+                    mcc == current_section_mcc):
+                for new_code, new_name in pending_new_codes:
+                    new_content_parts.append(
+                        f'    "{new_code}": "{new_name}",\n'
+                    )
+                pending_new_codes = []
+                if current_section_mcc:
+                    section_entries_added.add(current_section_mcc)
+                
         elif item[0] == 'blank':
             new_content_parts.append('\n')
     
-    # Add any remaining new codes that don't fit in existing sections
-    remaining_codes = set(updated_entries.keys()) - set(existing_entries.keys())
-    if remaining_codes:
+    # Add any remaining orphaned codes that don't fit in existing sections
+    if orphaned_codes:
         new_content_parts.append('\n    # Additional network codes\n')
-        for code in sorted(remaining_codes):
-            new_content_parts.append(f'    "{code}": "{updated_entries[code]}",\n')
+        for code, name in orphaned_codes:
+            new_content_parts.append(f'    "{code}": "{name}",\n')
     
     new_content_parts.append('}\n')
     

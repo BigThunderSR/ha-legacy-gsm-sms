@@ -136,24 +136,102 @@ def get_network_type(machine):
     Returns human-readable network type string
     """
     import logging
+    import serial
+    import time
+    import os
+    
     try:
-        # Try to read network info
-        network_info = machine.GetNetworkInfo()
+        # Get the device path from Gammu config
+        config = machine.GetConfig(0)
+        device_path = config.get('Device', '')
         
-        # Debug: Log all available fields to understand what Gammu provides
-        logging.info(f"🔍 DEBUG: GetNetworkInfo keys: {list(network_info.keys())}")
-        logging.info(f"🔍 DEBUG: GetNetworkInfo full data: {network_info}")
+        if not device_path:
+            logging.warning("No device path found in Gammu config")
+            return 'Unknown'
         
-        # Check for any fields that might indicate network type
-        # Some possible fields: GPRS, PacketState, NetworkCode, etc.
-        for key, value in network_info.items():
-            logging.info(f"🔍 DEBUG: {key} = {value}")
+        # Resolve symlinks to get actual device
+        if os.path.islink(device_path):
+            device_path = os.path.realpath(device_path)
+            logging.info(f"🔍 Resolved device path for AT commands: {device_path}")
         
-        return 'Unknown'
+        # Open serial connection (brief, read-only operation)
+        ser = None
+        try:
+            ser = serial.Serial(
+                port=device_path,
+                baudrate=115200,
+                timeout=2,
+                write_timeout=2
+            )
+            
+            # Small delay to let modem respond
+            time.sleep(0.1)
+            
+            # Clear any existing data
+            ser.reset_input_buffer()
+            ser.reset_output_buffer()
+            
+            # Enable extended format with AcT parameter
+            ser.write(b'AT+CREG=2\r\n')
+            time.sleep(0.2)
+            response1 = ser.read_all().decode('utf-8', errors='ignore')
+            logging.info(f"🔍 AT+CREG=2 response: {response1.strip()}")
+            
+            # Query registration status
+            ser.write(b'AT+CREG?\r\n')
+            time.sleep(0.2)
+            response2 = ser.read_all().decode('utf-8', errors='ignore')
+            logging.info(f"🔍 AT+CREG? response: {response2.strip()}")
+            
+            # Parse the response: +CREG: <n>,<stat>[,<lac>,<ci>[,<AcT>]]
+            # Example: +CREG: 2,1,"AF04","1C3730B",7
+            for line in response2.split('\n'):
+                if '+CREG:' in line:
+                    parts = line.split(':')[1].strip().split(',')
+                    logging.info(f"🔍 Parsed CREG parts: {parts}")
+                    
+                    if len(parts) >= 5:
+                        # Extract AcT value (last parameter)
+                        act_str = parts[4].strip().strip('"')
+                        try:
+                            act = int(act_str)
+                            network_type = map_act_to_network_type(act)
+                            logging.info(f"🔍 Detected network type: AcT={act} -> {network_type}")
+                            return network_type
+                        except ValueError:
+                            logging.warning(f"Could not parse AcT value: {act_str}")
+            
+            logging.warning("No AcT parameter found in AT+CREG? response")
+            return 'Unknown'
+            
+        finally:
+            if ser and ser.is_open:
+                ser.close()
         
     except Exception as e:
-        logging.warning(f"Could not detect network type: {e}")
+        logging.warning(f"Could not detect network type via AT commands: {e}")
         return 'Unknown'
+
+
+def map_act_to_network_type(act):
+    """Map Access Technology value to human-readable network type"""
+    act_map = {
+        0: "2G (GSM)",
+        1: "2G (GSM Compact)",
+        2: "3G (UMTS)",
+        3: "2.5G (EDGE)",
+        4: "3G+ (HSPA)",
+        5: "3G+ (HSUPA)",
+        6: "3G+ (HSPA+)",
+        7: "4G (LTE)",
+        8: "2G (GSM-IoT)",
+        9: "4G (NB-IoT)",
+        10: "4G (LTE-5G)",
+        11: "5G (NR)",
+        12: "5G (NG-RAN)",
+        13: "4G+5G (EN-DC)"
+    }
+    return act_map.get(act, f"Unknown (AcT={act})")
 
 
 def get_network_type_at(machine):

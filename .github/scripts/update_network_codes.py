@@ -5,6 +5,7 @@ import json
 import re
 import sys
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 import requests
@@ -47,9 +48,8 @@ def get_source_last_update(source, response):
     if last_modified:
         try:
             # Parse HTTP date format (RFC 2822)
-            from email.utils import parsedate_to_datetime
             return parsedate_to_datetime(last_modified)
-        except Exception:
+        except (ValueError, TypeError):
             pass
     
     # Fallback: Try GitHub API (may hit rate limits)
@@ -65,7 +65,7 @@ def get_source_last_update(source, response):
                 # Parse ISO 8601 date
                 commit_date = datetime.fromisoformat(commit_date_str.replace('Z', '+00:00'))
                 return commit_date
-    except Exception:
+    except (requests.exceptions.RequestException, ValueError, KeyError, IndexError):
         pass
     
     return None

@@ -2091,8 +2091,8 @@ class MQTTPublisher:
                 try:
                     all_sms = self.track_gammu_operation("retrieveAllSms", retrieveAllSms, self.gammu_machine)
                     current_count = len(all_sms)
-                    # Only log routine polling in verbose mode to reduce log spam
-                    if self.log_level == 'verbose':
+                    # Only log routine polling in debug mode to reduce log spam
+                    if self.log_level == 'debug':
                         logger.info(f"✅ SMS monitoring cycle OK: {current_count} messages on SIM")
                     else:
                         logger.debug(f"SMS monitoring cycle OK: {current_count} messages on SIM")

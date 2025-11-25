@@ -100,7 +100,8 @@ def fetch_from_source(source):
         return data, last_update
         
     except requests.exceptions.HTTPError as e:
-        print(f"    ✗ HTTP Error {e.response.status_code}: {e}")
+        status = e.response.status_code if e.response is not None else "Unknown"
+        print(f"    ✗ HTTP Error {status}: {e}")
         return None, None
     except (requests.exceptions.RequestException, json.JSONDecodeError, ValueError, KeyError) as e:
         print(f"    ✗ Failed: {e}")
@@ -121,9 +122,9 @@ def parse_data_to_codes(data, source_format):
             mnc = str(entry.get('mnc', ''))
             
             # Try different field names for operator name
-            operator = (entry.get('network', '') or 
-                       entry.get('brand', '') or 
-                       entry.get('operator', ''))
+            operator = (entry.get('network') or 
+                       entry.get('brand') or 
+                       entry.get('operator') or '')
             
             if mcc and mnc and operator:
                 # Pad MNC to 2-3 digits as needed

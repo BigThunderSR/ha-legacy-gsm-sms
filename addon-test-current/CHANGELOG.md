@@ -30,6 +30,14 @@ All notable changes to this project will be documented in this file.
   - "Reset SMS Counter" renamed to "Reset SMS Sent Counter"
   - Distinguishes between sent and received counter reset buttons
 
+### Fixed
+
+- **Last SMS Restoration** 🔄 - Fixed blank SMS sensors after restart
+  - Last received SMS data is now restored from history on addon startup
+  - "Last SMS Received" and "Last SMS Sender" sensors populate immediately
+  - No need to wait for a new SMS to arrive to see previous message
+  - SMS history is loaded from persistent storage and republished to MQTT
+
 ## [2.7.0] - 2025-11-25
 
 ### Added

@@ -736,6 +736,17 @@ auto_delete_read_sms: true
 
 SMS messages are automatically deleted after being read and published to MQTT. Storage capacity is tracked in `sensor.sms_gateway_sms_storage_used`.
 
+### SMS History Persistence (🆕 v2.8.0)
+
+The addon automatically preserves SMS history across restarts:
+
+- **Last 10 received SMS** stored in `/data/sms_history.json`
+- **Auto-restored on startup** - Last received SMS sensors populate immediately
+- **No data loss** - SMS information persists even after addon restarts
+- **Survives updates** - History maintained across addon upgrades
+
+The `sensor.sms_gateway_last_sms` and `sensor.sms_gateway_last_sms_sender` will show your most recent message immediately on startup, without waiting for a new SMS to arrive.
+
 ### Monitor Modem Health
 
 New sensors provide detailed diagnostics:

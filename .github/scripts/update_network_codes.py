@@ -399,7 +399,11 @@ def update_file_preserving_structure(existing_file, new_codes):
         print(f"  No new entries to add to {existing_file.name}")
         return False
     
-    print(f"  Adding {len(new_entries)} new network codes to "
+    # Count truly new codes vs updates
+    truly_new = [c for c in new_entries.keys() if c not in existing_entries]
+    updates = [c for c in new_entries.keys() if c in existing_entries]
+    
+    print(f"  Processing {len(truly_new)} new codes and {len(updates)} updates for "
           f"{existing_file.name}")
     
     # Group new entries by MCC prefix for insertion into correct sections
@@ -408,17 +412,40 @@ def update_file_preserving_structure(existing_file, new_codes):
     
     for code, name in new_entries.items():
         mcc = get_mcc_prefix(code)
-        if mcc and mcc in sections:
-            if mcc not in new_by_mcc:
-                new_by_mcc[mcc] = []
-            new_by_mcc[mcc].append((code, name))
+        if mcc:
+            if mcc in sections:
+                # MCC section exists - add to that section
+                if mcc not in new_by_mcc:
+                    new_by_mcc[mcc] = []
+                new_by_mcc[mcc].append((code, name))
+            else:
+                # MCC section doesn't exist - add to orphaned for later
+                orphaned_codes.append((code, name))
         else:
+            # No valid MCC prefix
             orphaned_codes.append((code, name))
     
     # Sort entries within each MCC group
     for mcc in new_by_mcc:
         new_by_mcc[mcc].sort(key=lambda x: x[0])
-    orphaned_codes.sort(key=lambda x: x[0])
+    
+    # Group orphaned codes by MCC for better organization
+    orphaned_by_mcc = {}
+    for code, name in orphaned_codes:
+        mcc = get_mcc_prefix(code)
+        if mcc:
+            if mcc not in orphaned_by_mcc:
+                orphaned_by_mcc[mcc] = []
+            orphaned_by_mcc[mcc].append((code, name))
+        else:
+            # Truly orphaned (no valid MCC)
+            if 'unknown' not in orphaned_by_mcc:
+                orphaned_by_mcc['unknown'] = []
+            orphaned_by_mcc['unknown'].append((code, name))
+    
+    # Sort orphaned codes
+    for mcc in orphaned_by_mcc:
+        orphaned_by_mcc[mcc].sort(key=lambda x: x[0])
     
     # Rebuild the file with updated entries but preserving structure
     new_content_parts = [docstring, '\n\n']
@@ -446,23 +473,35 @@ def update_file_preserving_structure(existing_file, new_codes):
             new_content_parts.append(item[1] + '\n')
             
             # Determine which MCC section this comment represents
+            # For multi-MCC sections (e.g., "United States (MCC 310-316)"),
+            # we need to load codes for ALL MCCs that map to this section
             current_section_mcc = None
             pending_new_codes = []
             for mcc, comment in sections.items():
                 if comment == item[1]:
-                    current_section_mcc = mcc
-                    # Prepare new codes for this section if any
+                    # Set current_section_mcc to the first MCC we find
+                    if current_section_mcc is None:
+                        current_section_mcc = mcc
+                    # Add codes from this MCC to pending_new_codes
                     if mcc in new_by_mcc:
-                        pending_new_codes = list(new_by_mcc[mcc])
-                    break
+                        pending_new_codes.extend(new_by_mcc[mcc])
+            
+            # Sort pending codes by code number for correct insertion order
+            if pending_new_codes:
+                pending_new_codes.sort(key=lambda x: x[0])
             
         elif item[0] == 'entry':
             code = item[1]
             mcc = get_mcc_prefix(code)
             
+            # Check if this code's MCC belongs to the current section
+            code_section = sections.get(mcc)
+            in_current_section = (code_section and current_section_mcc and
+                                  code_section == sections.get(current_section_mcc))
+            
             # Insert any pending new codes that come before this code
-            # in numerical order
-            if pending_new_codes and mcc == current_section_mcc:
+            # in numerical order (only if in the same section)
+            if pending_new_codes and in_current_section:
                 codes_to_insert = []
                 remaining_codes = []
                 
@@ -499,8 +538,7 @@ def update_file_preserving_structure(existing_file, new_codes):
                 is_last_in_section = True
             
             # If last entry in section, add any remaining pending codes
-            if (is_last_in_section and pending_new_codes and
-                    mcc == current_section_mcc):
+            if (is_last_in_section and pending_new_codes and in_current_section):
                 for new_code, new_name in pending_new_codes:
                     new_content_parts.append(
                         f'    "{new_code}": "{new_name}",\n'
@@ -512,11 +550,27 @@ def update_file_preserving_structure(existing_file, new_codes):
         elif item[0] == 'blank':
             new_content_parts.append('\n')
     
-    # Add any remaining orphaned codes that don't fit in existing sections
-    if orphaned_codes:
-        new_content_parts.append('\n    # Additional network codes\n')
-        for code, name in orphaned_codes:
-            new_content_parts.append(f'    "{code}": "{name}",\n')
+    # Add orphaned codes (codes without existing MCC sections) organized by MCC
+    if orphaned_by_mcc:
+        total_orphaned = sum(len(codes) for codes in orphaned_by_mcc.values())
+        print(f"    Adding {total_orphaned} codes in new MCC sections")
+        new_content_parts.append('\n    # Additional network codes (new MCC regions)\n')
+        
+        # Sort MCCs for consistent ordering
+        sorted_mccs = sorted([m for m in orphaned_by_mcc.keys() if m != 'unknown'])
+        if 'unknown' in orphaned_by_mcc:
+            sorted_mccs.append('unknown')
+        
+        for mcc in sorted_mccs:
+            codes = orphaned_by_mcc[mcc]
+            if mcc == 'unknown':
+                new_content_parts.append('\n    # Unclassified codes\n')
+            else:
+                # Add a basic comment for the new MCC section
+                new_content_parts.append(f'\n    # MCC {mcc}\n')
+            
+            for code, name in codes:
+                new_content_parts.append(f'    "{code}": "{name}",\n')
     
     new_content_parts.append('}\n')
     

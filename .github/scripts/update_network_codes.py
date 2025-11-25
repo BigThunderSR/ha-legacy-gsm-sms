@@ -4,26 +4,192 @@
 import json
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import requests
 
-# Public data sources
-SOURCES = {
-    # Community-maintained database
-    "mcc_mnc_json": "https://raw.githubusercontent.com/musalbas/mcc-mnc-list/master/mcc-mnc-list.json",
-}
+# Public data sources - multiple fallback options
+# Each source will be checked for availability and last update time
+SOURCES = [
+    {
+        "name": "musalbas/mcc-mnc-table",
+        "url": "https://raw.githubusercontent.com/musalbas/mcc-mnc-table/master/mcc-mnc-table.json",
+        "repo": "musalbas/mcc-mnc-table",
+        "file": "mcc-mnc-table.json",
+        "format": "list",  # List of objects
+    },
+    {
+        "name": "pbakondy/mcc-mnc-list", 
+        "url": "https://raw.githubusercontent.com/pbakondy/mcc-mnc-list/master/mcc-mnc-list.json",
+        "repo": "pbakondy/mcc-mnc-list",
+        "file": "mcc-mnc-list.json",
+        "format": "list",  # List of objects
+    },
+    {
+        "name": "musalbas/mcc-mnc-list (original)",
+        "url": "https://raw.githubusercontent.com/musalbas/mcc-mnc-list/master/mcc-mnc-list.json",
+        "repo": "musalbas/mcc-mnc-list",
+        "file": "mcc-mnc-list.json",
+        "format": "list",  # List of objects
+    },
+]
 
 
-def fetch_mcc_mnc_json():
-    """Fetch MCC-MNC data from JSON source."""
+def get_source_last_update(source, response):
+    """Get the last update time for a source.
+    
+    First tries the Last-Modified header from the raw file response,
+    then falls back to GitHub API if needed.
+    """
+    # Try to get Last-Modified header from the response
+    last_modified = response.headers.get('Last-Modified')
+    if last_modified:
+        try:
+            # Parse HTTP date format (RFC 2822)
+            from email.utils import parsedate_to_datetime
+            return parsedate_to_datetime(last_modified)
+        except Exception:
+            pass
+    
+    # Fallback: Try GitHub API (may hit rate limits)
     try:
-        response = requests.get(SOURCES["mcc_mnc_json"], timeout=30)
+        url = f"https://api.github.com/repos/{source['repo']}/commits"
+        params = {"path": source["file"], "per_page": 1}
+        
+        api_response = requests.get(url, params=params, timeout=10)
+        if api_response.status_code == 200:
+            commits = api_response.json()
+            if commits:
+                commit_date_str = commits[0]["commit"]["committer"]["date"]
+                # Parse ISO 8601 date
+                commit_date = datetime.fromisoformat(commit_date_str.replace('Z', '+00:00'))
+                return commit_date
+    except Exception:
+        pass
+    
+    return None
+
+
+def fetch_from_source(source):
+    """Fetch MCC-MNC data from a specific source."""
+    try:
+        print(f"  Trying source: {source['name']}")
+        print(f"    URL: {source['url']}")
+        
+        response = requests.get(source["url"], timeout=30)
         response.raise_for_status()
-        return response.json()
+        
+        data = response.json()
+        
+        # Validate that we got data
+        if not data:
+            print(f"    Warning: Source returned empty data")
+            return None, None
+        
+        entry_count = len(data) if isinstance(data, (list, dict)) else 0
+        print(f"    ✓ Success: Retrieved {entry_count} entries")
+        
+        # Get last update time for this source (pass the response for headers)
+        last_update = get_source_last_update(source, response)
+        if last_update:
+            print(f"    Last updated: {last_update.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        else:
+            print(f"    Last updated: Unable to determine")
+        
+        return data, last_update
+        
+    except requests.exceptions.HTTPError as e:
+        print(f"    ✗ HTTP Error {e.response.status_code}: {e}")
+        return None, None
     except Exception as e:
-        print(f"Warning: Failed to fetch JSON data: {e}")
-        return []
+        print(f"    ✗ Failed: {e}")
+        return None, None
+
+
+def parse_data_to_codes(data, source_format):
+    """Parse data from various source formats into our standard format."""
+    codes = {}
+    
+    if not data:
+        return codes
+    
+    if source_format == "list":
+        # Handle list-based formats (most sources)
+        for entry in data:
+            mcc = str(entry.get('mcc', ''))
+            mnc = str(entry.get('mnc', ''))
+            
+            # Try different field names for operator name
+            operator = (entry.get('network', '') or 
+                       entry.get('brand', '') or 
+                       entry.get('operator', ''))
+            
+            if mcc and mnc and operator:
+                # Pad MNC to 2-3 digits as needed
+                code = f"{mcc}{mnc.zfill(2)}"
+                codes[code] = operator
+    
+    return codes
+
+
+def fetch_mcc_mnc_data():
+    """Fetch MCC-MNC data from the most recently updated available source."""
+    print("\nChecking all available sources...")
+    print("="*70)
+    
+    available_sources = []
+    
+    # Try each source and collect successful ones
+    for source in SOURCES:
+        data, last_update = fetch_from_source(source)
+        
+        if data:
+            parsed_codes = parse_data_to_codes(data, source["format"])
+            if parsed_codes:
+                available_sources.append({
+                    "source": source,
+                    "data": parsed_codes,
+                    "last_update": last_update,
+                    "count": len(parsed_codes)
+                })
+    
+    print("="*70)
+    
+    if not available_sources:
+        print("\n✗ ERROR: No sources were available!")
+        return {}
+    
+    # Separate sources with known update times from those without
+    sources_with_dates = [s for s in available_sources if s["last_update"]]
+    sources_without_dates = [s for s in available_sources if not s["last_update"]]
+    
+    # Sort sources with dates by most recent first, then by count
+    sources_with_dates.sort(
+        key=lambda x: (x["last_update"], x["count"]),
+        reverse=True
+    )
+    
+    # Sort sources without dates by count only
+    sources_without_dates.sort(key=lambda x: x["count"], reverse=True)
+    
+    # Combine: prefer sources with known update dates
+    sorted_sources = sources_with_dates + sources_without_dates
+    
+    # Display all available sources
+    print(f"\n✓ Found {len(available_sources)} working source(s):")
+    for i, src in enumerate(sorted_sources, 1):
+        update_info = src["last_update"].strftime('%Y-%m-%d') if src["last_update"] else "unknown"
+        marker = "➜ SELECTED" if i == 1 else ""
+        print(f"  {i}. {src['source']['name']} - {src['count']} codes (updated: {update_info}) {marker}")
+    
+    # Use the most recently updated source (or most entries if no dates available)
+    selected = sorted_sources[0]
+    selection_reason = "most recently updated" if selected["last_update"] else "most entries"
+    print(f"\n✓ Using {selection_reason} source: {selected['source']['name']}")
+    print(f"  Total network codes: {selected['count']}")
+    
+    return selected["data"]
 
 
 def parse_existing_file(existing_file):
@@ -142,22 +308,12 @@ def main():
     """Main update process."""
     print("Fetching network operator data from public sources...")
     
-    # Fetch data from JSON source
-    json_data = fetch_mcc_mnc_json()
+    # Fetch data from the most recently updated available source
+    new_codes = fetch_mcc_mnc_data()
     
-    # Convert to our format
-    new_codes = {}
-    for entry in json_data:
-        mcc = entry.get('mcc', '')
-        mnc = entry.get('mnc', '')
-        operator = entry.get('network', '') or entry.get('brand', '')
-        
-        if mcc and mnc and operator:
-            # Pad MNC to 2-3 digits as needed
-            code = f"{mcc}{mnc.zfill(2)}"
-            new_codes[code] = operator
-    
-    print(f"Found {len(new_codes)} network codes from public sources")
+    if not new_codes:
+        print("\n✗ ERROR: Could not fetch data from any source!")
+        sys.exit(1)
     
     # Update all network_codes.py files
     repo_root = Path(__file__).parent.parent.parent

@@ -42,6 +42,13 @@ def get_source_last_update(source, response):
     
     First tries the Last-Modified header from the raw file response,
     then falls back to GitHub API if needed.
+    
+    Args:
+        source: Dictionary containing 'repo' and 'file' keys for GitHub API lookup
+        response: requests.Response object from fetching the raw file
+    
+    Returns:
+        datetime object representing last update time, or None if unavailable
     """
     # Try to get Last-Modified header from the response
     last_modified = response.headers.get('Last-Modified')
@@ -72,7 +79,15 @@ def get_source_last_update(source, response):
 
 
 def fetch_from_source(source):
-    """Fetch MCC-MNC data from a specific source."""
+    """Fetch MCC-MNC data from a specific source.
+    
+    Args:
+        source: Dictionary containing 'name', 'url', 'repo', and 'file' keys
+    
+    Returns:
+        Tuple of (data, last_update) where data is the JSON response or None,
+        and last_update is a datetime object or None
+    """
     try:
         print(f"  Trying source: {source['name']}")
         print(f"    URL: {source['url']}")
@@ -109,7 +124,15 @@ def fetch_from_source(source):
 
 
 def parse_data_to_codes(data, source_format):
-    """Parse data from various source formats into our standard format."""
+    """Parse data from various source formats into our standard format.
+    
+    Args:
+        data: Raw JSON data from the source (list or dict)
+        source_format: Format type, currently supports "list"
+    
+    Returns:
+        Dictionary mapping MCCMNC codes to operator names
+    """
     codes = {}
     
     if not data:
@@ -145,7 +168,11 @@ def parse_data_to_codes(data, source_format):
 
 
 def fetch_mcc_mnc_data():
-    """Fetch MCC-MNC data from the most recently updated available source."""
+    """Fetch MCC-MNC data from the most recently updated available source.
+    
+    Returns:
+        Dictionary mapping MCCMNC codes to operator names, or empty dict if no sources available
+    """
     print("\nChecking all available sources...")
     print("="*70)
     

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0]
+
+### Added
+
+- MVNO (Mobile Virtual Network Operator) support with intelligent network code handling
+- Reverse lookup to find numeric MCC+MNC codes from operator names
+- Network code caching to handle modems that alternate between operator name and numeric code
+- Improved network name resolution for empty or missing names
+
+### Fixed
+
+- Fixed handling of modem quirk where NetworkCode field contains operator name instead of numeric MCC+MNC
+- Better handling of NITZ operator names in network information
+
 ## [1.0.1]
 
 ### Fixed

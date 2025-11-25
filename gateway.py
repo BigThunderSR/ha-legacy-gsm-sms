@@ -186,17 +186,44 @@ class Gateway:
         network_info = await self._worker.get_network_info_async()
         
         # Gammu returns: NetworkName, State, NetworkCode, CID, LAC
-        network_name = network_info.get("NetworkName")
+        raw_network_name = network_info.get("NetworkName")
         network_code = network_info.get("NetworkCode")
         
-        # Looks like there is a bug and NetworkName is often empty https://github.com/gammu/python-gammu/issues/31
-        # Try multiple lookup methods
-        if not network_name and network_code:
-            # First try our comprehensive database
-            network_name = get_network_name(network_code)
-            # Fallback to Gammu's database
-            if not network_name:
-                network_name = gammu.GSMNetworks.get(network_code)
+        # Determine the best network name and code to display
+        # Note: Some modems return the NITZ operator name in NetworkCode field
+        # instead of the numeric MCC+MNC code
+        network_name = raw_network_name
+        resolved_code = None
+        
+        # Check if NetworkCode is numeric (correct) or contains a name (modem quirk)
+        if network_code:
+            if network_code.isdigit():
+                # NetworkCode is numeric MCC+MNC (e.g., "310260")
+                resolved_code = network_code
+                # If NetworkName is empty, look up the numeric code
+                if not network_name or not network_name.strip():
+                    network_name = get_network_name(network_code)
+                    if not network_name:
+                        network_name = gammu.GSMNetworks.get(network_code)
+            else:
+                # NetworkCode contains operator name (e.g., "Red Pocket")
+                # This is a modem quirk - use it as the network name
+                if not network_name or not network_name.strip():
+                    network_name = network_code
+                
+                # Try to find the numeric code by reverse lookup
+                # This works for MVNOs that have their own codes in the database
+                from .network_codes import NETWORK_OPERATORS
+                for code, name in NETWORK_OPERATORS.items():
+                    if name.lower() == network_code.lower():
+                        resolved_code = code
+                        break
+                
+                # If reverse lookup failed, try to use cached code from gateway
+                # MVNOs often alternate between broadcasting their name and the
+                # host network code, so we cache the last known numeric code
+                if not resolved_code and hasattr(self, '_last_network_code'):
+                    resolved_code = self._last_network_code
         
         # Map Gammu's state to match addon format
         state = network_info.get("State", "Unknown")
@@ -212,10 +239,15 @@ class Gateway:
         }
         mapped_state = state_map.get(state, state)  # Use mapping or keep original
         
+        # Cache the resolved code for next time
+        # This helps when modem alternates between numeric code and operator name
+        if resolved_code:
+            self._last_network_code = resolved_code
+        
         return {
             "NetworkName": network_name,
             "State": mapped_state,
-            "NetworkCode": network_code or None,
+            "NetworkCode": resolved_code,
             "CID": network_info.get("CID") or None,
             "LAC": network_info.get("LAC") or None,
         }

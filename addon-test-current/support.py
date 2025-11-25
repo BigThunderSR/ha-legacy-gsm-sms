@@ -134,6 +134,8 @@ def get_network_type(machine):
     
     Uses AT+CREG? command to retrieve Access Technology (AcT) parameter
     Returns human-readable network type string
+    
+    Note: Temporarily disconnects Gammu to send AT commands, then reconnects
     """
     import logging
     import serial
@@ -154,8 +156,18 @@ def get_network_type(machine):
             device_path = os.path.realpath(device_path)
             logging.info(f"🔍 Resolved device path for AT commands: {device_path}")
         
-        # Open serial connection (brief, read-only operation)
+        # Temporarily disconnect Gammu to free the serial port
+        try:
+            machine.Terminate()
+            time.sleep(0.5)  # Give time for port to be released
+            logging.info(f"🔍 Temporarily closed Gammu connection")
+        except Exception as e:
+            logging.warning(f"Could not terminate Gammu: {e}")
+            return 'Unknown'
+        
+        # Open serial connection
         ser = None
+        network_type = 'Unknown'
         try:
             ser = serial.Serial(
                 port=device_path,
@@ -173,13 +185,13 @@ def get_network_type(machine):
             
             # Enable extended format with AcT parameter
             ser.write(b'AT+CREG=2\r\n')
-            time.sleep(0.2)
+            time.sleep(0.3)
             response1 = ser.read_all().decode('utf-8', errors='ignore')
             logging.info(f"🔍 AT+CREG=2 response: {response1.strip()}")
             
             # Query registration status
             ser.write(b'AT+CREG?\r\n')
-            time.sleep(0.2)
+            time.sleep(0.3)
             response2 = ser.read_all().decode('utf-8', errors='ignore')
             logging.info(f"🔍 AT+CREG? response: {response2.strip()}")
             
@@ -197,19 +209,36 @@ def get_network_type(machine):
                             act = int(act_str)
                             network_type = map_act_to_network_type(act)
                             logging.info(f"🔍 Detected network type: AcT={act} -> {network_type}")
-                            return network_type
                         except ValueError:
                             logging.warning(f"Could not parse AcT value: {act_str}")
             
-            logging.warning("No AcT parameter found in AT+CREG? response")
-            return 'Unknown'
+            if network_type == 'Unknown':
+                logging.warning("No AcT parameter found in AT+CREG? response")
+            
+        except Exception as e:
+            logging.warning(f"Error sending AT commands: {e}")
             
         finally:
             if ser and ser.is_open:
                 ser.close()
+            time.sleep(0.3)
+        
+        # Reconnect Gammu
+        try:
+            machine.Init()
+            logging.info(f"🔍 Reconnected Gammu successfully")
+        except Exception as e:
+            logging.error(f"Failed to reconnect Gammu: {e}")
+        
+        return network_type
         
     except Exception as e:
         logging.warning(f"Could not detect network type via AT commands: {e}")
+        # Try to reconnect Gammu if it was disconnected
+        try:
+            machine.Init()
+        except:
+            pass
         return 'Unknown'
 
 

@@ -58,6 +58,7 @@ MANUAL_OVERRIDES = {
     "310650": "Jasper",  # M2M MVNO (Jasper Technologies)
     "310840": "telna Mobile",  # MVNO (Telecom North America Mobile)
     "310850": "Aeris",  # M2M MVNO (Aeris Communications)
+    "311280": "Assurance Wireless",  # Verizon MVNO (Lifeline service)
     "311660": "Metro by T-Mobile",  # Former MetroPCS, now T-Mobile MVNO brand
     "311870": "T-Mobile",  # Former Sprint MVNO services
     "311880": "T-Mobile",  # Former Sprint MVNO services

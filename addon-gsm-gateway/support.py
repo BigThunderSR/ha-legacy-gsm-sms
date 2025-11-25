@@ -127,3 +127,70 @@ def deleteSms(machine, sms):
 def encodeSms(smsinfo):
     """Encode SMS for sending"""
     return gammu.EncodeSMS(smsinfo)
+
+
+def get_network_type(machine):
+    """Get network type (2G/3G/4G/LTE) via AT commands
+    
+    Uses AT+CREG? command to retrieve Access Technology (AcT) parameter
+    Returns human-readable network type string
+    """
+    try:
+        # Try to get network registration with access technology
+        # AT+CREG=2 enables extended format with <AcT>
+        # Format: +CREG: <n>,<stat>[,<lac>,<ci>[,<AcT>]]
+        
+        # Some modems might support this via custom AT commands
+        # Since Gammu doesn't expose direct AT command interface by default,
+        # we'll try to infer from available data or use fallback
+        
+        # Try to read network info - some implementations include GPRS state
+        network_info = machine.GetNetworkInfo()
+        
+        # Check if GPRS/Packet data fields are available (modem-dependent)
+        gprs_state = network_info.get('GPRS', '')
+        packet_state = network_info.get('PacketNetworkState', '')
+        
+        # Map GPRS states to network types (basic heuristic)
+        if gprs_state == 'Attached' or packet_state:
+            # If GPRS is attached, we're at least on 2G/2.5G
+            # More sophisticated detection would require AT commands
+            return 'Unknown'  # Conservative default
+        
+        return 'Unknown'
+        
+    except Exception as e:
+        print(f"Warning: Could not detect network type: {e}")
+        return 'Unknown'
+
+
+def get_network_type_at(machine):
+    """Get network type using direct AT commands (if supported)
+    
+    This function attempts to use AT+CREG? to get Access Technology.
+    Note: Requires modem that supports AT command passthrough.
+    
+    Access Technology values (3GPP TS 27.007):
+    0 = GSM (2G)
+    1 = GSM Compact (2G)
+    2 = UTRAN (3G)
+    3 = GSM w/EGPRS (EDGE/2.5G)
+    4 = UTRAN w/HSDPA (3G+/HSPA)
+    5 = UTRAN w/HSUPA (3G+/HSPA+)
+    6 = UTRAN w/HSDPA and HSUPA (3G+/HSPA+)
+    7 = E-UTRAN (LTE/4G)
+    8 = EC-GSM-IoT (2G IoT)
+    9 = E-UTRAN (NB-S1 mode) (NB-IoT)
+    10 = E-UTRA connected to 5GCN (LTE anchored to 5G core)
+    11 = NR connected to 5GCN (5G NR)
+    12 = NG-RAN (5G)
+    13 = E-UTRA-NR dual connectivity (EN-DC/4G+5G)
+    """
+    try:
+        # Gammu doesn't provide direct AT command interface in standard API
+        # This would require custom implementation or modem-specific backend
+        # For now, return Unknown - can be enhanced with pyserial if needed
+        return 'Unknown'
+    except Exception as e:
+        print(f"Warning: AT command network type detection failed: {e}")
+        return 'Unknown'

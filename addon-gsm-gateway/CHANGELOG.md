@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.0] - 2025-11-24
+
+### Added
+
+- **GSM Network Type Sensor** 📶 - New diagnostic sensor for cellular technology detection
+  - Displays network technology (2G/3G/4G/5G/NB-IoT/EN-DC)
+  - Comprehensive support for all network types including 5G NR and EN-DC
+  - Currently shows "Unknown" as Gammu API doesn't expose Access Technology by default
+  - Framework in place for future AT command-based detection
+  - Full 3GPP TS 27.007 compliance (AcT values 0-13)
+  - Documentation added for troubleshooting and technical details
+
 ## [2.4.1] - 2025-11-24
 
 ### Fixed

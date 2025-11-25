@@ -1154,6 +1154,18 @@ class MQTTPublisher:
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
+        
+        # Network Type sensor (2G/3G/4G/LTE)
+        network_type_config = {
+            "name": "GSM Network Type",
+            "unique_id": "sms_gateway_network_type",
+            "state_topic": f"{self.topic_prefix}/network/state",
+            "value_template": "{{ value_json.NetworkType }}",
+            "icon": "mdi:network",
+            "entity_category": "diagnostic",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
 
         # Last SMS sensor
         sms_config = {
@@ -1460,6 +1472,7 @@ class MQTTPublisher:
             ("homeassistant/sensor/sms_gateway/network_code/config", network_code_config),
             ("homeassistant/sensor/sms_gateway/cid/config", cid_config),
             ("homeassistant/sensor/sms_gateway/lac/config", lac_config),
+            ("homeassistant/sensor/sms_gateway/network_type/config", network_type_config),
             # SMS sensors
             ("homeassistant/sensor/sms_gateway/last_sms/config", sms_config),
             ("homeassistant/sensor/sms_gateway/last_sms_sender/config", sms_sender_config),
@@ -1547,19 +1560,25 @@ class MQTTPublisher:
         """Publish network information"""
         if not self.connected:
             return
+        
+        # Ensure NetworkType is included (default to Unknown if not present)
+        if 'NetworkType' not in network_data:
+            network_data['NetworkType'] = 'Unknown'
             
         topic = f"{self.topic_prefix}/network/state"
         self.client.publish(topic, json.dumps(network_data), retain=True)
         
         if not silent:
-            logger.info(f"📡 Published network info to MQTT: {network_data.get('NetworkName', 'Unknown')}")
+            network_type = network_data.get('NetworkType', 'Unknown')
+            network_name = network_data.get('NetworkName', 'Unknown')
+            logger.info(f"📡 Published network info to MQTT: {network_name} ({network_type})")
             
             # Verbose/debug logging: show all network sensor data
             network_code = network_data.get('NetworkCode', 'N/A')
             state = network_data.get('State', 'N/A')
             lac = network_data.get('LAC', 'N/A')
             cell_id = network_data.get('CID', 'N/A')
-            logger.debug(f"   📡 Network details: Code={network_code}, State={state}, LAC={lac}, CID={cell_id}")
+            logger.debug(f"   📡 Network details: Code={network_code}, State={state}, Type={network_type}, LAC={lac}, CID={cell_id}")
     
     def publish_status_combined(self, signal_data: Dict[str, Any], network_data: Dict[str, Any]):
         """Publish both signal strength and network info with combined logging"""
@@ -1574,7 +1593,8 @@ class MQTTPublisher:
         signal_percent = signal_data.get('SignalPercent', 'N/A')
         signal_dbm = signal_data.get('SignalStrength', 'N/A')
         network_name = network_data.get('NetworkName', 'Unknown')
-        logger.info(f"📡 Status update: {signal_percent}% ({signal_dbm} dBm) | {network_name}")
+        network_type = network_data.get('NetworkType', 'Unknown')
+        logger.info(f"📡 Status update: {signal_percent}% ({signal_dbm} dBm) | {network_name} ({network_type})")
         
         # Verbose/debug logging: show all sensor details
         ber = signal_data.get('BitErrorRate', 'N/A')
@@ -1583,7 +1603,7 @@ class MQTTPublisher:
         lac = network_data.get('LAC', 'N/A')
         cell_id = network_data.get('CID', 'N/A')
         logger.debug(f"   📊 Signal: Percent={signal_percent}%, dBm={signal_dbm}, BER={ber}")
-        logger.debug(f"   📡 Network: Code={network_code}, State={state}, LAC={lac}, CID={cell_id}")
+        logger.debug(f"   📡 Network: Code={network_code}, State={state}, Type={network_type}, LAC={lac}, CID={cell_id}")
     
     def publish_sms_received(self, sms_data: Dict[str, Any]):
         """Publish received SMS data and fire Home Assistant event"""
@@ -1975,6 +1995,15 @@ class MQTTPublisher:
             }
             network["State"] = state_map.get(state, state)
             
+            # Add network type detection
+            try:
+                from support import get_network_type
+                network_type = get_network_type(self.gammu_machine)
+                network["NetworkType"] = network_type
+            except Exception as e:
+                logger.warning(f"Could not detect network type: {e}")
+                network["NetworkType"] = "Unknown"
+            
             self.publish_network_info(network)
 
             # Don't publish empty SMS state on startup - it would overwrite the last real SMS
@@ -2254,6 +2283,16 @@ class MQTTPublisher:
                         "Unknown": "Unknown",
                     }
                     network["State"] = state_map.get(state, state)
+                    
+                    # Add network type detection
+                    try:
+                        from support import get_network_type
+                        network_type = get_network_type(self.gammu_machine)
+                        network["NetworkType"] = network_type
+                    except Exception as net_type_err:
+                        logger.debug(f"Could not detect network type: {net_type_err}")
+                        network["NetworkType"] = "Unknown"
+                        
                 except Exception as e:
                     # track_gammu_operation already recorded the failure
                     pass  # Warning already logged by track_gammu_operation

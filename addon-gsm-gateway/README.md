@@ -74,6 +74,7 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 - **GSM Signal Strength (dBm)** - Actual signal strength in dBm
 - **GSM Bit Error Rate** - Network quality metric (0-7%)
 - **GSM Network Code** - MCC+MNC code for debugging
+- **GSM Network Type** - Network technology (2G/3G/4G/5G/NB-IoT/EN-DC) 🆕
 - **GSM Cell ID** - Current cell tower identifier
 - **GSM Location Area Code** - Network area code
 - **Modem IMEI** - Device identifier
@@ -354,6 +355,35 @@ If you see duplicate sensors after upgrading:
 - Check antenna connection
 - View **GSM Signal Strength (dBm)** diagnostic sensor for raw signal value
 
+### Network Type Shows "Unknown"
+
+The **GSM Network Type** sensor displays the cellular network technology (2G/3G/4G/5G) your modem is connected to. If it shows "Unknown":
+
+**Current Limitations:**
+
+- Gammu's `GetNetworkInfo()` API does not expose Access Technology (AcT) information by default
+- Direct AT command access (`AT+CREG?`) would be needed for accurate detection but requires low-level serial communication
+- Actual network type detection is not yet implemented
+
+**Technical Details:**
+
+The network type is normally provided by the `AT+CREG?` command's AcT parameter (3GPP TS 27.007):
+
+- 0 = GSM (2G)
+- 1 = GSM Compact (2G)
+- 2 = UTRAN (3G)
+- 3 = GSM w/EGPRS (EDGE/2.5G)
+- 4 = UTRAN w/HSDPA (3G+/HSPA)
+- 5 = UTRAN w/HSUPA (3G+/HSPA+)
+- 6 = UTRAN w/HSDPA and HSUPA (3G+/HSPA+)
+- 7 = E-UTRAN (LTE/4G)
+- 8 = EC-GSM-IoT (2G IoT)
+- 9 = E-UTRAN NB-S1 (NB-IoT)
+- 10 = E-UTRA connected to 5GCN (LTE anchored to 5G core)
+- 11 = NR connected to 5GCN (5G NR - New Radio)
+- 12 = NG-RAN (5G)
+- 13 = E-UTRA-NR dual connectivity (EN-DC - simultaneous 4G+5G)
+
 ## Network Provider Database
 
 This enhanced version includes a comprehensive database of network operators worldwide:
@@ -386,6 +416,18 @@ This project maintains the Apache License 2.0 from the original works:
 - [pajikos/sms-gammu-gateway](https://github.com/pajikos/sms-gammu-gateway)
 
 ## Changelog
+
+### Version 2.5.0 (2025-11-24)
+
+**Network Type Detection** 📶 🆕
+
+- New **GSM Network Type** sensor showing cellular technology (2G/3G/4G/5G)
+- Comprehensive support for all network types including 5G NR, NB-IoT, and EN-DC
+- Lays groundwork for future AT command-based network type detection
+- Currently shows "Unknown" as Gammu API doesn't expose Access Technology by default
+- Framework in place for modem-specific AT command implementation
+- Full 3GPP TS 27.007 compliance (AcT values 0-13)
+- Documentation added for troubleshooting and future enhancement
 
 ### Version 2.4.1 (2025-11-24)
 

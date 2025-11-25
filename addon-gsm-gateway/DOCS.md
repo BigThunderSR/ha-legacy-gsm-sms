@@ -258,6 +258,7 @@ After enabling MQTT, these entities are automatically created:
 | `sensor.sms_gateway_network`         | Sensor | Network operator name with provider lookup (🆕)    |
 | `sensor.sms_gateway_network_state`   | Sensor | Human-readable network state (🆕 v2.0.0)           |
 | `sensor.sms_gateway_network_code`    | Sensor | MCC+MNC network code (🆕 v2.0.0)                   |
+| `sensor.sms_gateway_network_type`    | Sensor | Network technology 2G/3G/4G/5G (🆕 v2.5.0)         |
 | `sensor.sms_gateway_cid`             | Sensor | Cell tower ID (🆕 v2.0.0)                          |
 | `sensor.sms_gateway_lac`             | Sensor | Location Area Code (🆕 v2.0.0)                     |
 | `sensor.sms_gateway_last_sms`        | Sensor | Last received SMS with history (🆕 v2.1.0 history) |

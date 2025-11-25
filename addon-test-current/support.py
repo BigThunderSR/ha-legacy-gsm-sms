@@ -183,37 +183,81 @@ def get_network_type(machine):
             ser.reset_input_buffer()
             ser.reset_output_buffer()
             
-            # Enable extended format with AcT parameter
+            # Try multiple AT commands to get network type
+            
+            # Method 1: AT+CREG? (CS registration with AcT)
             ser.write(b'AT+CREG=2\r\n')
             time.sleep(0.3)
             response1 = ser.read_all().decode('utf-8', errors='ignore')
             logging.info(f"🔍 AT+CREG=2 response: {response1.strip()}")
             
-            # Query registration status
             ser.write(b'AT+CREG?\r\n')
             time.sleep(0.3)
             response2 = ser.read_all().decode('utf-8', errors='ignore')
             logging.info(f"🔍 AT+CREG? response: {response2.strip()}")
             
-            # Parse the response: +CREG: <n>,<stat>[,<lac>,<ci>[,<AcT>]]
-            # Example: +CREG: 2,1,"AF04","1C3730B",7
             for line in response2.split('\n'):
                 if '+CREG:' in line:
                     parts = line.split(':')[1].strip().split(',')
                     logging.info(f"🔍 Parsed CREG parts: {parts}")
-                    
                     if len(parts) >= 5:
-                        # Extract AcT value (last parameter)
-                        act_str = parts[4].strip().strip('"')
                         try:
-                            act = int(act_str)
+                            act = int(parts[4].strip().strip('"'))
                             network_type = map_act_to_network_type(act)
-                            logging.info(f"🔍 Detected network type: AcT={act} -> {network_type}")
-                        except ValueError:
-                            logging.warning(f"Could not parse AcT value: {act_str}")
+                            logging.info(f"🔍 AT+CREG? detected: {network_type} (AcT={act})")
+                        except (ValueError, IndexError):
+                            pass
+            
+            # Method 2: AT+CGREG? (GPRS/packet registration with AcT)
+            if network_type == 'Unknown':
+                ser.write(b'AT+CGREG=2\r\n')
+                time.sleep(0.3)
+                response3 = ser.read_all().decode('utf-8', errors='ignore')
+                logging.info(f"🔍 AT+CGREG=2 response: {response3.strip()}")
+                
+                ser.write(b'AT+CGREG?\r\n')
+                time.sleep(0.3)
+                response4 = ser.read_all().decode('utf-8', errors='ignore')
+                logging.info(f"🔍 AT+CGREG? response: {response4.strip()}")
+                
+                for line in response4.split('\n'):
+                    if '+CGREG:' in line:
+                        parts = line.split(':')[1].strip().split(',')
+                        logging.info(f"🔍 Parsed CGREG parts: {parts}")
+                        if len(parts) >= 5:
+                            try:
+                                act = int(parts[4].strip().strip('"'))
+                                network_type = map_act_to_network_type(act)
+                                logging.info(f"🔍 AT+CGREG? detected: {network_type} (AcT={act})")
+                            except (ValueError, IndexError):
+                                pass
+            
+            # Method 3: AT+CEREG? (EPS/LTE registration with AcT)
+            if network_type == 'Unknown':
+                ser.write(b'AT+CEREG=2\r\n')
+                time.sleep(0.3)
+                response5 = ser.read_all().decode('utf-8', errors='ignore')
+                logging.info(f"🔍 AT+CEREG=2 response: {response5.strip()}")
+                
+                ser.write(b'AT+CEREG?\r\n')
+                time.sleep(0.3)
+                response6 = ser.read_all().decode('utf-8', errors='ignore')
+                logging.info(f"🔍 AT+CEREG? response: {response6.strip()}")
+                
+                for line in response6.split('\n'):
+                    if '+CEREG:' in line:
+                        parts = line.split(':')[1].strip().split(',')
+                        logging.info(f"🔍 Parsed CEREG parts: {parts}")
+                        if len(parts) >= 5:
+                            try:
+                                act = int(parts[4].strip().strip('"'))
+                                network_type = map_act_to_network_type(act)
+                                logging.info(f"🔍 AT+CEREG? detected: {network_type} (AcT={act})")
+                            except (ValueError, IndexError):
+                                pass
             
             if network_type == 'Unknown':
-                logging.warning("No AcT parameter found in AT+CREG? response")
+                logging.warning("No AcT parameter found in any AT command response (CREG/CGREG/CEREG)")
             
         except Exception as e:
             logging.warning(f"Error sending AT commands: {e}")

@@ -371,6 +371,8 @@ def main():
     for target in [
         repo_root / "custom_components" / "legacy_gsm_sms" / "network_codes.py",
         repo_root / "addon-gsm-gateway" / "network_codes.py",
+        repo_root / "addon-test-current" / "network_codes.py",
+        repo_root / "addon-test-pavelve" / "network_codes.py",
         repo_root / "network_codes.py"
     ]:
         if not target.exists():

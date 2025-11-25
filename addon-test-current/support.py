@@ -13,7 +13,20 @@ import time as time_module
 
 # Cache for network type detection (avoid frequent disconnects)
 _network_type_cache = {'type': None, 'timestamp': 0}
-_NETWORK_TYPE_CACHE_SECONDS = 300  # Cache for 5 minutes
+_network_type_cache_seconds = 300  # Default: Cache for 5 minutes (configurable)
+
+
+def set_network_type_cache_duration(seconds):
+    """Set the cache duration for network type detection"""
+    global _network_type_cache_seconds
+    _network_type_cache_seconds = seconds
+
+
+def invalidate_network_type_cache():
+    """Invalidate the network type cache (call when modem reconnects)"""
+    global _network_type_cache
+    _network_type_cache['type'] = None
+    _network_type_cache['timestamp'] = 0
 
 
 def init_state_machine(pin, device_path='/dev/ttyUSB0'):
@@ -149,10 +162,10 @@ def get_network_type(machine):
     import os
     
     # Check cache first
-    global _network_type_cache
+    global _network_type_cache, _network_type_cache_seconds
     current_time = time_module.time()
     if (_network_type_cache['type'] is not None and 
-        current_time - _network_type_cache['timestamp'] < _NETWORK_TYPE_CACHE_SECONDS):
+        current_time - _network_type_cache['timestamp'] < _network_type_cache_seconds):
         return _network_type_cache['type']
     
     try:

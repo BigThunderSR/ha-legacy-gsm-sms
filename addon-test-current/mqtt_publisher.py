@@ -353,6 +353,13 @@ class DeviceConnectivityTracker:
         if self.consecutive_failures > 0:
             logger.info(f"✅ Device recovery: resetting consecutive_failures from {self.consecutive_failures} to 0")
             self.consecutive_failures = 0
+            
+            # Invalidate network type cache on recovery so we get fresh info
+            try:
+                from support import invalidate_network_type_cache
+                invalidate_network_type_cache()
+            except:
+                pass
 
         self.last_error = None
         self.total_operations += 1

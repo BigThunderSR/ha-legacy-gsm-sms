@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Automatische Wiederherstellung
     description: Automatische Wiederherstellung nach Modem-Kommunikationsfehlern (empfohlen)
+  network_type_cache_seconds:
+    name: Netzwerktyp-Cache-Dauer
+    description: Wie lange Netzwerktyp-Ergebnisse zwischengespeichert werden, um häufige Modem-Abfragen zu vermeiden (Sekunden, 60-3600)
   sms_cost_per_message:
     name: SMS-Kosten pro Nachricht
     description: Kosten pro gesendete SMS-Nachricht. Auf 0 setzen, um die Kostenverfolgung zu deaktivieren.
@@ -72,5 +75,5 @@ configuration:
     name: Balance SMS-Absendernummer
     description: Telefonnummer, die Guthaben-Informationen sendet (der Antwortabsender)
   balance_keywords:
-    name: Balance-Schlüsselwörter
-    description: Schlüsselwörter zum Erkennen von Guthaben-SMS (z.B. Verbleibend, läuft ab, Guthaben von)
+    name: Saldo-Schlüsselwörter
+    description: "Schlüsselwörter zur Erkennung von Saldo-SMS (z.B: Verbleibend, läuft ab, Guthaben)"

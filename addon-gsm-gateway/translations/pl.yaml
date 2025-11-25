@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Automatyczne Przywracanie
     description: Automatyczne przywracanie po błędach komunikacji modemu (zalecane)
+  network_type_cache_seconds:
+    name: Czas Przechowywania Typu Sieci
+    description: Jak długo przechowywać wyniki typu sieci, aby uniknąć częstych zapytań do modemu (sekundy, 60-3600)
   sms_cost_per_message:
     name: Koszt za SMS
     description: Koszt za wysłaną wiadomość SMS. Ustaw 0, aby wyłączyć śledzenie kosztów.
@@ -73,4 +76,4 @@ configuration:
     description: Numer telefonu wysyłający informacje o saldzie (nadawca odpowiedzi)
   balance_keywords:
     name: Słowa kluczowe salda
-    description: Słowa kluczowe do wykrywania SMS salda (np: Pozostało, wygasa, saldo)
+    description: "Słowa kluczowe do wykrywania SMS salda (np: Pozostało, wygasa, saldo)"

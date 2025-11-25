@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Auto-Recovery
     description: Automatically recover from modem communication failures (recommended)
+  network_type_cache_seconds:
+    name: Network Type Cache Duration
+    description: How long to cache network type results to avoid frequent modem queries (seconds, 60-3600)
   sms_cost_per_message:
     name: SMS Cost per Message
     description: Cost per sent SMS message. Set to 0 to disable cost tracking.

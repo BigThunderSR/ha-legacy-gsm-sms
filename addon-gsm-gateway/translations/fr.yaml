@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Récupération Automatique
     description: Récupération automatique après échecs de communication du modem (recommandé)
+  network_type_cache_seconds:
+    name: Durée du Cache de Type de Réseau
+    description: Durée de mise en cache des résultats du type de réseau pour éviter les requêtes fréquentes au modem (secondes, 60-3600)
   sms_cost_per_message:
     name: Coût par SMS
     description: Coût par message SMS envoyé. Définir à 0 pour désactiver le suivi des coûts.
@@ -73,4 +76,4 @@ configuration:
     description: Numéro de téléphone qui envoie les informations de solde (l'expéditeur de réponse)
   balance_keywords:
     name: Mots-clés de solde
-    description: Mots-clés pour détecter les SMS de solde (ex: Restant, expire, solde de)
+    description: "Mots-clés pour détecter les SMS de solde (ex: Restant, expire, solde de)"

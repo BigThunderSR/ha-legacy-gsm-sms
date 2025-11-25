@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Automatisch Herstel
     description: Automatisch herstel na modemcommunicatiefouten (aanbevolen)
+  network_type_cache_seconds:
+    name: Netwerktype Cache Duur
+    description: Hoe lang netwerktype resultaten in cache bewaren om frequente modem queries te voorkomen (seconden, 60-3600)
   sms_cost_per_message:
     name: Kosten per SMS
     description: Kosten per verzonden SMS-bericht. Stel in op 0 om kostenbewaking uit te schakelen.
@@ -73,4 +76,4 @@ configuration:
     description: Telefoonnummer dat saldo-informatie verzendt (de antwoordafzender)
   balance_keywords:
     name: Saldo trefwoorden
-    description: Trefwoorden om saldo SMS-berichten te detecteren (bijv: Resterend, verloopt, saldo van)
+    description: "Trefwoorden om saldo SMS-berichten te detecteren (bijv: Resterend, verloopt, saldo van)"

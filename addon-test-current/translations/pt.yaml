@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Recuperação Automática
     description: Recuperação automática de falhas de comunicação do modem (recomendado)
+  network_type_cache_seconds:
+    name: Duração do Cache de Tipo de Rede
+    description: Quanto tempo armazenar em cache os resultados do tipo de rede para evitar consultas frequentes ao modem (segundos, 60-3600)
   sms_cost_per_message:
     name: Custo por SMS
     description: Custo por mensagem SMS enviada. Defina como 0 para desativar o rastreamento de custos.
@@ -73,4 +76,4 @@ configuration:
     description: Número de telefone que envia informações de saldo (o remetente de resposta)
   balance_keywords:
     name: Palavras-chave de saldo
-    description: Palavras-chave para detectar SMS de saldo (ex: Restante, expira, saldo de)
+    description: "Palavras-chave para detectar SMS de saldo (ex: Restante, expira, saldo de)"

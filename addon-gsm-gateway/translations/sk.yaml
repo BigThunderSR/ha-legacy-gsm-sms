@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Automatické Obnovenie
     description: Automatické obnovenie po zlyhaniach komunikácie modemu (odporúčané)
+  network_type_cache_seconds:
+    name: Doba Ukladania Typu Siete
+    description: Ako dlho ukladať výsledky typu siete, aby sa zabránilo častým dotazom modemu (sekundy, 60-3600)
   sms_cost_per_message:
     name: Cena za SMS
     description: Cena za jednu odoslanú SMS správu. Nastavte 0 pre vypnutie sledovania nákladov.
@@ -73,4 +76,4 @@ configuration:
     description: Telefónne číslo, ktoré posiela informácie o zostatku (odosielateľ odpovede)
   balance_keywords:
     name: Kľúčové slová zostatku
-    description: Kľúčové slová na detekciu SMS zostatku (napr: Zostávajúce, vyprší, zostatok)
+    description: "Kľúčové slová na detekciu SMS zostatku (napr: Zostávajúce, vyprší, zostatok)"

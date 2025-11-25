@@ -9,6 +9,7 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
 
 # Public data sources - multiple fallback options
 # Each source will be checked for availability and last update time
@@ -46,9 +47,43 @@ SOURCES = [
     },
 ]
 
+# Wikipedia MVNO list pages (for reference - not currently used due to lack of MCC-MNC codes)
+# When adding new MVNOs to MANUAL_OVERRIDES, check these pages for updates:
+# - USA: https://en.wikipedia.org/wiki/List_of_United_States_mobile_virtual_network_operators
+# - Canada: https://en.wikipedia.org/wiki/List_of_Canadian_mobile_virtual_network_operators  
+# - Mexico: https://en.wikipedia.org/wiki/List_of_mobile_network_operators_of_the_Americas#Mexico
+#
+# To find MCC-MNC codes for MVNOs:
+# 1. Check https://www.mcc-mnc.com/ or https://cellidfinder.com/mcc-mnc
+# 2. Search the MVNO name + "MCC MNC" in Google
+# 3. Check the FCC database for US carriers: https://www.fcc.gov/general/universal-licensing-system
+WIKIPEDIA_MVNO_SOURCES = [
+    {
+        "url": "https://en.wikipedia.org/wiki/List_of_United_States_mobile_virtual_network_operators",
+        "country": "USA",
+        "mcc_prefixes": ["310", "311", "312", "313", "314", "315", "316"],
+    },
+    {
+        "url": "https://en.wikipedia.org/wiki/List_of_Canadian_mobile_virtual_network_operators",
+        "country": "Canada",
+        "mcc_prefixes": ["302"],
+    },
+    {
+        "url": "https://en.wikipedia.org/wiki/List_of_mobile_network_operators_of_the_Americas#Mexico",
+        "country": "Mexico",
+        "mcc_prefixes": ["334"],
+    },
+]
+
 # Manual overrides for specific operator codes
 # These corrections will be applied after fetching from sources
 # to fix known issues in the upstream data or to preserve MVNO distinctions
+#
+# MAINTENANCE: To keep MVNO list current:
+# 1. Periodically check Wikipedia MVNO pages (links above)
+# 2. For new MVNOs, find their MCC-MNC codes using the resources listed above
+# 3. Add entries below in the format: "MCCMNC": "Operator Name",  # Description
+# 4. Run this script to update all network_codes.py files
 MANUAL_OVERRIDES = {
     # USA MVNOs (MCC 310/311/312/313)
     "310053": "Virgin Mobile",  # T-Mobile MVNO (former Sprint)
@@ -142,6 +177,142 @@ def get_source_last_update(source, response):
             pass
     
     return None
+
+
+def scrape_wikipedia_mvnos():
+    """Scrape MVNO information from Wikipedia pages.
+    
+    Returns:
+        Dictionary mapping MCC-MNC codes to MVNO operator names
+    """
+    mvno_overrides = {}
+    
+    print("\nScraping MVNO data from Wikipedia...")
+    
+    # Use a proper User-Agent header to avoid 403 errors
+    headers = {
+        'User-Agent': (
+            'Mozilla/5.0 (compatible; MCC-MNC-Updater/1.0; '
+            '+https://github.com/BigThunderSR/ha-legacy-gsm-sms)'
+        )
+    }
+    
+    for wiki_source in WIKIPEDIA_MVNO_SOURCES:
+        try:
+            country = wiki_source['country']
+            print(f"  Fetching {country} MVNOs from Wikipedia...")
+            response = requests.get(
+                wiki_source['url'], headers=headers, timeout=15
+            )
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Find all tables in the page
+            tables = soup.find_all('table', class_='wikitable')
+            
+            for table in tables:
+                rows = table.find_all('tr')
+                
+                # Try to identify header columns
+                headers = []
+                if rows:
+                    header_row = rows[0]
+                    header_cells = header_row.find_all(['th', 'td'])
+                    headers = [
+                        th.get_text(strip=True).lower()
+                        for th in header_cells
+                    ]
+                
+                # Look for columns containing MCC, MNC, and operator name
+                mcc_col = mnc_col = name_col = None
+                for idx, header in enumerate(headers):
+                    if 'mcc' in header:
+                        mcc_col = idx
+                    elif 'mnc' in header:
+                        mnc_col = idx
+                    elif any(
+                        term in header
+                        for term in ['operator', 'brand', 'name', 'mvno']
+                    ):
+                        if name_col is None:  # Use first name-like column
+                            name_col = idx
+                
+                # Process data rows
+                for row in rows[1:]:  # Skip header row
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) < 2:
+                        continue
+                    
+                    mcc = mnc = name = None
+                    
+                    # Extract values based on identified columns
+                    if mcc_col is not None and mcc_col < len(cells):
+                        mcc = cells[mcc_col].get_text(strip=True)
+                    if mnc_col is not None and mnc_col < len(cells):
+                        mnc = cells[mnc_col].get_text(strip=True)
+                    if name_col is not None and name_col < len(cells):
+                        name = cells[name_col].get_text(strip=True)
+                    
+                    # If we didn't find columns by header, try pattern matching
+                    if not mcc or not mnc or not name:
+                        for cell in cells:
+                            text = cell.get_text(strip=True)
+                            # Look for MCC pattern
+                            if re.match(r'^\d{3}$', text) and not mcc:
+                                mcc = text
+                            # Look for MNC pattern (after finding MCC)
+                            elif (
+                                re.match(r'^\d{2,3}$', text)
+                                and mcc
+                                and not mnc
+                            ):
+                                mnc = text
+                            # Look for operator name
+                            elif (
+                                text
+                                and not text.isdigit()
+                                and len(text) > 2
+                                and not name
+                            ):
+                                name = text
+                    
+                    # Clean up and validate
+                    if mcc and mnc and name:
+                        mcc = mcc.strip()
+                        mnc = mnc.strip().zfill(2)  # Pad MNC to 2 digits
+                        name = name.strip()
+                        
+                        # Validate MCC matches expected prefixes
+                        if mcc in wiki_source['mcc_prefixes']:
+                            code = f"{mcc}{mnc}"
+                            # Only add if it's a valid 5-6 digit code
+                            if 5 <= len(code) <= 6 and code.isdigit():
+                                # Clean up common Wikipedia formatting
+                                # Remove reference markers [1]
+                                name = re.sub(r'\[\d+\]', '', name)
+                                # Normalize whitespace
+                                name = re.sub(r'\s+', ' ', name)
+                                mvno_overrides[code] = name
+            
+            # Count codes found for this country
+            prefixes = tuple(wiki_source['mcc_prefixes'])
+            found = sum(
+                1
+                for code in mvno_overrides.keys()
+                if code.startswith(prefixes)
+            )
+            if found > 0:
+                print(f"    ✓ Found {found} {country} MVNO codes")
+            else:
+                print(f"    ⚠ No MVNOs found (table format may have changed)")
+                
+        except requests.exceptions.RequestException as e:
+            print(f"    ✗ Failed to fetch {country} MVNOs: {e}")
+        except Exception as e:
+            print(f"    ✗ Error parsing {country} MVNOs: {e}")
+    
+    return mvno_overrides
 
 
 def fetch_from_source(source):
@@ -593,9 +764,40 @@ def main():
         print("\n✗ ERROR: Could not fetch data from any source!")
         sys.exit(1)
     
-    # Apply manual overrides to correct known issues in source data
-    print(f"\nApplying {len(MANUAL_OVERRIDES)} manual corrections...")
-    for code, corrected_name in MANUAL_OVERRIDES.items():
+    # Wikipedia scraping is currently disabled because Wikipedia MVNO pages
+    # don't include MCC-MNC codes in a machine-readable format.
+    # MVNOs must be maintained manually in the MANUAL_OVERRIDES dictionary.
+    # See comments above WIKIPEDIA_MVNO_SOURCES for resources to find new MVNOs.
+    wikipedia_mvnos = {}
+    
+    # Uncomment to enable Wikipedia scraping (experimental):
+    # try:
+    #     wikipedia_mvnos = scrape_wikipedia_mvnos()
+    # except Exception as e:
+    #     print(f"\n⚠ Wikipedia scraping failed: {e}")
+    #     print("  Continuing with manual overrides only...")
+    
+    # Merge Wikipedia MVNOs with manual overrides
+    # Manual overrides take precedence over Wikipedia data
+    all_overrides = {}
+    if wikipedia_mvnos:
+        all_overrides.update(wikipedia_mvnos)  # Add Wikipedia data first
+    all_overrides.update(MANUAL_OVERRIDES)  # Manual overrides win
+    
+    # Apply all overrides to correct known issues in source data
+    wiki_count = len(wikipedia_mvnos)
+    manual_count = len(MANUAL_OVERRIDES)
+    total_corrections = len(all_overrides)
+    
+    if wiki_count > 0:
+        print(
+            f"\nApplying {total_corrections} corrections "
+            f"({wiki_count} from Wikipedia, {manual_count} manual)..."
+        )
+    else:
+        print(f"\nApplying {manual_count} manual corrections...")
+    
+    for code, corrected_name in all_overrides.items():
         if code in new_codes:
             old_name = new_codes[code]
             if old_name != corrected_name:

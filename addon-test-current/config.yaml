@@ -1,4 +1,4 @@
-name: "GSM SMS Gateway - TEST (Current Development)"
+name: "TEST - GSM SMS Gateway (Current Development)"
 version: "2.5.0-test"
 slug: "gsm_sms_gateway_test_current"
 description: |

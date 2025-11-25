@@ -14,6 +14,7 @@ import requests
 # Each source will be checked for availability and last update time
 # Only includes verified, currently available sources
 SOURCES = [
+    # Primary GitHub sources
     {
         "name": "musalbas/mcc-mnc-table",
         "url": "https://raw.githubusercontent.com/musalbas/mcc-mnc-table/master/mcc-mnc-table.json",
@@ -26,6 +27,21 @@ SOURCES = [
         "url": "https://raw.githubusercontent.com/pbakondy/mcc-mnc-list/master/mcc-mnc-list.json",
         "repo": "pbakondy/mcc-mnc-list",
         "file": "mcc-mnc-list.json",
+        "format": "list",  # List of objects
+    },
+    # CDN mirrors (provide redundancy if GitHub is unavailable)
+    {
+        "name": "jsdelivr CDN (mcc-mnc-list mirror)",
+        "url": "https://cdn.jsdelivr.net/npm/mcc-mnc-list@latest/mcc-mnc-list.json",
+        "repo": None,  # CDN, no GitHub repo
+        "file": None,
+        "format": "list",  # List of objects
+    },
+    {
+        "name": "unpkg CDN (mcc-mnc-list mirror)",
+        "url": "https://unpkg.com/mcc-mnc-list/mcc-mnc-list.json",
+        "repo": None,  # CDN, no GitHub repo
+        "file": None,
         "format": "list",  # List of objects
     },
 ]
@@ -53,21 +69,22 @@ def get_source_last_update(source, response):
         except (ValueError, TypeError):
             pass
     
-    # Fallback: Try GitHub API (may hit rate limits)
-    try:
-        url = f"https://api.github.com/repos/{source['repo']}/commits"
-        params = {"path": source["file"], "per_page": 1}
-        
-        api_response = requests.get(url, params=params, timeout=10)
-        if api_response.status_code == 200:
-            commits = api_response.json()
-            if commits:
-                commit_date_str = commits[0]["commit"]["committer"]["date"]
-                # Parse ISO 8601 date
-                commit_date = datetime.fromisoformat(commit_date_str.replace('Z', '+00:00'))
-                return commit_date
-    except (requests.exceptions.RequestException, ValueError, KeyError, IndexError):
-        pass
+    # Fallback: Try GitHub API (may hit rate limits, only for GitHub sources)
+    if source.get('repo') and source.get('file'):
+        try:
+            url = f"https://api.github.com/repos/{source['repo']}/commits"
+            params = {"path": source["file"], "per_page": 1}
+            
+            api_response = requests.get(url, params=params, timeout=10)
+            if api_response.status_code == 200:
+                commits = api_response.json()
+                if commits:
+                    commit_date_str = commits[0]["commit"]["committer"]["date"]
+                    # Parse ISO 8601 date
+                    commit_date = datetime.fromisoformat(commit_date_str.replace('Z', '+00:00'))
+                    return commit_date
+        except (requests.exceptions.RequestException, ValueError, KeyError, IndexError):
+            pass
     
     return None
 

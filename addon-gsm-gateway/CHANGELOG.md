@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file.
   - Network Name sensor correctly displays MVNO brands when broadcast by tower
   - Works for all MVNOs: those with own codes (Assurance Wireless, Xfinity Mobile) and host network users (Red Pocket)
   - Resolves issue where Network Code sensor would intermittently show operator names instead of MCC+MNC codes
+- **Clear Delivery Reports Button** 📦 - New control to clear stuck delivery reports
+  - Useful when SMS delivery reports don't work properly with certain modems/SIMs
+  - Clears all pending delivery reports from tracking database
+  - Accessible via Home Assistant device controls or MQTT button
+  - Publishes confirmation to delivery_status topic when cleared
 
 ### Changed
 

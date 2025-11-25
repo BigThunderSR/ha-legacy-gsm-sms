@@ -308,15 +308,18 @@ The addon automatically detects, parses, and updates the sensors when responses 
 
 ### Controls
 
-| Entity                                | Type       | Description                       |
-| ------------------------------------- | ---------- | --------------------------------- |
-| `text.sms_gateway_phone_number`       | Text input | Phone number input field          |
-| `text.sms_gateway_message_text`       | Text input | Message text input field          |
-| `text.sms_gateway_ussd_code`          | Text input | USSD code input (🆕 v2.1.0)       |
-| `button.sms_gateway_send_button`      | Button     | Send SMS button                   |
-| `button.sms_gateway_send_ussd_button` | Button     | Send USSD code button (🆕 v2.1.0) |
-| `button.sms_gateway_reset_counter`    | Button     | Reset SMS counter and costs       |
-| `button.sms_gateway_delete_all_sms`   | Button     | Delete all SMS from SIM card      |
+| Entity                                      | Type       | Description                              |
+| ------------------------------------------- | ---------- | ---------------------------------------- |
+| `text.sms_gateway_phone_number`             | Text input | Phone number input field                 |
+| `text.sms_gateway_message_text`             | Text input | Message text input field                 |
+| `text.sms_gateway_ussd_code`                | Text input | USSD code input (🆕 v2.1.0)              |
+| `button.sms_gateway_send_button`            | Button     | Send SMS button                          |
+| `button.sms_gateway_send_ussd_button`       | Button     | Send USSD code button (🆕 v2.1.0)        |
+| `button.sms_gateway_reset_counter`          | Button     | Reset SMS counter and costs              |
+| `button.sms_gateway_delete_all_sms`         | Button     | Delete all SMS from SIM card             |
+| `button.sms_gateway_clear_delivery_reports` | Button     | Clear stuck delivery reports (🆕 v2.7.0) |
+
+> **📦 Delivery Reports:** If SMS delivery reports don't work with your modem/SIM and get stuck in pending state, use the "Clear Delivery Reports" button to reset the tracking.
 
 ## 🎯 Automation Examples
 

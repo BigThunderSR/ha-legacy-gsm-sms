@@ -230,6 +230,14 @@ class SMSDeliveryTracker:
         """Get all tracked deliveries"""
         return self.pending_deliveries
 
+    def clear_pending_deliveries(self):
+        """Clear all pending delivery reports (useful for stuck reports)"""
+        count = len(self.pending_deliveries)
+        self.pending_deliveries = {}
+        self._save()
+        logger.info(f"📬 Cleared {count} pending delivery reports")
+        return count
+
 class BalanceSMSParser:
     """Parses SMS messages from network providers to extract account balance information"""
     
@@ -536,6 +544,11 @@ class MQTTPublisher:
             client.subscribe(delete_all_sms_topic)
             logger.info(f"Subscribed to delete all SMS topic: {delete_all_sms_topic}")
 
+            # Subscribe to clear delivery reports button
+            clear_delivery_reports_topic = f"{self.topic_prefix}/clear_delivery_reports_button"
+            client.subscribe(clear_delivery_reports_topic)
+            logger.info(f"Subscribed to clear delivery reports topic: {clear_delivery_reports_topic}")
+
             # Subscribe to text input topics
             phone_topic = f"{self.topic_prefix}/phone_number/set"
             message_topic = f"{self.topic_prefix}/message_text/set"
@@ -581,6 +594,7 @@ class MQTTPublisher:
             button_topic = f"{self.topic_prefix}/send_button"
             reset_counter_topic = f"{self.topic_prefix}/reset_counter_button"
             delete_all_sms_topic = f"{self.topic_prefix}/delete_all_sms_button"
+            clear_delivery_reports_topic = f"{self.topic_prefix}/clear_delivery_reports_button"
             phone_topic = f"{self.topic_prefix}/phone_number/set"
             message_topic = f"{self.topic_prefix}/message_text/set"
             phone_state_topic = f"{self.topic_prefix}/phone_number/state"
@@ -600,6 +614,9 @@ class MQTTPublisher:
             elif topic == delete_all_sms_topic and payload == "PRESS":
                 # Delete all SMS button pressed
                 self._handle_delete_all_sms()
+            elif topic == clear_delivery_reports_topic and payload == "PRESS":
+                # Clear delivery reports button pressed
+                self._handle_clear_delivery_reports()
             elif topic == phone_topic:
                 # Phone number updated via command topic
                 self.current_phone_number = payload
@@ -900,6 +917,34 @@ class MQTTPublisher:
         self.sms_counter.reset()
         self.publish_sms_counter()
         logger.info("✅ SMS counter reset to 0")
+
+    def _handle_clear_delivery_reports(self):
+        """Handle clear delivery reports button press"""
+        logger.info("📬 Clear delivery reports button pressed")
+        try:
+            count = self.delivery_tracker.clear_pending_deliveries()
+            
+            # Publish updated status
+            if self.connected:
+                status_topic = f"{self.topic_prefix}/delivery_status"
+                status_data = {
+                    "status": "cleared",
+                    "message": f"Cleared {count} pending delivery reports",
+                    "pending_count": 0,
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                self.client.publish(status_topic, json.dumps(status_data), retain=False)
+                logger.info(f"✅ Cleared {count} pending delivery reports")
+        except Exception as e:
+            logger.error(f"❌ Failed to clear delivery reports: {e}")
+            if self.connected:
+                status_topic = f"{self.topic_prefix}/delivery_status"
+                status_data = {
+                    "status": "error",
+                    "message": f"Failed to clear delivery reports: {str(e)}",
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                self.client.publish(status_topic, json.dumps(status_data), retain=False)
 
     def _handle_delete_all_sms(self):
         """Handle delete all SMS button press - with fallback for corrupted SMS"""
@@ -1368,6 +1413,17 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
 
+        # Clear delivery reports button
+        clear_delivery_reports_button_config = {
+            "name": "Clear Delivery Reports",
+            "unique_id": "sms_gateway_clear_delivery_reports",
+            "command_topic": f"{self.topic_prefix}/clear_delivery_reports_button",
+            "payload_press": "PRESS",
+            "icon": "mdi:email-remove",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+
         # Modem IMEI sensor
         modem_imei_config = {
             "name": "Modem IMEI",
@@ -1511,6 +1567,7 @@ class MQTTPublisher:
             ("homeassistant/button/sms_gateway/send_button/config", button_config),
             ("homeassistant/button/sms_gateway/reset_counter/config", reset_counter_button_config),
             ("homeassistant/button/sms_gateway/delete_all_sms/config", delete_all_sms_button_config),
+            ("homeassistant/button/sms_gateway/clear_delivery_reports/config", clear_delivery_reports_button_config),
             ("homeassistant/button/sms_gateway/send_ussd_button/config", ussd_button_config),
             ("homeassistant/text/sms_gateway/phone_number/config", phone_text_config),
             ("homeassistant/text/sms_gateway/message_text/config", message_text_config),

@@ -2,7 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.5.0] - 2025-11-24
+## [2.7.0] - 2025-11-25
+
+### Added
+
+- **MVNO Network Code Handling** 📱 - Improved support for Mobile Virtual Network Operators
+  - Handles modem quirk where operator names appear in NetworkCode field (e.g., "Red Pocket")
+  - Implements reverse lookup in network database to find numeric codes for MVNO names
+  - Network code caching mechanism preserves numeric codes across polling cycles
+  - Ensures Network Code sensor shows stable numeric values (e.g., "310260")
+  - Network Name sensor correctly displays MVNO brands when broadcast by tower
+  - Works for all MVNOs: those with own codes (Assurance Wireless, Xfinity Mobile) and host network users (Red Pocket)
+  - Resolves issue where Network Code sensor would intermittently show operator names instead of MCC+MNC codes
+
+### Changed
+
+- **Network Codes Database Update** 📊 - Expanded operator coverage
+  - Added 180 new network codes (2,869 → 3,049 total entries)
+  - Improved multi-MCC section handling in update script (fixes 310-316 range)
+  - All 42 manual MVNO overrides verified and preserved
+  - Better coverage for US, Canadian, and international carriers
+
+## [2.6.1] - 2025-11-24
 
 ### Added
 

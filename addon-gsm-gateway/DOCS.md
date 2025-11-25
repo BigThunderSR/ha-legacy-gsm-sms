@@ -257,7 +257,7 @@ After enabling MQTT, these entities are automatically created:
 | `sensor.sms_gateway_ber`             | Sensor | Bit Error Rate - network quality (🆕 v2.0.0)       |
 | `sensor.sms_gateway_network`         | Sensor | Network operator name with provider lookup (🆕)    |
 | `sensor.sms_gateway_network_state`   | Sensor | Human-readable network state (🆕 v2.0.0)           |
-| `sensor.sms_gateway_network_code`    | Sensor | MCC+MNC network code (🆕 v2.0.0)                   |
+| `sensor.sms_gateway_network_code`    | Sensor | MCC+MNC network code - MVNO aware (✨ v2.7.0)      |
 | `sensor.sms_gateway_network_type`    | Sensor | Network technology 2G/3G/4G/5G (🆕 v2.6.0)         |
 | `sensor.sms_gateway_cid`             | Sensor | Cell tower ID (🆕 v2.0.0)                          |
 | `sensor.sms_gateway_lac`             | Sensor | Location Area Code (🆕 v2.0.0)                     |
@@ -277,6 +277,8 @@ After enabling MQTT, these entities are automatically created:
 | `sensor.sms_gateway_modem_model`      | Sensor | Modem manufacturer and model |
 | `sensor.sms_gateway_sim_imsi`         | Sensor | SIM card IMSI number         |
 | `sensor.sms_gateway_sms_storage_used` | Sensor | Number of SMS on SIM card    |
+
+> **✨ MVNO Support (v2.7.0):** The Network Code sensor now intelligently handles Mobile Virtual Network Operators (MVNOs) like Red Pocket, Xfinity Mobile, and Assurance Wireless. Some modems intermittently report operator names instead of numeric codes - this is automatically detected and resolved using database lookup and caching to maintain stable numeric MCC+MNC codes.
 
 ### SMS Counter & Cost Sensors
 

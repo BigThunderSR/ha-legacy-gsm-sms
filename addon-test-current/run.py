@@ -586,22 +586,51 @@ class Signal(Resource):
 @ns_status.route('/network')
 @ns_status.doc('get_network_info')
 class Network(Resource):
+    # Cache for last known numeric network code (for MVNO name handling)
+    _last_network_code = None
+    
     @ns_status.doc('network_information')
     @ns_status.marshal_with(network_response)
     def get(self):
         """Get network operator and registration information"""
         network = mqtt_publisher.track_gammu_operation("GetNetworkInfo", machine.GetNetworkInfo)
+        raw_network_name = network.get("NetworkName")
         network_code = network.get("NetworkCode", "")
-        network_name = network.get("NetworkName")
+        network_name = raw_network_name
+        resolved_code = None
         
-        # Try multiple lookup methods if name is empty (Gammu bug: https://github.com/gammu/python-gammu/issues/31)
-        if not network_name and network_code:
-            # First try our comprehensive database
-            network_name = get_network_name(network_code)
-            # Fallback to Gammu's database
-            if not network_name:
-                network_name = GSMNetworks.get(network_code, 'Unknown')
+        # Handle modem quirk: Some modems put operator name (e.g., "Red Pocket") in NetworkCode field
+        if network_code:
+            if network_code.isdigit():
+                # Numeric MCC+MNC code (e.g., "310260")
+                resolved_code = network_code
+                if not network_name or not network_name.strip():
+                    # Lookup name from database if NetworkName is empty
+                    network_name = get_network_name(network_code)
+                    if not network_name:
+                        network_name = GSMNetworks.get(network_code, 'Unknown')
+            else:
+                # Operator name in NetworkCode field (e.g., "Red Pocket", "Xfinity Mobile")
+                if not network_name or not network_name.strip():
+                    network_name = network_code
+                
+                # Try reverse lookup: find numeric code for this operator name
+                from network_codes import NETWORK_OPERATORS
+                for code, name in NETWORK_OPERATORS.items():
+                    if name.lower() == network_code.lower():
+                        resolved_code = code
+                        break
+                
+                # If reverse lookup fails, use cached code from previous poll
+                if not resolved_code and Network._last_network_code:
+                    resolved_code = Network._last_network_code
         
+        # Cache the numeric code for next time (when modem reports operator name)
+        if resolved_code:
+            Network._last_network_code = resolved_code
+        
+        # Update network dict with resolved values
+        network["NetworkCode"] = resolved_code
         network["NetworkName"] = network_name or 'Unknown'
         
         # Map Gammu's state to human-readable format

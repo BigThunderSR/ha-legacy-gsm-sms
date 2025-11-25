@@ -1155,6 +1155,18 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG
         }
         
+        # Packet Location Area Code sensor
+        packet_lac_config = {
+            "name": "GSM Packet Location Area Code",
+            "unique_id": "sms_gateway_packet_lac",
+            "state_topic": f"{self.topic_prefix}/network/state",
+            "value_template": "{{ value_json.PacketLAC }}",
+            "icon": "mdi:map-marker-radius",
+            "entity_category": "diagnostic",
+            "device": DEVICE_CONFIG,
+            **AVAILABILITY_CONFIG
+        }
+        
         # Network Type sensor (2G/3G/4G/LTE)
         network_type_config = {
             "name": "GSM Network Type",
@@ -1472,6 +1484,7 @@ class MQTTPublisher:
             ("homeassistant/sensor/sms_gateway/network_code/config", network_code_config),
             ("homeassistant/sensor/sms_gateway/cid/config", cid_config),
             ("homeassistant/sensor/sms_gateway/lac/config", lac_config),
+            ("homeassistant/sensor/sms_gateway/packet_lac/config", packet_lac_config),
             ("homeassistant/sensor/sms_gateway/network_type/config", network_type_config),
             # SMS sensors
             ("homeassistant/sensor/sms_gateway/last_sms/config", sms_config),
@@ -1577,8 +1590,9 @@ class MQTTPublisher:
             network_code = network_data.get('NetworkCode', 'N/A')
             state = network_data.get('State', 'N/A')
             lac = network_data.get('LAC', 'N/A')
+            packet_lac = network_data.get('PacketLAC', 'N/A')
             cell_id = network_data.get('CID', 'N/A')
-            logger.debug(f"   📡 Network details: Code={network_code}, State={state}, Type={network_type}, LAC={lac}, CID={cell_id}")
+            logger.debug(f"   📡 Network details: Code={network_code}, State={state}, Type={network_type}, LAC={lac}, PacketLAC={packet_lac}, CID={cell_id}")
     
     def publish_status_combined(self, signal_data: Dict[str, Any], network_data: Dict[str, Any]):
         """Publish both signal strength and network info with combined logging"""
@@ -1601,9 +1615,10 @@ class MQTTPublisher:
         network_code = network_data.get('NetworkCode', 'N/A')
         state = network_data.get('State', 'N/A')
         lac = network_data.get('LAC', 'N/A')
+        packet_lac = network_data.get('PacketLAC', 'N/A')
         cell_id = network_data.get('CID', 'N/A')
         logger.debug(f"   📊 Signal: Percent={signal_percent}%, dBm={signal_dbm}, BER={ber}")
-        logger.debug(f"   📡 Network: Code={network_code}, State={state}, Type={network_type}, LAC={lac}, CID={cell_id}")
+        logger.debug(f"   📡 Network: Code={network_code}, State={state}, Type={network_type}, LAC={lac}, PacketLAC={packet_lac}, CID={cell_id}")
     
     def publish_sms_received(self, sms_data: Dict[str, Any]):
         """Publish received SMS data and fire Home Assistant event"""

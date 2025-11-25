@@ -21,7 +21,7 @@ SOURCES = [
         "format": "list",  # List of objects
     },
     {
-        "name": "pbakondy/mcc-mnc-list", 
+        "name": "pbakondy/mcc-mnc-list",
         "url": "https://raw.githubusercontent.com/pbakondy/mcc-mnc-list/master/mcc-mnc-list.json",
         "repo": "pbakondy/mcc-mnc-list",
         "file": "mcc-mnc-list.json",
@@ -102,7 +102,7 @@ def fetch_from_source(source):
     except requests.exceptions.HTTPError as e:
         print(f"    ✗ HTTP Error {e.response.status_code}: {e}")
         return None, None
-    except Exception as e:
+    except (requests.exceptions.RequestException, json.JSONDecodeError, ValueError, KeyError) as e:
         print(f"    ✗ Failed: {e}")
         return None, None
 

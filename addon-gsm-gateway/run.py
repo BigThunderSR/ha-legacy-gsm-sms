@@ -20,7 +20,7 @@ from flask import Flask, request
 from flask_httpauth import HTTPBasicAuth
 from flask_restx import Api, Resource, fields, reqparse
 
-from support import init_state_machine, retrieveAllSms, deleteSms, encodeSms
+from support import init_state_machine, retrieveAllSms, deleteSms, encodeSms, set_network_type_cache_duration, invalidate_network_type_cache
 from mqtt_publisher import MQTTPublisher
 from gammu import GSMNetworks
 from network_codes import get_network_name
@@ -154,6 +154,10 @@ port = config.get('port', 5000)
 username = config.get('username', 'admin')
 password = config.get('password', 'password')
 device_path = config.get('device_path', '/dev/ttyUSB0')
+
+# Configure network type cache duration
+network_type_cache_seconds = config.get('network_type_cache_seconds', 300)
+set_network_type_cache_duration(network_type_cache_seconds)
 
 # Log device path and check accessibility
 logging.info(f"📱 Configured device path: {device_path}")

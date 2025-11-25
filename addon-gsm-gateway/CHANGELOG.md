@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.0] - 2025-11-24
+
+### Added
+
+- **GSM Network Type Sensor** 📶 - Cellular technology detection with AT command support
+  - Displays network technology (2G/3G/4G/5G/NB-IoT/EN-DC) from modem
+  - Uses AT+CEREG? and AT+CGREG? commands to retrieve Access Technology (AcT)
+  - Automatically detects LTE, UMTS, GSM, 5G NR, and other network types
+  - 5-minute caching to minimize modem disconnects and maximize reliability
+  - Falls back to "Unknown" if modem doesn't support AcT reporting
+  - Full 3GPP TS 27.007 compliance (AcT values 0-13)
+  - Tested and working on SIM7600G-H and similar LTE modems
+
+- **Packet Location Area Code Sensor** 📍 - New diagnostic sensor
+  - Tracks location area code for packet-switched (data) connections
+  - Complements existing LAC sensor (circuit-switched voice)
+  - Useful for monitoring data network roaming and handoffs
+
 ## [2.5.0] - 2025-11-24
 
 ### Added

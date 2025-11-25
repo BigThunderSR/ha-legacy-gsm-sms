@@ -6,3 +6,4 @@ pyopenssl
 paho-mqtt
 PyYAML
 requests
+pyserial

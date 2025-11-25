@@ -270,7 +270,26 @@ class SMSDeliveryTracker:
         count = len(self.pending_deliveries)
         self.pending_deliveries = {}
         self._save()
-        logger.info(f"📬 Cleared {count} pending delivery reports")
+        
+        # Verify the file was actually cleared
+        try:
+            if os.path.exists(self.delivery_file):
+                with open(self.delivery_file, 'r') as f:
+                    data = json.load(f)
+                    remaining = len(data.get('pending', {}))
+                    if remaining > 0:
+                        logger.error(
+                            f"📬 WARNING: File still contains {remaining} "
+                            f"entries after clear!"
+                        )
+                    else:
+                        logger.info(
+                            f"📬 Verified: Cleared {count} pending delivery "
+                            f"reports from file"
+                        )
+        except Exception as e:
+            logger.error(f"📬 Error verifying clear operation: {e}")
+        
         return count
 
 class BalanceSMSParser:
@@ -1803,7 +1822,7 @@ class MQTTPublisher:
         sms_data['history'] = self.sms_history.get_history()
         
         topic = f"{self.topic_prefix}/sms/state"
-        self.client.publish(topic, json.dumps(sms_data), qos=1)
+        self.client.publish(topic, json.dumps(sms_data), qos=1, retain=True)
         
         # Fire Home Assistant event for reliable automation triggering
         self.fire_ha_event(sms_data)
@@ -2139,9 +2158,11 @@ class MQTTPublisher:
                     "history": history
                 }
                 
-                # Publish to SMS state topic
+                # Publish to SMS state topic with retain
                 topic = f"{self.topic_prefix}/sms/state"
-                self.client.publish(topic, json.dumps(restored_sms_data), qos=1)
+                self.client.publish(
+                    topic, json.dumps(restored_sms_data), qos=1, retain=True
+                )
                 
                 sender = last_sms.get('number', 'Unknown')
                 timestamp = last_sms.get('timestamp', '')

@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.1] - 2025-11-25
+
+### Fixed
+
+- **Last SMS Restoration** 🔄 - Fixed blank SMS sensors after restart
+
+  - Last received SMS data is now restored from history on addon startup
+  - SMS state messages are now retained in MQTT broker
+  - "Last SMS Received" and "Last SMS Sender" sensors populate immediately after **any** restart
+  - Works correctly when Home Assistant restarts (not just addon restarts)
+  - No need to wait for a new SMS to arrive to see previous message
+  - SMS history is loaded from persistent storage and republished to MQTT
+
+- **Delivery Tracker Verification** 📬 - Enhanced clear delivery reports button
+  - Added verification logging after clearing delivery reports
+  - Confirms file was actually cleared on disk
+  - Helps diagnose persistence issues with delivery tracking
+  - Logs warning if entries remain after clear operation
+
 ## [2.8.0] - 2025-11-25
 
 ### Added
@@ -29,14 +48,6 @@ All notable changes to this project will be documented in this file.
 - **Button Names Clarified** 🔘 - Improved naming for better clarity
   - "Reset SMS Counter" renamed to "Reset SMS Sent Counter"
   - Distinguishes between sent and received counter reset buttons
-
-### Fixed
-
-- **Last SMS Restoration** 🔄 - Fixed blank SMS sensors after restart
-  - Last received SMS data is now restored from history on addon startup
-  - "Last SMS Received" and "Last SMS Sender" sensors populate immediately
-  - No need to wait for a new SMS to arrive to see previous message
-  - SMS history is loaded from persistent storage and republished to MQTT
 
 ## [2.7.0] - 2025-11-25
 
@@ -81,6 +92,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **Auto-Recovery Bug** 🐛 - Critical fix for automatic modem recovery
+
   - Fixed issue where background threads continued using old broken Gammu connection after recovery
   - All operations now use `self.gammu_machine` instead of function parameter
   - SMS monitoring, status publishing, and initial states now pick up new connection immediately
@@ -96,6 +108,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Automatic Modem Recovery** 🔄 - Recover from modem communication failures without restart
+
   - New `auto_recovery` option (default: `true`) - configurable automatic recovery
   - Monitors modem communication for consecutive failures
   - Triggers reconnection after 5 consecutive failures
@@ -144,6 +157,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Configurable Status Update Interval** 📊 - Control how often signal and network info updates
+
   - New `status_update_interval` option (default: 300 seconds / 5 minutes)
   - Range: 30-3600 seconds (30 seconds to 1 hour)
   - Controls update frequency for signal strength, network info, and BER
@@ -164,6 +178,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **SMS Check Interval** - Reduced minimum from 10 to 5 seconds
+
   - `sms_check_interval` now accepts 5-300 seconds (previously 10-300)
   - Default changed to 5 seconds for faster SMS detection
   - Allows near-instant SMS notifications for time-sensitive use cases
@@ -272,17 +287,20 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Base Image Update** - Updated to Alpine 3.22 base image
+
   - Security improvements and CVE patches
   - Performance optimizations
   - Updated Python versions (3.13.x)
   - Modernized tooling (pip 25.2, Bashio 0.17.5)
 
 - **Docker Configuration** - Fixed multi-architecture build support
+
   - Removed hardcoded architecture from Dockerfile
   - Proper ARG BUILD_FROM usage for multi-arch builds
   - Updated Dockerfile labels with correct version and maintainer
 
 - **Startup Logging & Dependencies** - Enhanced version visibility and fixed dependencies
+
   - Added version display in startup logs
   - Fixed version loading to read from config.yaml
   - Added PyYAML and requests to dependencies
@@ -295,6 +313,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant
+
   - USSD Code text field - Enter USSD codes (validates format: starts with \*, e.g., \*225#, \*#100#)
   - Send USSD button - Execute USSD code and receive network response
   - USSD Response sensor - Displays network response with timestamp
@@ -303,6 +322,7 @@ All notable changes to this project will be documented in this file.
   - Error handling with user-friendly messages
 
 - **SMS History Tracking** - Received messages stored with persistence
+
   - Messages include phone number, full message text, and timestamp
   - Available as JSON attributes on Last SMS Received sensor
   - Persistent storage survives addon restarts

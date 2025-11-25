@@ -135,23 +135,24 @@ def get_network_type(machine):
     Uses AT+CREG? command to retrieve Access Technology (AcT) parameter
     Returns human-readable network type string
     """
+    import logging
     try:
         # Try to read network info
         network_info = machine.GetNetworkInfo()
         
         # Debug: Log all available fields to understand what Gammu provides
-        print(f"DEBUG: GetNetworkInfo keys: {network_info.keys()}")
-        print(f"DEBUG: GetNetworkInfo full data: {network_info}")
+        logging.info(f"🔍 DEBUG: GetNetworkInfo keys: {list(network_info.keys())}")
+        logging.info(f"🔍 DEBUG: GetNetworkInfo full data: {network_info}")
         
         # Check for any fields that might indicate network type
         # Some possible fields: GPRS, PacketState, NetworkCode, etc.
         for key, value in network_info.items():
-            print(f"DEBUG: {key} = {value}")
+            logging.info(f"🔍 DEBUG: {key} = {value}")
         
         return 'Unknown'
         
     except Exception as e:
-        print(f"Warning: Could not detect network type: {e}")
+        logging.warning(f"Could not detect network type: {e}")
         return 'Unknown'
 
 

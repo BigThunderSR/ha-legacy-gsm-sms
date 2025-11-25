@@ -1,0 +1,76 @@
+configuration:
+  device_path:
+    name: Caminho do dispositivo
+    description: Caminho para o modem GSM (por exemplo /dev/ttyUSB0)
+  pin:
+    name: PIN do SIM
+    description: Código PIN do cartão SIM (deixar vazio se nenhum PIN for necessário)
+  port:
+    name: Porta da API
+    description: Porta para a API REST do gateway SMS
+  ssl:
+    name: Ativar SSL
+    description: Ativar HTTPS para conexões seguras (requer certificados SSL)
+  username:
+    name: Nome de usuário
+    description: Nome de usuário para autenticação da API
+  password:
+    name: Senha
+    description: Senha para autenticação da API
+  mqtt_enabled:
+    name: Ativar MQTT
+    description: Publicar SMS e estado do dispositivo no broker MQTT
+  mqtt_host:
+    name: Host MQTT
+    description: Nome do host do broker MQTT (use 'core-mosquitto' para o broker HA integrado)
+  mqtt_port:
+    name: Porta MQTT
+    description: Porta do broker MQTT (geralmente 1883)
+  mqtt_username:
+    name: Usuário MQTT
+    description: Nome de usuário para autenticação MQTT (deixar vazio se não for necessário)
+  mqtt_password:
+    name: Senha MQTT
+    description: Senha para autenticação MQTT (deixar vazio se não for necessário)
+  mqtt_topic_prefix:
+    name: Prefixo de tópico MQTT
+    description: Prefixo de tópico MQTT para mensagens publicadas
+  sms_monitoring_enabled:
+    name: Ativar monitoramento de SMS
+    description: Detectar automaticamente e publicar mensagens SMS recebidas no MQTT
+  sms_check_interval:
+    name: Intervalo de verificação de SMS
+    description: Frequência de verificação de novas mensagens SMS (segundos, 5-300)
+  status_update_interval:
+    name: Intervalo de atualização de status
+    description: Frequência de atualização da força do sinal e informações de rede (segundos, 30-3600)
+  log_level:
+    name: Nível de Registro
+    description: Nível de registro (warning=apenas erros, info=padrão, debug=detalhado)
+  auto_recovery:
+    name: Recuperação Automática
+    description: Recuperação automática de falhas de comunicação do modem (recomendado)
+  sms_cost_per_message:
+    name: Custo por SMS
+    description: Custo por mensagem SMS enviada. Defina como 0 para desativar o rastreamento de custos.
+  sms_cost_currency:
+    name: Moeda
+    description: Moeda para exibição do custo de SMS (por ex. USD, EUR, GBP, BRL)
+  auto_delete_read_sms:
+    name: Excluir SMS lidos automaticamente
+    description: Excluir automaticamente mensagens SMS do cartão SIM após a leitura (libera espaço)
+  sms_history_max_messages:
+    name: Máximo de mensagens no histórico
+    description: Número máximo de mensagens SMS recebidas no histórico (1-100)
+  sms_delivery_reports:
+    name: Ativar relatórios de entrega
+    description: Solicitar relatórios de entrega para SMS enviados (pode gerar cobranças da operadora)
+  balance_sms_enabled:
+    name: Ativar análise de SMS de saldo
+    description: Analisar automaticamente informações de saldo da conta a partir de SMS do provedor
+  balance_sms_sender:
+    name: Número remetente de SMS de saldo
+    description: Número de telefone que envia informações de saldo (o remetente de resposta)
+  balance_keywords:
+    name: Palavras-chave de saldo
+    description: Palavras-chave para detectar SMS de saldo (ex: Restante, expira, saldo de)

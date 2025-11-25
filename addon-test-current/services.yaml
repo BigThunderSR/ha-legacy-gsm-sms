@@ -1,0 +1,19 @@
+send_sms:
+  name: Send SMS
+  description: Send SMS message via GSM gateway
+  fields:
+    number:
+      name: Phone Number
+      description: Phone number in international format (e.g., +420123456789)
+      required: true
+      example: "+420123456789"
+      selector:
+        text:
+    message:
+      name: Message
+      description: SMS message text
+      required: true
+      example: "Hello from Home Assistant!"
+      selector:
+        text:
+          multiline: true

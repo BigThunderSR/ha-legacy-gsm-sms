@@ -1,0 +1,76 @@
+configuration:
+  device_path:
+    name: Device Path
+    description: Path to your GSM modem device (e.g., /dev/ttyUSB0)
+  pin:
+    name: SIM PIN
+    description: SIM card PIN code (leave empty if no PIN required)
+  port:
+    name: API Port
+    description: Port for the SMS Gateway REST API
+  ssl:
+    name: Enable SSL
+    description: Enable HTTPS for secure connections (requires SSL certificates)
+  username:
+    name: Username
+    description: Username for API authentication
+  password:
+    name: Password
+    description: Password for API authentication
+  mqtt_enabled:
+    name: Enable MQTT
+    description: Publish SMS and device status to MQTT broker
+  mqtt_host:
+    name: MQTT Host
+    description: MQTT broker hostname (use 'core-mosquitto' for HA built-in broker)
+  mqtt_port:
+    name: MQTT Port
+    description: MQTT broker port (usually 1883)
+  mqtt_username:
+    name: MQTT Username
+    description: MQTT authentication username (leave empty if not required)
+  mqtt_password:
+    name: MQTT Password
+    description: MQTT authentication password (leave empty if not required)
+  mqtt_topic_prefix:
+    name: MQTT Topic Prefix
+    description: MQTT topic prefix for published messages
+  sms_monitoring_enabled:
+    name: Enable SMS Monitoring
+    description: Automatically detect and publish incoming SMS messages to MQTT
+  sms_check_interval:
+    name: SMS Check Interval
+    description: How often to check for new SMS messages (seconds, 5-300)
+  status_update_interval:
+    name: Status Update Interval
+    description: How often to update signal strength and network info (seconds, 30-3600)
+  log_level:
+    name: Log Level
+    description: Logging level (warning=errors only, info=standard, debug=verbose)
+  auto_recovery:
+    name: Auto-Recovery
+    description: Automatically recover from modem communication failures (recommended)
+  sms_cost_per_message:
+    name: SMS Cost per Message
+    description: Cost per sent SMS message. Set to 0 to disable cost tracking.
+  sms_cost_currency:
+    name: Currency
+    description: Currency for SMS cost display (e.g., USD, EUR, GBP, CZK)
+  auto_delete_read_sms:
+    name: Auto-delete Read SMS
+    description: Automatically delete SMS messages from SIM card after reading (frees up SIM space)
+  sms_history_max_messages:
+    name: SMS History Max Messages
+    description: Maximum number of received SMS messages to keep in history (1-100)
+  sms_delivery_reports:
+    name: Enable SMS Delivery Reports
+    description: Request delivery reports for sent SMS (may incur carrier charges)
+  balance_sms_enabled:
+    name: Enable Balance SMS Parsing
+    description: Automatically parse account balance information from provider SMS messages
+  balance_sms_sender:
+    name: Balance SMS Sender Number
+    description: Phone number that sends balance information (the response sender)
+  balance_keywords:
+    name: Balance Keywords
+    description: Keywords to detect balance SMS messages (e.g., Remaining, expires, balance of)

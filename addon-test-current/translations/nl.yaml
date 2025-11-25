@@ -1,0 +1,76 @@
+configuration:
+  device_path:
+    name: Apparaatpad
+    description: Pad naar uw GSM-modem (bijv. /dev/ttyUSB0)
+  pin:
+    name: SIM PIN-code
+    description: PIN-code van SIM-kaart (leeg laten als geen PIN vereist)
+  port:
+    name: API-poort
+    description: Poort voor de SMS Gateway REST API
+  ssl:
+    name: SSL inschakelen
+    description: HTTPS inschakelen voor beveiligde verbindingen (vereist SSL-certificaten)
+  username:
+    name: Gebruikersnaam
+    description: Gebruikersnaam voor API-authenticatie
+  password:
+    name: Wachtwoord
+    description: Wachtwoord voor API-authenticatie
+  mqtt_enabled:
+    name: MQTT inschakelen
+    description: SMS en apparaatstatus publiceren naar MQTT-broker
+  mqtt_host:
+    name: MQTT-host
+    description: MQTT-broker hostnaam (gebruik 'core-mosquitto' voor ingebouwde HA-broker)
+  mqtt_port:
+    name: MQTT-poort
+    description: MQTT-broker poort (meestal 1883)
+  mqtt_username:
+    name: MQTT-gebruikersnaam
+    description: Gebruikersnaam voor MQTT-authenticatie (leeg laten indien niet vereist)
+  mqtt_password:
+    name: MQTT-wachtwoord
+    description: Wachtwoord voor MQTT-authenticatie (leeg laten indien niet vereist)
+  mqtt_topic_prefix:
+    name: MQTT-topic prefix
+    description: MQTT-topic prefix voor gepubliceerde berichten
+  sms_monitoring_enabled:
+    name: SMS-monitoring inschakelen
+    description: Automatisch inkomende SMS-berichten detecteren en publiceren naar MQTT
+  sms_check_interval:
+    name: SMS-controle-interval
+    description: Hoe vaak controleren op nieuwe SMS-berichten (seconden, 5-300)
+  status_update_interval:
+    name: Status update-interval
+    description: Hoe vaak signaalsterkte en netwerkinformatie worden bijgewerkt (seconden, 30-3600)
+  log_level:
+    name: Logniveau
+    description: Logniveau (warning=alleen fouten, info=standaard, debug=uitgebreid)
+  auto_recovery:
+    name: Automatisch Herstel
+    description: Automatisch herstel na modemcommunicatiefouten (aanbevolen)
+  sms_cost_per_message:
+    name: Kosten per SMS
+    description: Kosten per verzonden SMS-bericht. Stel in op 0 om kostenbewaking uit te schakelen.
+  sms_cost_currency:
+    name: Valuta
+    description: Valuta voor weergave van SMS-kosten (bijv. USD, EUR, GBP, CZK)
+  auto_delete_read_sms:
+    name: Gelezen SMS automatisch verwijderen
+    description: SMS-berichten automatisch van de SIM-kaart verwijderen na het lezen (bespaart SIM-ruimte)
+  sms_history_max_messages:
+    name: Maximale berichten in geschiedenis
+    description: Maximaal aantal ontvangen SMS-berichten in de geschiedenis (1-100)
+  sms_delivery_reports:
+    name: Bezorgingsrapporten inschakelen
+    description: Bezorgingsrapporten aanvragen voor verzonden SMS (kan kosten met zich meebrengen)
+  balance_sms_enabled:
+    name: Saldo SMS-analyse inschakelen
+    description: Rekeningsaldo-informatie automatisch analyseren uit provider SMS-berichten
+  balance_sms_sender:
+    name: Saldo SMS-afzendernummer
+    description: Telefoonnummer dat saldo-informatie verzendt (de antwoordafzender)
+  balance_keywords:
+    name: Saldo trefwoorden
+    description: Trefwoorden om saldo SMS-berichten te detecteren (bijv: Resterend, verloopt, saldo van)

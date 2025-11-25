@@ -1,0 +1,112 @@
+name: "GSM SMS Gateway - TEST (Current Development)"
+version: "2.5.0-test"
+slug: "gsm_sms_gateway_test_current"
+description: |
+  🧪 TEST VERSION - Current development build for experimentation
+  
+  Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
+  Based on PavelVe's SMS Gammu Gateway (https://github.com/PavelVe/hassio-addons).
+  
+  Features: Network diagnostics, USSD support, SMS history, delivery reports, automatic balance parsing from provider SMS.
+  
+  ⚠️ IMPORTANT: Do not run this add-on and the HACS Legacy GSM SMS integration simultaneously!
+  Both will try to access the same serial device, causing conflicts.
+  Stop/uninstall any existing GSM integrations before starting this add-on.
+arch:
+  - aarch64
+  - amd64
+
+url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms/tree/main/addon-test-current"
+#image: "ghcr.io/bigthundersr/gsm-sms-gateway-enhanced-{arch}"  # Commented out to allow local builds
+#boot: auto
+#host_network: false
+#startup: services
+init: false
+ingress: true
+ingress_port: 5000
+panel_icon: "mdi:cellphone-message"
+homeassistant: "2022.1.1"
+homeassistant_api: true
+devices:
+  - /dev/ttyUSB0
+  - /dev/ttyUSB1
+  - /dev/ttyUSB2
+  - /dev/ttyUSB3
+  - /dev/ttyUSB4
+  - /dev/ttyUSB5
+  - /dev/ttyUSB6
+  - /dev/ttyUSB7
+  - /dev/ttyUSB8
+  - /dev/ttyUSB9
+  - /dev/ttyACM0
+  - /dev/ttyACM1
+  - /dev/ttyACM2
+  - /dev/ttyACM3
+  - /dev/ttyS0
+  - /dev/ttyS1
+  - /dev/ttyS2
+  - /dev/ttyS3
+  - /dev/serial/by-id
+udev: true
+privileged:
+  - SYS_RAWIO
+ports:
+  5000/tcp: 5000
+ports_description:
+  5000/tcp: "SMS Gateway API port"
+options:
+  device_path: "/dev/ttyUSB0"
+  pin: ""
+  port: 5000
+  ssl: false
+  username: "admin"
+  password: "password"
+  mqtt_enabled: true
+  mqtt_host: "core-mosquitto"
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
+  mqtt_topic_prefix: "homeassistant/sensor/sms_gateway"
+  sms_monitoring_enabled: true
+  sms_check_interval: 5
+  status_update_interval: 300
+  sms_cost_per_message: 0.0
+  sms_cost_currency: "USD"
+  auto_delete_read_sms: true
+  sms_history_max_messages: 10
+  sms_delivery_reports: false
+  log_level: "info"
+  auto_recovery: true
+  balance_sms_enabled: false
+  balance_sms_sender: "7069"
+  balance_keywords:
+    - "Remaining"
+    - "expires"
+    - "balance of"
+schema:
+  device_path: str
+  pin: str?
+  port: int(1,65535)
+  ssl: bool
+  username: str
+  password: str
+  mqtt_enabled: bool
+  mqtt_host: str
+  mqtt_port: int(1,65535)
+  mqtt_username: str?
+  mqtt_password: str?
+  mqtt_topic_prefix: str
+  sms_monitoring_enabled: bool
+  sms_check_interval: int(5,300)
+  status_update_interval: int(30,3600)
+  sms_cost_per_message: float?
+  sms_cost_currency: str
+  auto_delete_read_sms: bool
+  sms_history_max_messages: int(1,100)
+  sms_delivery_reports: bool
+  log_level: list(warning|info|debug)
+  auto_recovery: bool
+  balance_sms_enabled: bool
+  balance_sms_sender: str
+  balance_keywords:
+    - str

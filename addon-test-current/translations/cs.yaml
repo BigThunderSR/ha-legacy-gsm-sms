@@ -1,0 +1,76 @@
+configuration:
+  device_path:
+    name: Cesta k zařízení
+    description: Cesta k vašemu GSM modemu (např. /dev/ttyUSB0)
+  pin:
+    name: PIN SIM karty
+    description: PIN kód SIM karty (nechte prázdné, pokud PIN není potřeba)
+  port:
+    name: Port API
+    description: Port pro REST API SMS Gateway
+  ssl:
+    name: Povolit SSL
+    description: Povolit HTTPS pro zabezpečené připojení (vyžaduje SSL certifikáty)
+  username:
+    name: Uživatelské jméno
+    description: Uživatelské jméno pro ověření API
+  password:
+    name: Heslo
+    description: Heslo pro ověření API
+  mqtt_enabled:
+    name: Povolit MQTT
+    description: Publikovat SMS a stav zařízení do MQTT brokeru
+  mqtt_host:
+    name: MQTT Host
+    description: Hostname MQTT brokeru (použijte 'core-mosquitto' pro vestavěný HA broker)
+  mqtt_port:
+    name: MQTT Port
+    description: Port MQTT brokeru (obvykle 1883)
+  mqtt_username:
+    name: MQTT Uživatel
+    description: Uživatelské jméno pro MQTT (nechte prázdné, pokud není potřeba)
+  mqtt_password:
+    name: MQTT Heslo
+    description: Heslo pro MQTT (nechte prázdné, pokud není potřeba)
+  mqtt_topic_prefix:
+    name: MQTT Topic Prefix
+    description: Prefix pro MQTT topicy publikovaných zpráv
+  sms_monitoring_enabled:
+    name: Povolit SMS Monitoring
+    description: Automaticky detekovat a publikovat příchozí SMS zprávy do MQTT
+  sms_check_interval:
+    name: Interval kontroly SMS
+    description: Jak často kontrolovat nové SMS zprávy (sekundy, 5-300)
+  status_update_interval:
+    name: Interval aktualizace stavu
+    description: Jak často aktualizovat sílu signálu a síťové informace (sekundy, 30-3600)
+  log_level:
+    name: Úroveň Protokolování
+    description: Úroveň protokolování (warning=pouze chyby, info=standardní, debug=podrobné)
+  auto_recovery:
+    name: Automatické Obnovení
+    description: Automatické obnovení po selháních komunikace modemu (doporučeno)
+  sms_cost_per_message:
+    name: Cena za SMS
+    description: Cena za jednu odeslanou SMS zprávu. Nastavte 0 pro vypnutí sledování nákladů.
+  sms_cost_currency:
+    name: Měna
+    description: Měna pro zobrazení nákladů za SMS (např. USD, EUR, GBP, CZK)
+  auto_delete_read_sms:
+    name: Automaticky mazat přečtené SMS
+    description: Automaticky mazat SMS zprávy z SIM karty po přečtení (uvolní místo na SIM)
+  sms_history_max_messages:
+    name: Maximální počet zpráv v historii
+    description: Maximální počet přijatých SMS zpráv v historii (1-100)
+  sms_delivery_reports:
+    name: Povolit potvrzení o doručení
+    description: Požadovat potvrzení o doručení pro odeslané SMS (může způsobit poplatky operátora)
+  balance_sms_enabled:
+    name: Povolit analýzu SMS zůstatku
+    description: Automaticky analyzovat informace o zůstatku účtu ze SMS poskytovatele
+  balance_sms_sender:
+    name: Číslo odesílatele SMS zůstatku
+    description: Telefonní číslo, které posílá informace o zůstatku (odesílatel odpovědi)
+  balance_keywords:
+    name: Klíčová slova zůstatku
+    description: Klíčová slova pro detekci SMS zůstatku (např: Zbývající, vyprší, zůstatek)

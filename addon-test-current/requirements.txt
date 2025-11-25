@@ -1,0 +1,8 @@
+python-gammu
+flask
+flask-restx
+Flask-HTTPAuth
+pyopenssl
+paho-mqtt
+PyYAML
+requests

@@ -1,0 +1,76 @@
+configuration:
+  device_path:
+    name: Percorso dispositivo
+    description: Percorso al modem GSM (es. /dev/ttyUSB0)
+  pin:
+    name: PIN SIM
+    description: Codice PIN della scheda SIM (lasciare vuoto se non richiesto)
+  port:
+    name: Porta API
+    description: Porta per l'API REST del gateway SMS
+  ssl:
+    name: Abilita SSL
+    description: Abilita HTTPS per connessioni sicure (richiede certificati SSL)
+  username:
+    name: Nome utente
+    description: Nome utente per l'autenticazione API
+  password:
+    name: Password
+    description: Password per l'autenticazione API
+  mqtt_enabled:
+    name: Abilita MQTT
+    description: Pubblica SMS e stato del dispositivo sul broker MQTT
+  mqtt_host:
+    name: Host MQTT
+    description: Nome host del broker MQTT (usa 'core-mosquitto' per il broker HA integrato)
+  mqtt_port:
+    name: Porta MQTT
+    description: Porta del broker MQTT (di solito 1883)
+  mqtt_username:
+    name: Nome utente MQTT
+    description: Nome utente per l'autenticazione MQTT (lasciare vuoto se non richiesto)
+  mqtt_password:
+    name: Password MQTT
+    description: Password per l'autenticazione MQTT (lasciare vuoto se non richiesto)
+  mqtt_topic_prefix:
+    name: Prefisso topic MQTT
+    description: Prefisso topic MQTT per i messaggi pubblicati
+  sms_monitoring_enabled:
+    name: Abilita monitoraggio SMS
+    description: Rileva automaticamente e pubblica messaggi SMS in arrivo su MQTT
+  sms_check_interval:
+    name: Intervallo di controllo SMS
+    description: Frequenza di controllo di nuovi messaggi SMS (secondi, 5-300)
+  status_update_interval:
+    name: Intervallo di aggiornamento dello stato
+    description: Frequenza di aggiornamento della potenza del segnale e delle informazioni di rete (secondi, 30-3600)
+  log_level:
+    name: Livello di Registro
+    description: Livello di registrazione (warning=solo errori, info=standard, debug=dettagliato)
+  auto_recovery:
+    name: Recupero Automatico
+    description: Recupero automatico da errori di comunicazione del modem (consigliato)
+  sms_cost_per_message:
+    name: Costo per SMS
+    description: Costo per messaggio SMS inviato. Impostare a 0 per disabilitare il monitoraggio dei costi.
+  sms_cost_currency:
+    name: Valuta
+    description: Valuta per la visualizzazione del costo SMS (es. USD, EUR, GBP, CZK)
+  auto_delete_read_sms:
+    name: Elimina automaticamente SMS letti
+    description: Elimina automaticamente i messaggi SMS dalla scheda SIM dopo la lettura (libera spazio)
+  sms_history_max_messages:
+    name: Messaggi massimi nella cronologia
+    description: Numero massimo di messaggi SMS ricevuti da conservare nella cronologia (1-100)
+  sms_delivery_reports:
+    name: Abilita rapporti di consegna
+    description: Richiedi rapporti di consegna per SMS inviati (può comportare costi dell'operatore)
+  balance_sms_enabled:
+    name: Abilita analisi SMS saldo
+    description: Analizza automaticamente le informazioni sul saldo dell'account dagli SMS del provider
+  balance_sms_sender:
+    name: Numero mittente SMS saldo
+    description: Numero di telefono che invia le informazioni sul saldo (il mittente di risposta)
+  balance_keywords:
+    name: Parole chiave saldo
+    description: Parole chiave per rilevare SMS di saldo (es: Rimanente, scade, saldo di)

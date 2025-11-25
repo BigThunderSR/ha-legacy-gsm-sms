@@ -118,15 +118,25 @@ def parse_data_to_codes(data, source_format):
     if source_format == "list":
         # Handle list-based formats (most sources)
         for entry in data:
-            mcc = str(entry.get('mcc', ''))
-            mnc = str(entry.get('mnc', ''))
+            # Get values, ensuring they're not None
+            mcc = entry.get('mcc')
+            mnc = entry.get('mnc')
+            
+            # Skip if mcc or mnc is None or not convertible to string
+            if mcc is None or mnc is None:
+                continue
+            
+            # Convert to string
+            mcc = str(mcc).strip()
+            mnc = str(mnc).strip()
             
             # Try different field names for operator name
             operator = (entry.get('network') or 
                        entry.get('brand') or 
                        entry.get('operator') or '')
             
-            if mcc and mnc and operator:
+            # Ensure we have valid numeric MCC/MNC and operator name
+            if mcc and mnc and operator and mcc.isdigit() and mnc.isdigit():
                 # Pad MNC to 2-3 digits as needed
                 code = f"{mcc}{mnc.zfill(2)}"
                 codes[code] = operator

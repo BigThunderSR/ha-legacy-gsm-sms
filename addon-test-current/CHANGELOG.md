@@ -14,12 +14,12 @@ All notable changes to this project will be documented in this file.
   - No need to wait for a new SMS to arrive to see previous message
   - SMS history loaded from persistent storage and republished to MQTT
 
-- **Delivery Tracker Clear Button** 📬 - Fixed persistent state after clearing
-  - Clear button now publishes retained MQTT message to overwrite pending status
-  - Previously "pending" status would reappear after Home Assistant restart
+- **Delivery Tracker Status Sensor** 📬 - Fixed status persistence behavior
+  - Delivery status now follows same pattern as other event-driven status sensors
+  - Publishes "idle" state on startup (no longer retains "cleared" across restarts)
+  - Uses retain=False like send_status and delete_status sensors
+  - Event-driven status sensors should show current state, not persist old events
   - Added verification logging after clearing delivery reports
-  - Confirms file was actually cleared on disk
-  - Helps diagnose persistence issues with delivery tracking
 
 ## [2.8.0] - 2025-11-25
 

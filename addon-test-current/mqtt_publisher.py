@@ -1003,7 +1003,7 @@ class MQTTPublisher:
                     "pending_count": 0,
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
                 }
-                self.client.publish(status_topic, json.dumps(status_data), retain=True)
+                self.client.publish(status_topic, json.dumps(status_data), retain=False)
                 logger.info(f"✅ Cleared {count} pending delivery reports")
         except Exception as e:
             logger.error(f"❌ Failed to clear delivery reports: {e}")
@@ -1014,7 +1014,7 @@ class MQTTPublisher:
                     "message": f"Failed to clear delivery reports: {str(e)}",
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
                 }
-                self.client.publish(status_topic, json.dumps(status_data), retain=True)
+                self.client.publish(status_topic, json.dumps(status_data), retain=False)
 
     def _handle_delete_all_sms(self):
         """Handle delete all SMS button press - with fallback for corrupted SMS"""
@@ -2147,7 +2147,17 @@ class MQTTPublisher:
             }
             self.client.publish(delete_status_topic, json.dumps(delete_status_data), retain=False)
 
-            logger.info("📡 Published initial status states (send_status: ready, delete_status: idle)")
+            # Publish initial delivery_status as "idle"
+            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
+            delivery_status_data = {
+                "status": "idle",
+                "message": "No delivery reports yet",
+                "pending_count": 0,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            self.client.publish(delivery_status_topic, json.dumps(delivery_status_data), retain=False)
+
+            logger.info("📡 Published initial status states (send_status: ready, delete_status: idle, delivery_status: idle)")
     
     def _restore_sms_history(self):
         """Restore last SMS from history after discovery is complete"""

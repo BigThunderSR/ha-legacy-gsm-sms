@@ -270,7 +270,26 @@ class SMSDeliveryTracker:
         count = len(self.pending_deliveries)
         self.pending_deliveries = {}
         self._save()
-        logger.info(f"📬 Cleared {count} pending delivery reports")
+        
+        # Verify the file was actually cleared
+        try:
+            if os.path.exists(self.delivery_file):
+                with open(self.delivery_file, 'r') as f:
+                    data = json.load(f)
+                    remaining = len(data.get('pending', {}))
+                    if remaining > 0:
+                        logger.error(
+                            f"📬 WARNING: File still contains {remaining} "
+                            f"entries after clear!"
+                        )
+                    else:
+                        logger.info(
+                            f"📬 Verified: Cleared {count} pending delivery "
+                            f"reports from file"
+                        )
+        except Exception as e:
+            logger.error(f"📬 Error verifying clear operation: {e}")
+        
         return count
 
 class BalanceSMSParser:
@@ -1694,6 +1713,9 @@ class MQTTPublisher:
         # Give HA a moment to process discovery and send retained state messages back to us
         import time
         time.sleep(1)
+        
+        # Now restore SMS history after HA has processed discovery
+        self._restore_sms_history()
     
     def publish_signal_strength(self, signal_data: Dict[str, Any], silent: bool = False):
         """Publish signal strength data"""
@@ -1803,7 +1825,7 @@ class MQTTPublisher:
         sms_data['history'] = self.sms_history.get_history()
         
         topic = f"{self.topic_prefix}/sms/state"
-        self.client.publish(topic, json.dumps(sms_data), qos=1)
+        self.client.publish(topic, json.dumps(sms_data), qos=1, retain=True)
         
         # Fire Home Assistant event for reliable automation triggering
         self.fire_ha_event(sms_data)
@@ -2088,10 +2110,12 @@ class MQTTPublisher:
             # Reset both text input fields on startup (clear any old values from broker)
             phone_state_topic = f"{self.topic_prefix}/phone_number/state"
             message_state_topic = f"{self.topic_prefix}/message_text/state"
+            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
 
             # First, delete old retained messages by publishing null payload
             self.client.publish(phone_state_topic, None, retain=True, qos=1)
             self.client.publish(message_state_topic, None, retain=True, qos=1)
+            self.client.publish(delivery_status_topic, None, retain=True, qos=1)
 
             # Small delay to ensure deletion is processed
             import time
@@ -2125,31 +2149,47 @@ class MQTTPublisher:
             }
             self.client.publish(delete_status_topic, json.dumps(delete_status_data), retain=False)
 
-            logger.info("📡 Published initial status states (send_status: ready, delete_status: idle)")
+            # Publish initial delivery_status as "idle"
+            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
+            delivery_status_data = {
+                "status": "idle",
+                "message": "No delivery reports yet",
+                "pending_count": 0,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            self.client.publish(delivery_status_topic, json.dumps(delivery_status_data), retain=False)
 
-            # Restore last SMS data from history if available
-            history = self.sms_history.get_history()
-            if history:
-                last_sms = history[-1]  # Get most recent message
-                # Reconstruct SMS data in the same format as publish_sms_received
-                restored_sms_data = {
-                    "Number": last_sms.get("number", "Unknown"),
-                    "Text": last_sms.get("text", ""),
-                    "timestamp": last_sms.get("timestamp", ""),
-                    "history": history
-                }
-                
-                # Publish to SMS state topic
-                topic = f"{self.topic_prefix}/sms/state"
-                self.client.publish(topic, json.dumps(restored_sms_data), qos=1)
-                
-                sender = last_sms.get('number', 'Unknown')
-                timestamp = last_sms.get('timestamp', '')
-                logger.info(
-                    f"📡 Restored last SMS from history: {sender} at {timestamp}"
-                )
-            else:
-                logger.info("📡 No SMS history to restore")
+            logger.info("📡 Published initial status states (send_status: ready, delete_status: idle, delivery_status: idle)")
+    
+    def _restore_sms_history(self):
+        """Restore last SMS from history after discovery is complete"""
+        if not self.connected:
+            return
+        
+        history = self.sms_history.get_history()
+        if history:
+            last_sms = history[-1]  # Get most recent message
+            # Reconstruct SMS data in the same format as publish_sms_received
+            restored_sms_data = {
+                "Number": last_sms.get("number", "Unknown"),
+                "Text": last_sms.get("text", ""),
+                "timestamp": last_sms.get("timestamp", ""),
+                "history": history
+            }
+            
+            # Publish to SMS state topic with retain
+            topic = f"{self.topic_prefix}/sms/state"
+            self.client.publish(
+                topic, json.dumps(restored_sms_data), qos=1, retain=True
+            )
+            
+            sender = last_sms.get('number', 'Unknown')
+            timestamp = last_sms.get('timestamp', '')
+            logger.info(
+                f"📡 Restored last SMS from history: {sender} at {timestamp}"
+            )
+        else:
+            logger.info("📡 No SMS history to restore")
     
     def publish_initial_states_with_machine(self, gammu_machine):
         """Publish initial states with gammu machine access"""

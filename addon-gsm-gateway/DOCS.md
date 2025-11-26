@@ -134,11 +134,13 @@ curl -X POST http://192.168.1.x:5000/sms \
 The `log_level` setting uses Python's standard logging levels:
 
 - **`warning`** - Only warnings, errors, and critical messages (Python WARNING level)
+
   - Best for production when everything is working smoothly
   - Suppresses all routine status messages
   - Reduces log file size significantly
 
 - **`info`** (default) - Standard operational logging (Python INFO level)
+
   - Shows all useful information (SMS received/sent, signal strength, network info, connection changes)
   - **Signal strength logs both sensors**: `📡 Published signal strength to MQTT: 75% (-65 dBm)` _(Enhanced v2.2.1)_
   - **Only suppresses**: Repetitive "SMS monitoring cycle OK" messages when no new SMS arrives
@@ -157,6 +159,7 @@ The `log_level` setting uses Python's standard logging levels:
 The `auto_recovery` setting enables automatic recovery from modem communication failures:
 
 - **`true`** (default) - Automatically reconnects to modem after connection loss
+
   - Monitors modem communication for consecutive failures
   - Triggers reconnection after **5 consecutive failures**
   - Waits **60 seconds** between reconnection attempts (cooldown period)
@@ -736,16 +739,17 @@ auto_delete_read_sms: true
 
 SMS messages are automatically deleted after being read and published to MQTT. Storage capacity is tracked in `sensor.sms_gateway_sms_storage_used`.
 
-### SMS History Persistence (🆕 v2.8.0)
+### SMS History Persistence (🆕 v2.8.0, improved v2.8.1)
 
 The addon automatically preserves SMS history across restarts:
 
 - **Last 10 received SMS** stored in `/data/sms_history.json`
-- **Auto-restored on startup** - Last received SMS sensors populate immediately
+- **Auto-restored on startup** - Last received SMS sensors populate immediately (fixed in v2.8.1)
+- **MQTT retained state** - Survives Home Assistant restarts (fixed in v2.8.1)
 - **No data loss** - SMS information persists even after addon restarts
 - **Survives updates** - History maintained across addon upgrades
 
-The `sensor.sms_gateway_last_sms` and `sensor.sms_gateway_last_sms_sender` will show your most recent message immediately on startup, without waiting for a new SMS to arrive.
+The `sensor.sms_gateway_last_sms` and `sensor.sms_gateway_last_sms_sender` will show your most recent message immediately on startup, without waiting for a new SMS to arrive. This works correctly after both addon restarts and Home Assistant restarts.
 
 ### Monitor Modem Health
 

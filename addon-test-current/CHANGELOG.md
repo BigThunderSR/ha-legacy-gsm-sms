@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.3] - 2025-11-26
+
+### Fixed
+
+- **Status Sensor Clearing** 🔧 - Fixed retain flag for delivery_status clearing
+  - Changed retain from False to True when publishing clearing message
+  - Ensures old retained messages are properly replaced with valid JSON
+  - Prevents "Unknown" sensor states after restart
+  - Maintains fix for JSON parse errors from v2.8.2
+
 ## [2.8.2] - 2025-11-26
 
 ### Fixed

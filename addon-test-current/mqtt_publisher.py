@@ -2118,7 +2118,7 @@ class MQTTPublisher:
             self.client.publish(ussd_state_topic, None, retain=True, qos=1)
 
             # Clear delivery_status with valid JSON (has value_json template)
-            # Note: Using retain=False so this temporary state isn't persisted
+            # Note: Using retain=True to replace any old retained messages
             delivery_status_topic = f"{self.topic_prefix}/delivery_status"
             clear_delivery_data = {
                 "status": "initializing",
@@ -2128,7 +2128,7 @@ class MQTTPublisher:
             self.client.publish(
                 delivery_status_topic,
                 json.dumps(clear_delivery_data),
-                retain=False,
+                retain=True,
                 qos=1
             )
 
@@ -2154,7 +2154,7 @@ class MQTTPublisher:
                 "message": "SMS Gateway ready to send messages",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
-            self.client.publish(send_status_topic, json.dumps(send_status_data), retain=False)
+            self.client.publish(send_status_topic, json.dumps(send_status_data), retain=True)
 
             # Publish initial delete_status as "idle"
             delete_status_topic = f"{self.topic_prefix}/delete_sms_status"
@@ -2163,9 +2163,10 @@ class MQTTPublisher:
                 "message": "No delete operations yet",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
-            self.client.publish(delete_status_topic, json.dumps(delete_status_data), retain=False)
+            self.client.publish(delete_status_topic, json.dumps(delete_status_data), retain=True)
 
             # Publish initial delivery_status as "idle"
+            # Use retain=True to replace the "initializing" message
             delivery_status_topic = f"{self.topic_prefix}/delivery_status"
             delivery_status_data = {
                 "status": "idle",
@@ -2173,7 +2174,7 @@ class MQTTPublisher:
                 "pending_count": 0,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
-            self.client.publish(delivery_status_topic, json.dumps(delivery_status_data), retain=False)
+            self.client.publish(delivery_status_topic, json.dumps(delivery_status_data), retain=True)
 
             logger.info("📡 Published initial status states (send_status: ready, delete_status: idle, delivery_status: idle)")
     

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.2] - 2025-11-26
+
+### Fixed
+
+- **MQTT JSON Error on Startup** 🐛 - Fixed template errors in Home Assistant logs
+  - Fixed "Erroneous JSON" error when clearing retained MQTT messages
+  - Fixed "'value_json' is undefined" template error for delivery_status sensor
+  - delivery_status topic now cleared with valid JSON instead of null payload
+  - Added USSD code field to startup clearing routine to prevent "unknown" values
+  - All sensor topics with value_json templates now always receive valid JSON
+
 ## [2.8.1] - 2025-11-25
 
 ### Fixed

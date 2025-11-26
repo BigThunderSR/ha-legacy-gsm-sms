@@ -2107,15 +2107,30 @@ class MQTTPublisher:
     def _publish_initial_states(self):
         """Publish initial sensor states on startup"""
         if self.connected:
-            # Reset both text input fields on startup (clear any old values from broker)
+            # Reset all text input fields on startup (clear old values)
             phone_state_topic = f"{self.topic_prefix}/phone_number/state"
             message_state_topic = f"{self.topic_prefix}/message_text/state"
-            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
+            ussd_state_topic = f"{self.topic_prefix}/ussd_code/state"
 
             # First, delete old retained messages by publishing null payload
             self.client.publish(phone_state_topic, None, retain=True, qos=1)
             self.client.publish(message_state_topic, None, retain=True, qos=1)
-            self.client.publish(delivery_status_topic, None, retain=True, qos=1)
+            self.client.publish(ussd_state_topic, None, retain=True, qos=1)
+
+            # Clear delivery_status with valid JSON (has value_json template)
+            # Note: Using retain=False so this temporary state isn't persisted
+            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
+            clear_delivery_data = {
+                "status": "initializing",
+                "message": "Clearing previous state",
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            self.client.publish(
+                delivery_status_topic,
+                json.dumps(clear_delivery_data),
+                retain=False,
+                qos=1
+            )
 
             # Small delay to ensure deletion is processed
             import time
@@ -2124,12 +2139,13 @@ class MQTTPublisher:
             # Now publish empty string as initial value (creates entity in HA)
             self.client.publish(phone_state_topic, "", retain=True, qos=1)
             self.client.publish(message_state_topic, "", retain=True, qos=1)
+            self.client.publish(ussd_state_topic, "", retain=True, qos=1)
 
             # Reset internal state
             self.current_phone_number = ""
             self.current_message_text = ""
 
-            logger.info("📡 Published initial text field states: cleared both phone and message fields")
+            logger.info("📡 Published initial text field states: cleared phone, message, and USSD fields")
 
             # Publish initial send_status as "ready"
             send_status_topic = f"{self.topic_prefix}/send_status"

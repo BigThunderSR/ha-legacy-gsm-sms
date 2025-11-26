@@ -6,15 +6,6 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- **Last SMS Restoration** 🔄 - Fixed blank SMS sensors after restart
-
-  - Last received SMS data is now restored from history on addon startup
-  - SMS state messages are now retained in MQTT broker
-  - "Last SMS Received" and "Last SMS Sender" sensors populate immediately after **any** restart
-  - Works correctly when Home Assistant restarts (not just addon restarts)
-  - No need to wait for a new SMS to arrive to see previous message
-  - SMS history is loaded from persistent storage and republished to MQTT
-
 - **Delivery Tracker Clear Button** 📬 - Fixed persistent state after clearing
   - Clear button now publishes retained MQTT message to overwrite pending status
   - Previously "pending" status would reappear after Home Assistant restart

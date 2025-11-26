@@ -1822,7 +1822,7 @@ class MQTTPublisher:
         sms_data['history'] = self.sms_history.get_history()
         
         topic = f"{self.topic_prefix}/sms/state"
-        self.client.publish(topic, json.dumps(sms_data), qos=1, retain=True)
+        self.client.publish(topic, json.dumps(sms_data), qos=1)
         
         # Fire Home Assistant event for reliable automation triggering
         self.fire_ha_event(sms_data)
@@ -2145,32 +2145,6 @@ class MQTTPublisher:
             self.client.publish(delete_status_topic, json.dumps(delete_status_data), retain=False)
 
             logger.info("📡 Published initial status states (send_status: ready, delete_status: idle)")
-
-            # Restore last SMS data from history if available
-            history = self.sms_history.get_history()
-            if history:
-                last_sms = history[-1]  # Get most recent message
-                # Reconstruct SMS data in the same format as publish_sms_received
-                restored_sms_data = {
-                    "Number": last_sms.get("number", "Unknown"),
-                    "Text": last_sms.get("text", ""),
-                    "timestamp": last_sms.get("timestamp", ""),
-                    "history": history
-                }
-                
-                # Publish to SMS state topic with retain
-                topic = f"{self.topic_prefix}/sms/state"
-                self.client.publish(
-                    topic, json.dumps(restored_sms_data), qos=1, retain=True
-                )
-                
-                sender = last_sms.get('number', 'Unknown')
-                timestamp = last_sms.get('timestamp', '')
-                logger.info(
-                    f"📡 Restored last SMS from history: {sender} at {timestamp}"
-                )
-            else:
-                logger.info("📡 No SMS history to restore")
     
     def publish_initial_states_with_machine(self, gammu_machine):
         """Publish initial states with gammu machine access"""

@@ -1003,7 +1003,7 @@ class MQTTPublisher:
                     "pending_count": 0,
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
                 }
-                self.client.publish(status_topic, json.dumps(status_data), retain=False)
+                self.client.publish(status_topic, json.dumps(status_data), retain=True)
                 logger.info(f"✅ Cleared {count} pending delivery reports")
         except Exception as e:
             logger.error(f"❌ Failed to clear delivery reports: {e}")
@@ -1014,7 +1014,7 @@ class MQTTPublisher:
                     "message": f"Failed to clear delivery reports: {str(e)}",
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
                 }
-                self.client.publish(status_topic, json.dumps(status_data), retain=False)
+                self.client.publish(status_topic, json.dumps(status_data), retain=True)
 
     def _handle_delete_all_sms(self):
         """Handle delete all SMS button press - with fallback for corrupted SMS"""

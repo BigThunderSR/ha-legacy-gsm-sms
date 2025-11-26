@@ -2119,28 +2119,14 @@ class MQTTPublisher:
             self.client.publish(message_state_topic, None, retain=True, qos=1)
             self.client.publish(ussd_state_topic, None, retain=True, qos=1)
 
-            # Clear delivery_status with valid JSON (has value_json template)
-            # Note: Using retain=True to replace any old retained messages
-            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
-            clear_delivery_data = {
-                "status": "initializing",
-                "message": "Clearing previous state",
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
-            self.client.publish(
-                delivery_status_topic,
-                json.dumps(clear_delivery_data),
-                retain=True,
-                qos=1
-            )
-
             # Small delay to ensure deletion is processed
             time.sleep(0.1)
 
             # Now publish empty string as initial value (creates entity in HA)
             self.client.publish(phone_state_topic, "", retain=True, qos=1)
             self.client.publish(message_state_topic, "", retain=True, qos=1)
-            self.client.publish(ussd_state_topic, "", retain=True, qos=1)
+            # USSD has pattern validation - use placeholder that matches pattern
+            self.client.publish(ussd_state_topic, "*#", retain=True, qos=1)
 
             # Reset internal state
             self.current_phone_number = ""
@@ -2148,8 +2134,18 @@ class MQTTPublisher:
 
             logger.info("📡 Published initial text field states: cleared phone, message, and USSD fields")
 
-            # Publish initial send_status as "ready"
+            # Clear status topics to remove any old retained messages
             send_status_topic = f"{self.topic_prefix}/send_status"
+            delete_status_topic = f"{self.topic_prefix}/delete_sms_status"
+            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
+            
+            self.client.publish(send_status_topic, None, retain=True, qos=1)
+            self.client.publish(delete_status_topic, None, retain=True, qos=1)
+            self.client.publish(delivery_status_topic, None, retain=True, qos=1)
+            
+            time.sleep(0.1)
+            
+            # Publish initial send_status as "ready"
             send_status_data = {
                 "status": "ready",
                 "message": "SMS Gateway ready to send messages",
@@ -2158,7 +2154,6 @@ class MQTTPublisher:
             self.client.publish(send_status_topic, json.dumps(send_status_data), retain=True)
 
             # Publish initial delete_status as "idle"
-            delete_status_topic = f"{self.topic_prefix}/delete_sms_status"
             delete_status_data = {
                 "status": "idle",
                 "message": "No delete operations yet",
@@ -2167,8 +2162,6 @@ class MQTTPublisher:
             self.client.publish(delete_status_topic, json.dumps(delete_status_data), retain=True)
 
             # Publish initial delivery_status as "idle"
-            # Use retain=True to replace the "initializing" message
-            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
             delivery_status_data = {
                 "status": "idle",
                 "message": "No delivery reports yet",

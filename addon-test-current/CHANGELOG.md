@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.6-test] - 2025-11-26
+
+### Fixed
+
+- **JSON Parse Errors** 🐛 - Fixed MQTT JSON errors during status sensor clearing
+  - Changed status sensor clearing from None to valid JSON {"status": "clearing"}
+  - All status sensors (send/delete/delivery) now receive valid JSON at all times
+  - Resolves "Erroneous JSON" and "'value_json' is undefined" errors in HA logs
+
 ## [2.8.5-test] - 2025-11-26
 
 ### Fixed

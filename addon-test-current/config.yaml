@@ -1,5 +1,5 @@
 name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.8.5-test
+version: 2.8.6-test
 slug: "gsm_sms_gateway_test_current"
 description: |
   🧪 TEST VERSION - Current development build for experimentation (v2.8.4-test)

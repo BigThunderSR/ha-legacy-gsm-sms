@@ -2117,15 +2117,15 @@ class MQTTPublisher:
             # First, delete old retained messages by publishing null payload
             self.client.publish(phone_state_topic, None, retain=True, qos=1)
             self.client.publish(message_state_topic, None, retain=True, qos=1)
-            self.client.publish(ussd_state_topic, None, retain=True, qos=1)
+            # Note: Skip None for USSD - it has pattern validation, go straight to valid value
 
             # Small delay to ensure deletion is processed
             time.sleep(0.1)
 
-            # Now publish empty string as initial value (creates entity in HA)
+            # Now publish initial values (creates entity in HA)
             self.client.publish(phone_state_topic, "", retain=True, qos=1)
             self.client.publish(message_state_topic, "", retain=True, qos=1)
-            # USSD has pattern validation - use placeholder that matches pattern
+            # USSD has pattern validation - publish valid placeholder directly
             self.client.publish(ussd_state_topic, "*#", retain=True, qos=1)
 
             # Reset internal state
@@ -2139,9 +2139,11 @@ class MQTTPublisher:
             delete_status_topic = f"{self.topic_prefix}/delete_sms_status"
             delivery_status_topic = f"{self.topic_prefix}/delivery_status"
             
-            self.client.publish(send_status_topic, None, retain=True, qos=1)
-            self.client.publish(delete_status_topic, None, retain=True, qos=1)
-            self.client.publish(delivery_status_topic, None, retain=True, qos=1)
+            # Status sensors have value_json templates - must publish valid JSON
+            clear_status = {"status": "clearing", "message": ""}
+            self.client.publish(send_status_topic, json.dumps(clear_status), retain=True, qos=1)
+            self.client.publish(delete_status_topic, json.dumps(clear_status), retain=True, qos=1)
+            self.client.publish(delivery_status_topic, json.dumps(clear_status), retain=True, qos=1)
             
             time.sleep(0.1)
             

@@ -2107,6 +2107,8 @@ class MQTTPublisher:
     def _publish_initial_states(self):
         """Publish initial sensor states on startup"""
         if self.connected:
+            import time
+            
             # Reset all text input fields on startup (clear old values)
             phone_state_topic = f"{self.topic_prefix}/phone_number/state"
             message_state_topic = f"{self.topic_prefix}/message_text/state"
@@ -2133,7 +2135,6 @@ class MQTTPublisher:
             )
 
             # Small delay to ensure deletion is processed
-            import time
             time.sleep(0.1)
 
             # Now publish empty string as initial value (creates entity in HA)

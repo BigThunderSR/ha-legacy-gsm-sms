@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.4] - 2025-11-26
+
+### Fixed
+
+- **Startup Crash** 🐛 - Fixed UnboundLocalError on addon startup
+  - Moved `import time` to beginning of \_publish_initial_states method
+  - Fixed crash that prevented status sensors from being initialized
+  - Status sensors now properly receive their initial states
+  - Resolves "Unknown" sensor values that occurred due to initialization failure
+
 ## [2.8.3] - 2025-11-26
 
 ### Fixed

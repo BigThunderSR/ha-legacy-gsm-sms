@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.7] - 2025-11-26
+
+### Fixed
+
+- **Status Sensor Display** 🔧 - Fixed sensors stuck showing "clearing" after restart
+  - Removed unnecessary intermediate "clearing" state for status sensors
+  - Status sensors now publish final states (ready/idle) directly with retain=True
+  - Eliminates race condition that caused sensors to show "clearing" indefinitely
+  - All status sensors (send/delete/delivery) immediately show correct values
+
 ## [2.8.6] - 2025-11-26
 
 ### Fixed
@@ -17,7 +27,7 @@ All notable changes to this project will be documented in this file.
 
 - **Status Display** 🔧 - Fixed delivery_status and USSD code display issues
   - Removed intermediate "initializing" state for delivery_status (now directly publishes "idle")
-  - Fixed USSD Code field showing "unknown" by publishing valid placeholder "*#" instead of empty string
+  - Fixed USSD Code field showing "unknown" by publishing valid placeholder "\*#" instead of empty string
   - Resolves delivery_status stuck on "initializing" during HA restarts
   - USSD Code now properly respects pattern validation (requires USSD format)
 

@@ -2134,18 +2134,10 @@ class MQTTPublisher:
 
             logger.info("📡 Published initial text field states: cleared phone, message, and USSD fields")
 
-            # Clear status topics to remove any old retained messages
+            # Publish initial status sensor states (with retain=True to replace old messages)
             send_status_topic = f"{self.topic_prefix}/send_status"
             delete_status_topic = f"{self.topic_prefix}/delete_sms_status"
             delivery_status_topic = f"{self.topic_prefix}/delivery_status"
-            
-            # Status sensors have value_json templates - must publish valid JSON
-            clear_status = {"status": "clearing", "message": ""}
-            self.client.publish(send_status_topic, json.dumps(clear_status), retain=True, qos=1)
-            self.client.publish(delete_status_topic, json.dumps(clear_status), retain=True, qos=1)
-            self.client.publish(delivery_status_topic, json.dumps(clear_status), retain=True, qos=1)
-            
-            time.sleep(0.1)
             
             # Publish initial send_status as "ready"
             send_status_data = {
@@ -2153,7 +2145,7 @@ class MQTTPublisher:
                 "message": "SMS Gateway ready to send messages",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
-            self.client.publish(send_status_topic, json.dumps(send_status_data), retain=True)
+            self.client.publish(send_status_topic, json.dumps(send_status_data), retain=True, qos=1)
 
             # Publish initial delete_status as "idle"
             delete_status_data = {
@@ -2161,7 +2153,7 @@ class MQTTPublisher:
                 "message": "No delete operations yet",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
-            self.client.publish(delete_status_topic, json.dumps(delete_status_data), retain=True)
+            self.client.publish(delete_status_topic, json.dumps(delete_status_data), retain=True, qos=1)
 
             # Publish initial delivery_status as "idle"
             delivery_status_data = {
@@ -2170,7 +2162,7 @@ class MQTTPublisher:
                 "pending_count": 0,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
-            self.client.publish(delivery_status_topic, json.dumps(delivery_status_data), retain=True)
+            self.client.publish(delivery_status_topic, json.dumps(delivery_status_data), retain=True, qos=1)
 
             logger.info("📡 Published initial status states (send_status: ready, delete_status: idle, delivery_status: idle)")
     

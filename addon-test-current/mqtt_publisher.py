@@ -2110,10 +2110,12 @@ class MQTTPublisher:
             # Reset both text input fields on startup (clear any old values from broker)
             phone_state_topic = f"{self.topic_prefix}/phone_number/state"
             message_state_topic = f"{self.topic_prefix}/message_text/state"
+            delivery_status_topic = f"{self.topic_prefix}/delivery_status"
 
             # First, delete old retained messages by publishing null payload
             self.client.publish(phone_state_topic, None, retain=True, qos=1)
             self.client.publish(message_state_topic, None, retain=True, qos=1)
+            self.client.publish(delivery_status_topic, None, retain=True, qos=1)
 
             # Small delay to ensure deletion is processed
             import time

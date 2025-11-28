@@ -499,20 +499,62 @@ class SmsCollection(Resource):
                 }
             ],
         }
+        
+        # Get cached SMSC for reliable sending
+        cached_smsc = mqtt_publisher.get_cached_smsc()
+        
         messages = []
         for number in numbers:
             for message in encodeSms(smsinfo):
-                message["SMSC"] = {'Number': data.get("smsc")} if data.get("smsc") else {'Location': 1}
+                # Use cached SMSC if available (more reliable)
+                if data.get("smsc"):
+                    message["SMSC"] = {'Number': data.get("smsc")}
+                elif cached_smsc:
+                    message["SMSC"] = {'Number': cached_smsc}
+                else:
+                    message["SMSC"] = {'Location': 1}
+                
                 message["Number"] = number.strip()
                 messages.append(message)
-        result = [mqtt_publisher.track_gammu_operation("SendSMS", machine.SendSMS, message) for message in messages]
-
-        # Increment SMS counter for each sent message
-        for _ in messages:
-            mqtt_publisher.sms_counter.increment()
+        
+        # Send SMS with automatic retry on ERR_EMPTYSMSC
+        results = []
+        for message in messages:
+            try:
+                mqtt_publisher.track_gammu_operation(
+                    "SendSMS", machine.SendSMS, message
+                )
+                results.append(message["Number"])
+                mqtt_publisher.sms_counter.increment()
+            except Exception as e:
+                # Check if ERR_EMPTYSMSC was detected and reset triggered
+                if getattr(e, 'err_emptysmsc_detected', False):
+                    logging.warning(
+                        f"🔄 Retrying SMS to {message['Number']} "
+                        "after modem reset..."
+                    )
+                    time.sleep(7)  # Wait for modem recovery
+                    try:
+                        mqtt_publisher.track_gammu_operation(
+                            "SendSMS", machine.SendSMS, message
+                        )
+                        results.append(message["Number"])
+                        mqtt_publisher.sms_counter.increment()
+                        logging.info(
+                            f"✅ SMS sent to {message['Number']} "
+                            "after retry"
+                        )
+                    except Exception as retry_error:
+                        logging.error(
+                            f"❌ SMS retry failed for "
+                            f"{message['Number']}: {retry_error}"
+                        )
+                        raise
+                else:
+                    raise
+        
         mqtt_publisher.publish_sms_counter()
-
-        return {"status": 200, "message": str(result)}, 200
+        return {"status": 200, "message": f"Sent to {len(results)} number(s)"}, 200
 
 @ns_sms.route('/<int:id>')
 @ns_sms.doc('sms_by_id')

@@ -512,6 +512,11 @@ class MQTTPublisher:
         if config.get('balance_sms_enabled', False):
             self.balance_parser = BalanceSMSParser()
             logger.info("💰 Balance SMS parsing enabled")
+        
+        # SMSC caching for reliable SMS sending
+        self.cached_smsc = None
+        self.smsc_cache_time = None
+        self.smsc_cache_ttl = 3600  # Cache for 1 hour
 
         if config.get('mqtt_enabled', False):
             self._setup_client()
@@ -1903,6 +1908,30 @@ class MQTTPublisher:
             logger.debug(f"📡 Published device status to MQTT: {status}")
         else:
             logger.debug("Device status changed but MQTT not connected, skipping publish")
+    
+    def cache_smsc(self):
+        """Cache SMSC number from modem for reliable SMS sending"""
+        if not self.gammu_machine:
+            return False
+        
+        try:
+            smsc_info = self.gammu_machine.GetSMSC(Location=1)
+            if smsc_info and smsc_info.get('Number'):
+                self.cached_smsc = smsc_info['Number']
+                self.smsc_cache_time = time.time()
+                logger.info(f"📞 Cached SMSC: {self.cached_smsc}")
+                return True
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to cache SMSC: {e}")
+        return False
+    
+    def get_cached_smsc(self):
+        """Get cached SMSC, refresh if expired"""
+        if (self.cached_smsc is None or 
+            self.smsc_cache_time is None or
+            time.time() - self.smsc_cache_time > self.smsc_cache_ttl):
+            self.cache_smsc()
+        return self.cached_smsc
 
     def publish_sms_counter(self):
         """Publish SMS sent counter and cost data"""
@@ -2067,6 +2096,25 @@ class MQTTPublisher:
         except Exception as e:
             logger.error(f"❌ Failed to re-initialize Gammu: {e}")
             return False
+    
+    def _trigger_emergency_reset(self):
+        """Emergency modem reset for hung state recovery"""
+        logger.warning("🚨 Triggering emergency modem reset...")
+        try:
+            self.gammu_machine.Reset(False)
+            logger.info("✅ Emergency reset completed, waiting 5s...")
+            time.sleep(5)
+            
+            # Clear SMSC cache to force refresh
+            self.cached_smsc = None
+            self.smsc_cache_time = None
+            logger.info("🔄 SMSC cache cleared")
+            
+            self.consecutive_failures = self.reconnect_threshold
+            self.device_tracker.consecutive_failures = 2
+        except Exception as e:
+            logger.error(f"❌ Emergency reset failed: {e}")
+            self._reconnect_gammu()
         
     def track_gammu_operation(self, operation_name, gammu_function, *args, **kwargs):
         """Execute gammu operation with connectivity tracking, thread safety, and Python-level timeout"""
@@ -2097,6 +2145,26 @@ class MQTTPublisher:
                     logger.error(f"⏱️ Gammu operation '{operation_name}' timed out after 15s")
                     raise TimeoutError(f"Gammu operation '{operation_name}' timed out after 15s")
                 except Exception as e:
+                    # Check for ERR_EMPTYSMSC (error code 31)
+                    is_emptysmsc = False
+                    try:
+                        if (hasattr(e, 'args') and len(e.args) > 0 and
+                            isinstance(e.args[0], dict) and
+                            e.args[0].get('Code') == 31):
+                            is_emptysmsc = True
+                    except Exception:
+                        pass
+                    
+                    if is_emptysmsc:
+                        logger.error(
+                            f"🚨 ERR_EMPTYSMSC detected in '{operation_name}' - "
+                            "modem hung state!"
+                        )
+                        self._trigger_emergency_reset()
+                        # Mark exception for retry logic
+                        e.err_emptysmsc_detected = True
+                        raise
+                    
                     # All other errors (including Gammu commtimeout errors)
                     self.consecutive_failures += 1
                     self.device_tracker.record_failure(f"{operation_name}: {str(e)}")
@@ -2208,6 +2276,10 @@ class MQTTPublisher:
             # Publish initial offline status (will change to online on first successful operation)
             self.publish_device_status()
             logger.info("📡 Published initial modem status: offline (waiting for first successful communication)")
+
+            # Cache SMSC on initialization
+            logger.info("📞 Caching SMSC for reliable SMS sending...")
+            self.cache_smsc()
 
             # Publish initial signal strength with connectivity tracking
             signal = self.track_gammu_operation("GetSignalQuality", self.gammu_machine.GetSignalQuality)

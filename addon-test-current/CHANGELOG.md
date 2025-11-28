@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.0-test] - 2025-11-28
+
+### Added
+
+- **ERR_EMPTYSMSC Auto-Recovery** 🔄 - Automatic detection and recovery from modem hung state
+
+  - Detects ERR_EMPTYSMSC (error code 31) when modem cannot retrieve SMSC number
+  - Triggers emergency modem soft reset automatically
+  - Waits 7 seconds for modem recovery
+  - Automatically retries SMS send once after reset
+  - Prevents SMS loss when modem enters hung state
+
+- **SMSC Caching** 📞 - Caches SMS Service Center number for reliability
+  - Retrieves and caches SMSC number from modem on startup
+  - Uses explicit SMSC number instead of location lookup (more reliable)
+  - Cache refreshes every hour or after modem reset
+  - Falls back to location lookup if caching fails
+
+### Changed
+
+- **SMS Sending** - Now uses cached SMSC for all outgoing messages
+  - More reliable than location-based SMSC lookup
+  - Reduces dependency on modem state for SMSC retrieval
+
 ## [2.8.7-test] - 2025-11-26
 
 ### Fixed

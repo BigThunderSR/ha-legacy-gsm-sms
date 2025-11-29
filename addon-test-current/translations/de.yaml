@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Automatische Wiederherstellung
     description: Automatische Wiederherstellung nach Modem-Kommunikationsfehlern (empfohlen)
+  auto_restart_on_failure:
+    name: Automatischer Neustart bei Fehler
+    description: Add-on automatisch nach 2 Minuten anhaltender Modem-Fehler neu starten (schnellste Wiederherstellung)
   network_type_cache_seconds:
     name: Netzwerktyp-Cache-Dauer
     description: Wie lange Netzwerktyp-Ergebnisse zwischengespeichert werden, um häufige Modem-Abfragen zu vermeiden (Sekunden, 60-3600)

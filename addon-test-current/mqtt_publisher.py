@@ -15,6 +15,7 @@ import time
 import logging
 import threading
 import os
+import sys
 import requests
 from typing import Optional, Dict, Any
 import paho.mqtt.client as mqtt
@@ -25,6 +26,125 @@ logger = logging.getLogger(__name__)
 
 # SMS counter persistence file
 SMS_COUNTER_FILE = '/data/sms_counter.json'
+
+# Pending SMS queue persistence file
+SMS_QUEUE_FILE = '/data/pending_sms.json'
+
+# Default queue expiry time (1 hour)
+SMS_QUEUE_EXPIRY_SECONDS = 3600
+
+
+class SMSQueue:
+    """Manages pending SMS queue with persistence for retry after modem recovery"""
+
+    def __init__(self, queue_file: str = SMS_QUEUE_FILE, expiry_seconds: int = SMS_QUEUE_EXPIRY_SECONDS):
+        self.queue_file = queue_file
+        self.expiry_seconds = expiry_seconds
+        self.pending = []
+        self._load()
+
+    def _load(self):
+        """Load pending SMS queue from JSON file"""
+        try:
+            if os.path.exists(self.queue_file):
+                with open(self.queue_file, 'r') as f:
+                    data = json.load(f)
+                    self.pending = data.get('pending', [])
+                    # Clear expired messages on load
+                    self._clear_expired()
+                    if self.pending:
+                        logger.info(f"📥 Loaded {len(self.pending)} pending SMS from queue")
+                    else:
+                        logger.info("📥 SMS queue is empty")
+            else:
+                logger.info("📥 SMS queue file not found, starting fresh")
+        except Exception as e:
+            logger.error(f"Error loading SMS queue: {e}")
+            self.pending = []
+
+    def _save(self):
+        """Save pending SMS queue to JSON file"""
+        try:
+            # Ensure /data directory exists
+            os.makedirs(os.path.dirname(self.queue_file), exist_ok=True)
+
+            data = {'pending': self.pending}
+            with open(self.queue_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            logger.debug(f"📥 Saved SMS queue: {len(self.pending)} pending")
+        except Exception as e:
+            logger.error(f"Error saving SMS queue: {e}")
+
+    def _clear_expired(self):
+        """Remove expired messages from queue"""
+        if not self.pending:
+            return
+        
+        current_time = time.time()
+        before_count = len(self.pending)
+        self.pending = [
+            msg for msg in self.pending
+            if current_time - msg.get('queued_at', 0) < self.expiry_seconds
+        ]
+        expired_count = before_count - len(self.pending)
+        if expired_count > 0:
+            logger.info(f"📥 Cleared {expired_count} expired SMS from queue")
+            self._save()
+
+    def add(self, number: str, text: str, smsc: str = None) -> bool:
+        """Add SMS to pending queue for retry"""
+        # Check if same message already queued (prevent duplicates)
+        for msg in self.pending:
+            if msg.get('number') == number and msg.get('text') == text:
+                logger.debug(f"📥 SMS already queued for {number}, skipping duplicate")
+                return False
+        
+        message = {
+            'number': number,
+            'text': text,
+            'smsc': smsc,
+            'queued_at': time.time(),
+            'attempts': 0
+        }
+        self.pending.append(message)
+        self._save()
+        logger.info(f"📥 SMS queued for retry: {number} ({len(self.pending)} total in queue)")
+        return True
+
+    def remove(self, number: str, text: str) -> bool:
+        """Remove SMS from queue (after successful send)"""
+        for i, msg in enumerate(self.pending):
+            if msg.get('number') == number and msg.get('text') == text:
+                self.pending.pop(i)
+                self._save()
+                logger.info(f"📥 SMS removed from queue: {number} ({len(self.pending)} remaining)")
+                return True
+        return False
+
+    def increment_attempts(self, number: str, text: str):
+        """Increment attempt counter for a message"""
+        for msg in self.pending:
+            if msg.get('number') == number and msg.get('text') == text:
+                msg['attempts'] = msg.get('attempts', 0) + 1
+                self._save()
+                return msg['attempts']
+        return 0
+
+    def get_pending(self) -> list:
+        """Get all pending messages (clears expired first)"""
+        self._clear_expired()
+        return self.pending.copy()
+
+    def get_count(self) -> int:
+        """Get count of pending messages"""
+        return len(self.pending)
+
+    def clear(self):
+        """Clear all pending messages"""
+        self.pending = []
+        self._save()
+        logger.info("📥 SMS queue cleared")
+
 
 def detect_unicode_needed(text: str) -> bool:
     """Detect if text contains non-ASCII characters requiring Unicode encoding"""
@@ -517,6 +637,14 @@ class MQTTPublisher:
         self.cached_smsc = None
         self.smsc_cache_time = None
         self.smsc_cache_ttl = 3600  # Cache for 1 hour
+
+        # SMS queue for retry after modem recovery
+        self.sms_queue = SMSQueue()
+        
+        # Auto-restart settings for persistent modem failures
+        self.auto_restart_on_failure = config.get('auto_restart_on_failure', True)
+        self.failure_start_time = None  # When continuous failures started
+        self.restart_timeout = 120  # Restart after 2 min of continuous failure
 
         if config.get('mqtt_enabled', False):
             self._setup_client()
@@ -1933,6 +2061,89 @@ class MQTTPublisher:
             self.cache_smsc()
         return self.cached_smsc
 
+    def queue_sms_for_retry(self, number: str, text: str, smsc: str = None):
+        """Queue an SMS for retry after modem recovery"""
+        if not number or not text:
+            logger.warning("⚠️ Cannot queue SMS: missing number or text")
+            return False
+        return self.sms_queue.add(number, text, smsc)
+
+    def process_pending_sms(self):
+        """Process any pending SMS from the queue (called on startup)"""
+        pending = self.sms_queue.get_pending()
+        if not pending:
+            logger.info("📥 No pending SMS to process")
+            return
+        
+        logger.info(f"📥 Processing {len(pending)} pending SMS from queue...")
+        
+        for msg in pending:
+            number = msg.get('number')
+            text = msg.get('text')
+            smsc = msg.get('smsc')
+            attempts = msg.get('attempts', 0)
+            
+            logger.info(f"📤 Attempting to send queued SMS to {number} "
+                        f"(attempt #{attempts + 1})")
+            
+            try:
+                from gammu import EncodeSMS
+                
+                # Build SMS message
+                smsinfo = {
+                    'Class': -1,
+                    'Unicode': False,
+                    'Entries': [
+                        {'ID': 'ConcatenatedTextLong', 'Buffer': text}
+                    ]
+                }
+                
+                # Detect if unicode needed
+                if detect_unicode_needed(text):
+                    smsinfo['Unicode'] = True
+                
+                # Encode and send
+                messages = EncodeSMS(smsinfo)
+                success = True
+                
+                for message in messages:
+                    if smsc:
+                        message['SMSC'] = {'Number': smsc}
+                    elif self.cached_smsc:
+                        message['SMSC'] = {'Number': self.cached_smsc}
+                    else:
+                        message['SMSC'] = {'Location': 1}
+                    
+                    message['Number'] = number
+                    
+                    try:
+                        self.track_gammu_operation(
+                            "SendSMS",
+                            self.gammu_machine.SendSMS,
+                            message
+                        )
+                    except Exception as e:
+                        logger.error(f"❌ Failed to send queued SMS to {number}: {e}")
+                        self.sms_queue.increment_attempts(number, text)
+                        success = False
+                        break
+                
+                if success:
+                    # Successfully sent - remove from queue
+                    self.sms_queue.remove(number, text)
+                    self.sms_counter.increment()
+                    logger.info(f"✅ Queued SMS sent successfully to {number}")
+                    
+            except Exception as e:
+                logger.error(f"❌ Error processing queued SMS for {number}: {e}")
+                self.sms_queue.increment_attempts(number, text)
+        
+        # Publish updated counter after processing queue
+        self.publish_sms_counter()
+        remaining = self.sms_queue.get_count()
+        if remaining > 0:
+            logger.warning(f"📥 {remaining} SMS still pending in queue")
+
     def publish_sms_counter(self):
         """Publish SMS sent counter and cost data"""
         if not self.connected:
@@ -2070,8 +2281,11 @@ class MQTTPublisher:
         if self._reconnect_gammu():
             logger.info("✅ Automatic modem reconnection successful!")
             self.consecutive_failures = 0
+            self.failure_start_time = None  # Reset restart timer on success
         else:
             logger.error(f"❌ Automatic modem reconnection failed. Will retry in {self.reconnect_cooldown}s")
+            # Track failure time for restart timeout (applies to ALL errors, not just specific codes)
+            self._check_restart_timeout()
     
     def _reconnect_gammu(self):
         """Attempt to re-initialize Gammu state machine"""
@@ -2096,10 +2310,65 @@ class MQTTPublisher:
         except Exception as e:
             logger.error(f"❌ Failed to re-initialize Gammu: {e}")
             return False
+
+    def _check_restart_timeout(self):
+        """Check if failure duration exceeds restart timeout and trigger restart if needed.
+        
+        This is called for ALL failures (not just specific error codes) to ensure
+        the addon restarts after prolonged modem problems of any kind.
+        """
+        if not self.auto_restart_on_failure:
+            return
+        
+        current_time = time.time()
+        if self.failure_start_time is None:
+            self.failure_start_time = current_time
+            logger.info(f"⏱️ Failure tracking started at {time.strftime('%H:%M:%S')}")
+        
+        failure_duration = current_time - self.failure_start_time
+        logger.info(f"⏱️ Modem failing for {int(failure_duration)}s "
+                    f"(restart after {self.restart_timeout}s)")
+        
+        if failure_duration >= self.restart_timeout:
+            logger.error(
+                f"🔴 Modem failed for {int(failure_duration)}s - triggering restart!"
+            )
+            time.sleep(2)  # Brief pause for logs to flush
+            sys.exit(1)  # HA Supervisor will restart us
     
-    def _trigger_emergency_reset(self):
-        """Emergency modem reset for hung state recovery - full reconnect"""
-        logger.warning("🚨 Triggering emergency modem reconnect...")
+    def _trigger_emergency_reset(self, error_code=None):
+        """Emergency modem reset for hung state recovery - full reconnect or restart"""
+        logger.warning("🚨 Triggering emergency modem recovery...")
+        
+        # Check if device is unavailable (Code 2: ERR_DEVICEOPENERROR)
+        # This means USB device is gone - addon restart is the only fix
+        if error_code == 2:
+            logger.error("🔴 Device unavailable (USB disconnected) - restart required!")
+            if self.auto_restart_on_failure:
+                logger.warning("🔄 Auto-restarting addon to recover device...")
+                time.sleep(2)  # Brief pause for logs to flush
+                sys.exit(1)  # HA Supervisor will restart us
+            else:
+                logger.warning("⚠️ Auto-restart disabled, manual intervention required")
+                return False
+        
+        # Track continuous failure time for timeout-based restart
+        current_time = time.time()
+        if self.failure_start_time is None:
+            self.failure_start_time = current_time
+            logger.info(f"⏱️ Failure tracking started at {time.strftime('%H:%M:%S')}")
+        
+        failure_duration = current_time - self.failure_start_time
+        logger.info(f"⏱️ Modem failing for {int(failure_duration)}s "
+                    f"(restart after {self.restart_timeout}s)")
+        
+        # Check if we've exceeded the restart timeout
+        if failure_duration >= self.restart_timeout and self.auto_restart_on_failure:
+            logger.error(
+                f"🔴 Modem failed for {int(failure_duration)}s - triggering restart!"
+            )
+            time.sleep(2)  # Brief pause for logs to flush
+            sys.exit(1)  # HA Supervisor will restart us
         
         # Clear SMSC cache first
         self.cached_smsc = None
@@ -2116,6 +2385,7 @@ class MQTTPublisher:
             try:
                 self.gammu_machine.GetManufacturer()
                 logger.info("✅ Modem responsive after soft reset")
+                self.failure_start_time = None  # Reset failure timer on success
                 return True
             except Exception:
                 logger.warning("⚠️ Modem still unresponsive, trying full reconnect...")
@@ -2126,6 +2396,7 @@ class MQTTPublisher:
         if self._reconnect_gammu():
             logger.info("✅ Full modem reconnect successful, waiting 5s...")
             time.sleep(5)
+            self.failure_start_time = None  # Reset failure timer on success
             return True
         else:
             logger.error("❌ Full modem reconnect failed")
@@ -2143,6 +2414,7 @@ class MQTTPublisher:
                     result = future.result(timeout=15)
                     self.device_tracker.record_success()
                     self.consecutive_failures = 0  # Reset failure counter on success
+                    self.failure_start_time = None  # Reset restart timer on success
                     self.publish_device_status()
                     logger.debug(f"✅ Gammu operation '{operation_name}' succeeded")
 
@@ -2157,6 +2429,7 @@ class MQTTPublisher:
                     self.device_tracker.record_failure(f"{operation_name}: Python timeout (15s)")
                     self.publish_device_status()
                     self._attempt_reconnect_if_needed()
+                    self._check_restart_timeout()  # Check if restart is needed
                     logger.error(f"⏱️ Gammu operation '{operation_name}' timed out after 15s")
                     raise TimeoutError(f"Gammu operation '{operation_name}' timed out after 15s")
                 except Exception as e:
@@ -2164,12 +2437,13 @@ class MQTTPublisher:
                     # These errors indicate the modem is in a bad state and needs a reset
                     # Reference: https://docs.gammu.org/c/error.html
                     RECOVERABLE_ERROR_CODES = {
-                        14: 'ERR_TIMEOUT',        # Command timed out
-                        31: 'ERR_EMPTYSMSC',      # SMSC number is empty
-                        33: 'ERR_NOTCONNECTED',   # Phone NOT connected
-                        37: 'ERR_BUG',            # Bug in implementation/phone
-                        56: 'ERR_PHONE_INTERNAL', # Internal phone error
-                        69: 'ERR_GETTING_SMSC',   # Failed to get SMSC from phone
+                        2: 'ERR_DEVICEOPENERROR',  # Device unavailable (USB gone)
+                        14: 'ERR_TIMEOUT',         # Command timed out
+                        31: 'ERR_EMPTYSMSC',       # SMSC number is empty
+                        33: 'ERR_NOTCONNECTED',    # Phone NOT connected
+                        37: 'ERR_BUG',             # Bug in implementation/phone
+                        56: 'ERR_PHONE_INTERNAL',  # Internal phone error
+                        69: 'ERR_GETTING_SMSC',    # Failed to get SMSC from phone
                     }
                     
                     needs_reset_retry = False
@@ -2191,7 +2465,7 @@ class MQTTPublisher:
                             f"🚨 {error_name} detected in '{operation_name}' - "
                             "modem hung state!"
                         )
-                        self._trigger_emergency_reset()
+                        self._trigger_emergency_reset(error_code=error_code)
                         # Mark exception for retry logic
                         e.err_recoverable_detected = True
                         raise
@@ -2201,6 +2475,7 @@ class MQTTPublisher:
                     self.device_tracker.record_failure(f"{operation_name}: {str(e)}")
                     self.publish_device_status()
                     self._attempt_reconnect_if_needed()
+                    self._check_restart_timeout()  # Check if restart is needed
                     raise
     
     def _publish_initial_states(self):
@@ -2398,6 +2673,11 @@ class MQTTPublisher:
                 logger.warning(f"Could not publish SMS capacity: {e}")
 
             logger.info("📡 Published initial states to MQTT")
+            
+            # Process any pending SMS from queue (from previous failed sends)
+            if self.sms_queue.get_count() > 0:
+                logger.info("📥 Found pending SMS in queue, processing...")
+                self.process_pending_sms()
 
         except Exception as e:
             logger.error(f"Error publishing initial states: {e}")

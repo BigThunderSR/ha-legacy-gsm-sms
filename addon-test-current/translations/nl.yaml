@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Automatisch Herstel
     description: Automatisch herstel na modemcommunicatiefouten (aanbevolen)
+  auto_restart_on_failure:
+    name: Automatisch Herstarten bij Fout
+    description: Addon automatisch herstarten na 2 minuten aanhoudende modemfout (snelste herstel)
   network_type_cache_seconds:
     name: Netwerktype Cache Duur
     description: Hoe lang netwerktype resultaten in cache bewaren om frequente modem queries te voorkomen (seconden, 60-3600)

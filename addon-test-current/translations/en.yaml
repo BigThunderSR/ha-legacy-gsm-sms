@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Auto-Recovery
     description: Automatically recover from modem communication failures (recommended)
+  auto_restart_on_failure:
+    name: Auto-Restart on Failure
+    description: Automatically restart addon after 2 minutes of persistent modem failure (fastest recovery)
   network_type_cache_seconds:
     name: Network Type Cache Duration
     description: How long to cache network type results to avoid frequent modem queries (seconds, 60-3600)

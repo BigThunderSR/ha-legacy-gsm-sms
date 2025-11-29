@@ -1,10 +1,10 @@
 name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.9.2-test
+version: 2.10.0-test
 slug: "gsm_sms_gateway_test_current"
 description: |
-  🧪 TEST VERSION - Current development build for experimentation (v2.9.2-test)
+  🧪 TEST VERSION - Current development build for experimentation (v2.10.0-test)
   
-  Testing: Full modem reconnect on errors, comprehensive error recovery (6 error codes).
+  Testing: SMS queue with auto-restart for persistent modem failures.
   
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
   Based on PavelVe's SMS Gammu Gateway (https://github.com/PavelVe/hassio-addons).
@@ -79,6 +79,7 @@ options:
   sms_delivery_reports: false
   log_level: "info"
   auto_recovery: true
+  auto_restart_on_failure: true
   network_type_cache_seconds: 300
   balance_sms_enabled: false
   balance_sms_sender: "7069"
@@ -109,6 +110,7 @@ schema:
   sms_delivery_reports: bool
   log_level: list(warning|info|debug)
   auto_recovery: bool
+  auto_restart_on_failure: bool
   network_type_cache_seconds: int(60,3600)
   balance_sms_enabled: bool
   balance_sms_sender: str

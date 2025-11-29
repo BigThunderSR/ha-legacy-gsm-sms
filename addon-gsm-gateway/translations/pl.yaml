@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Automatyczne Przywracanie
     description: Automatyczne przywracanie po błędach komunikacji modemu (zalecane)
+  auto_restart_on_failure:
+    name: Automatyczny Restart przy Awarii
+    description: Automatycznie restartuj addon po 2 minutach trwałej awarii modemu (najszybsze przywracanie)
   network_type_cache_seconds:
     name: Czas Przechowywania Typu Sieci
     description: Jak długo przechowywać wyniki typu sieci, aby uniknąć częstych zapytań do modemu (sekundy, 60-3600)

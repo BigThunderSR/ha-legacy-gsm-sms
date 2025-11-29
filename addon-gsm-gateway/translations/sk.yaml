@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Automatické Obnovenie
     description: Automatické obnovenie po zlyhaniach komunikácie modemu (odporúčané)
+  auto_restart_on_failure:
+    name: Automatický Reštart pri Zlyhaní
+    description: Automaticky reštartovať addon po 2 minútach pretrvávajúceho zlyhania modemu (najrýchlejšie obnovenie)
   network_type_cache_seconds:
     name: Doba Ukladania Typu Siete
     description: Ako dlho ukladať výsledky typu siete, aby sa zabránilo častým dotazom modemu (sekundy, 60-3600)

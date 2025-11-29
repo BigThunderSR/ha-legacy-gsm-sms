@@ -128,19 +128,18 @@ curl -X POST http://192.168.1.x:5000/sms \
 | `sms_delivery_reports`     | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0) |
 | `log_level`                | `info`  | Logging level: `warning`, `info`, or `debug` (🆕 v2.1.8)            |
 | `auto_recovery`            | `true`  | Automatically recover from modem failures (🆕 v2.4.0)               |
+| `auto_restart_on_failure`  | `true`  | Auto-restart addon after 2 min of persistent failure (🆕 v2.10.0)   |
 
 ### Logging Levels (🆕 v2.1.8, Enhanced v2.2.1)
 
 The `log_level` setting uses Python's standard logging levels:
 
 - **`warning`** - Only warnings, errors, and critical messages (Python WARNING level)
-
   - Best for production when everything is working smoothly
   - Suppresses all routine status messages
   - Reduces log file size significantly
 
 - **`info`** (default) - Standard operational logging (Python INFO level)
-
   - Shows all useful information (SMS received/sent, signal strength, network info, connection changes)
   - **Signal strength logs both sensors**: `📡 Published signal strength to MQTT: 75% (-65 dBm)` _(Enhanced v2.2.1)_
   - **Only suppresses**: Repetitive "SMS monitoring cycle OK" messages when no new SMS arrives
@@ -159,7 +158,6 @@ The `log_level` setting uses Python's standard logging levels:
 The `auto_recovery` setting enables automatic recovery from modem communication failures:
 
 - **`true`** (default) - Automatically reconnects to modem after connection loss
-
   - Monitors modem communication for consecutive failures
   - Triggers reconnection after **5 consecutive failures**
   - Waits **60 seconds** between reconnection attempts (cooldown period)
@@ -173,6 +171,54 @@ The `auto_recovery` setting enables automatic recovery from modem communication 
   - Use only if automatic recovery causes issues with your specific modem
 
 **Use Case**: If your GSM modem loses USB connection (power loss, physical disconnect, driver issues), the addon will automatically attempt to recover without requiring a full addon restart or external automation.
+
+### Auto-Restart on Persistent Failure (🆕 v2.10.0)
+
+The `auto_restart_on_failure` setting enables automatic addon restart when the modem is persistently unresponsive:
+
+- **`true`** (default) - Restart addon after prolonged modem failure
+  - **Immediate restart** when USB device becomes unavailable (ERR_DEVICEOPENERROR)
+  - **2-minute timeout**: If modem fails continuously for 2 minutes, addon restarts
+  - HA Supervisor automatically restarts the addon (clean recovery)
+  - Failed SMS are queued and retried after restart (see SMS Queue below)
+  - **Fastest recovery method** for hung modems based on user testing
+
+- **`false`** - No automatic restart
+  - Addon will try soft reset and reconnection only
+  - May remain stuck if modem is in a bad state
+  - Use if you prefer manual control or have external monitoring
+
+**Use Case**: Some modems (e.g., SimTech) can enter a hung state that only clears after a power cycle. Since the addon controls the modem via USB, the fastest recovery is restarting the addon, which forces a complete USB re-enumeration.
+
+### SMS Queue for Reliability (🆕 v2.10.0)
+
+When SMS sending fails due to modem issues, messages are automatically queued for retry:
+
+**How it works:**
+
+1. SMS send fails with a recoverable error (timeout, modem hung, etc.)
+2. Message is saved to `/data/pending_sms.json` (persists across restarts)
+3. After modem recovery or addon restart, queued messages are automatically sent
+4. Successfully sent messages are removed from queue
+
+**Queue behavior:**
+
+- **Persistence**: Queue survives addon restarts
+- **Expiry**: Messages expire after 1 hour (prevents stale delivery)
+- **Duplicates**: Same number+text combination won't be queued twice
+- **API response**: Shows both sent and queued counts: "Sent to 2 number(s), 1 queued for retry"
+
+**Recoverable errors that trigger queueing:**
+
+| Error Code | Name                | Description            |
+| ---------- | ------------------- | ---------------------- |
+| 2          | ERR_DEVICEOPENERROR | USB device unavailable |
+| 14         | ERR_TIMEOUT         | Command timed out      |
+| 31         | ERR_EMPTYSMSC       | Cannot get SMSC number |
+| 33         | ERR_NOTCONNECTED    | Phone not connected    |
+| 37         | ERR_BUG             | Protocol error         |
+| 56         | ERR_PHONE_INTERNAL  | Internal phone error   |
+| 69         | ERR_GETTING_SMSC    | Failed to get SMSC     |
 
 ### Status Update Interval (🆕 v2.1.8)
 

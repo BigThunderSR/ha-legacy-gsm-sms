@@ -50,6 +50,9 @@ configuration:
   auto_recovery:
     name: Recuperação Automática
     description: Recuperação automática de falhas de comunicação do modem (recomendado)
+  auto_restart_on_failure:
+    name: Reinício Automático em Falha
+    description: Reiniciar automaticamente o addon após 2 minutos de falha persistente do modem (recuperação mais rápida)
   network_type_cache_seconds:
     name: Duração do Cache de Tipo de Rede
     description: Quanto tempo armazenar em cache os resultados do tipo de rede para evitar consultas frequentes ao modem (segundos, 60-3600)

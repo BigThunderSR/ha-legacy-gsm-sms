@@ -528,7 +528,7 @@ class SmsCollection(Resource):
                 mqtt_publisher.sms_counter.increment()
             except Exception as e:
                 # Check if ERR_EMPTYSMSC was detected and reset triggered
-                if getattr(e, 'err_emptysmsc_detected', False):
+                if getattr(e, 'err_recoverable_detected', False):
                     logging.warning(
                         f"🔄 Retrying SMS to {message['Number']} "
                         "after modem reset..."

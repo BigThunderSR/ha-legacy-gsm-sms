@@ -1,10 +1,10 @@
 name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.9.0-test
+version: 2.9.1-test
 slug: "gsm_sms_gateway_test_current"
 description: |
-  🧪 TEST VERSION - Current development build for experimentation (v2.9.0-test)
+  🧪 TEST VERSION - Current development build for experimentation (v2.9.1-test)
   
-  Testing: ERR_EMPTYSMSC auto-recovery, SMSC caching, emergency modem reset with immediate retry.
+  Testing: Comprehensive modem error recovery (6 error codes), SMSC caching, emergency reset with immediate retry.
   
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
   Based on PavelVe's SMS Gammu Gateway (https://github.com/PavelVe/hassio-addons).

@@ -2145,24 +2145,40 @@ class MQTTPublisher:
                     logger.error(f"⏱️ Gammu operation '{operation_name}' timed out after 15s")
                     raise TimeoutError(f"Gammu operation '{operation_name}' timed out after 15s")
                 except Exception as e:
-                    # Check for ERR_EMPTYSMSC (error code 31)
-                    is_emptysmsc = False
+                    # Check for modem hung/communication errors that benefit from reset+retry
+                    # These errors indicate the modem is in a bad state and needs a reset
+                    # Reference: https://docs.gammu.org/c/error.html
+                    RECOVERABLE_ERROR_CODES = {
+                        14: 'ERR_TIMEOUT',        # Command timed out
+                        31: 'ERR_EMPTYSMSC',      # SMSC number is empty
+                        33: 'ERR_NOTCONNECTED',   # Phone NOT connected
+                        37: 'ERR_BUG',            # Bug in implementation/phone
+                        56: 'ERR_PHONE_INTERNAL', # Internal phone error
+                        69: 'ERR_GETTING_SMSC',   # Failed to get SMSC from phone
+                    }
+                    
+                    needs_reset_retry = False
+                    error_code = None
                     try:
                         if (hasattr(e, 'args') and len(e.args) > 0 and
-                            isinstance(e.args[0], dict) and
-                            e.args[0].get('Code') == 31):
-                            is_emptysmsc = True
+                            isinstance(e.args[0], dict)):
+                            error_code = e.args[0].get('Code')
+                            if error_code in RECOVERABLE_ERROR_CODES:
+                                needs_reset_retry = True
                     except Exception:
                         pass
                     
-                    if is_emptysmsc:
+                    if needs_reset_retry:
+                        error_name = RECOVERABLE_ERROR_CODES.get(
+                            error_code, f'Code {error_code}'
+                        )
                         logger.error(
-                            f"🚨 ERR_EMPTYSMSC detected in '{operation_name}' - "
+                            f"🚨 {error_name} detected in '{operation_name}' - "
                             "modem hung state!"
                         )
                         self._trigger_emergency_reset()
                         # Mark exception for retry logic
-                        e.err_emptysmsc_detected = True
+                        e.err_recoverable_detected = True
                         raise
                     
                     # All other errors (including Gammu commtimeout errors)

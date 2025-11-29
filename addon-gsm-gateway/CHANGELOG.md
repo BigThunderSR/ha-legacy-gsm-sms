@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.1] - 2025-11-29
+
+### Added
+
+- **Comprehensive Modem Error Recovery** 🔄 - Extended hung modem detection to all recoverable errors
+  - ERR_TIMEOUT (14): Command timed out
+  - ERR_EMPTYSMSC (31): Cannot retrieve SMSC number
+  - ERR_NOTCONNECTED (33): Phone not connected
+  - ERR_BUG (37): Protocol implementation error
+  - ERR_PHONE_INTERNAL (56): Internal phone error
+  - ERR_GETTING_SMSC (69): Failed to get SMSC from phone
+  - All trigger: emergency reset + 7s wait + automatic retry
+  - Reference: https://docs.gammu.org/c/error.html
+
 ## [2.9.0] - 2025-11-28
 
 ### Added

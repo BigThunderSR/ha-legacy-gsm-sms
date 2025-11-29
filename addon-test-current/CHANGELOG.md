@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.2-test] - 2025-11-29
+
+### Fixed
+
+- **Full Modem Reconnect on Errors** 🔧 - Fixed retry using stale modem connection
+  - Now performs full Gammu re-initialization when soft reset fails
+  - Retry uses the reconnected modem instance (not the old broken one)
+  - Soft reset tested first (10s wait), falls back to full reconnect if unresponsive
+  - Additional 5s wait after reconnect before SMS retry
+  - Fixes issue where retry failed with same ERR_NOTCONNECTED error
+
 ## [2.9.1-test] - 2025-11-29
 
 ### Added

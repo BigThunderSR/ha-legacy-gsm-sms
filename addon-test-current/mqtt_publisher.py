@@ -2098,23 +2098,38 @@ class MQTTPublisher:
             return False
     
     def _trigger_emergency_reset(self):
-        """Emergency modem reset for hung state recovery"""
-        logger.warning("🚨 Triggering emergency modem reset...")
+        """Emergency modem reset for hung state recovery - full reconnect"""
+        logger.warning("🚨 Triggering emergency modem reconnect...")
+        
+        # Clear SMSC cache first
+        self.cached_smsc = None
+        self.smsc_cache_time = None
+        logger.info("🔄 SMSC cache cleared")
+        
+        # Try soft reset first (faster if it works)
         try:
             self.gammu_machine.Reset(False)
-            logger.info("✅ Emergency reset completed, waiting 5s...")
-            time.sleep(5)
+            logger.info("✅ Soft reset completed, waiting 10s...")
+            time.sleep(10)
             
-            # Clear SMSC cache to force refresh
-            self.cached_smsc = None
-            self.smsc_cache_time = None
-            logger.info("🔄 SMSC cache cleared")
-            
-            self.consecutive_failures = self.reconnect_threshold
-            self.device_tracker.consecutive_failures = 2
+            # Test if modem responds after soft reset
+            try:
+                self.gammu_machine.GetManufacturer()
+                logger.info("✅ Modem responsive after soft reset")
+                return True
+            except Exception:
+                logger.warning("⚠️ Modem still unresponsive, trying full reconnect...")
         except Exception as e:
-            logger.error(f"❌ Emergency reset failed: {e}")
-            self._reconnect_gammu()
+            logger.warning(f"⚠️ Soft reset failed: {e}, trying full reconnect...")
+        
+        # Full reconnect if soft reset didn't work
+        if self._reconnect_gammu():
+            logger.info("✅ Full modem reconnect successful, waiting 5s...")
+            time.sleep(5)
+            return True
+        else:
+            logger.error("❌ Full modem reconnect failed")
+            return False
         
     def track_gammu_operation(self, operation_name, gammu_function, *args, **kwargs):
         """Execute gammu operation with connectivity tracking, thread safety, and Python-level timeout"""

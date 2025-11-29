@@ -517,7 +517,7 @@ class SmsCollection(Resource):
                 message["Number"] = number.strip()
                 messages.append(message)
         
-        # Send SMS with automatic retry on ERR_EMPTYSMSC
+        # Send SMS with automatic retry on recoverable errors
         results = []
         for message in messages:
             try:
@@ -527,16 +527,19 @@ class SmsCollection(Resource):
                 results.append(message["Number"])
                 mqtt_publisher.sms_counter.increment()
             except Exception as e:
-                # Check if ERR_EMPTYSMSC was detected and reset triggered
+                # Check if recoverable error was detected and reset triggered
                 if getattr(e, 'err_recoverable_detected', False):
                     logging.warning(
                         f"🔄 Retrying SMS to {message['Number']} "
-                        "after modem reset..."
+                        "after modem reconnect..."
                     )
-                    time.sleep(7)  # Wait for modem recovery
+                    time.sleep(5)  # Additional wait after reconnect
                     try:
+                        # Use publisher's gammu_machine (may have been reconnected)
                         mqtt_publisher.track_gammu_operation(
-                            "SendSMS", machine.SendSMS, message
+                            "SendSMS", 
+                            mqtt_publisher.gammu_machine.SendSMS, 
+                            message
                         )
                         results.append(message["Number"])
                         mqtt_publisher.sms_counter.increment()

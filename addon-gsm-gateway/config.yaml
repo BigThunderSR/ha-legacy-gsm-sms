@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: 2.9.1
+version: 2.9.2
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 

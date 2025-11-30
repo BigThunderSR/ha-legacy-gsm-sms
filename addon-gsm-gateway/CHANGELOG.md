@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.10.4] - 2025-11-29
+
+### Fixed
+
+- **SMS lost during restart if sent via REST API** 🐛
+  - SMS was not persisted to queue before send attempt
+  - If addon restarted during send/retry, SMS would be lost
+  - Now queues SMS BEFORE attempting to send
+  - On success, removes from queue; on failure, remains queued
+  - Survives restarts during any phase of send operation
+
 ## [2.10.3] - 2025-11-29
 
 ### Fixed

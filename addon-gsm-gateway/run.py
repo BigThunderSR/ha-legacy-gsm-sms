@@ -518,6 +518,7 @@ class SmsCollection(Resource):
                 messages.append(message)
         
         # Send SMS with automatic retry on recoverable errors
+        # Queue SMS BEFORE sending to survive restarts during send/retry
         results = []
         for message in messages:
             number = message["Number"]
@@ -526,10 +527,15 @@ class SmsCollection(Resource):
             if message.get("SMSC") and message["SMSC"].get("Number"):
                 smsc = message["SMSC"]["Number"]
             
+            # Queue SMS first to survive restarts during send attempt
+            mqtt_publisher.queue_sms_for_retry(number, sms_text, smsc)
+            
             try:
                 mqtt_publisher.track_gammu_operation(
                     "SendSMS", machine.SendSMS, message
                 )
+                # Success - remove from queue
+                mqtt_publisher.sms_queue.remove(number, sms_text)
                 results.append(number)
                 mqtt_publisher.sms_counter.increment()
             except Exception as e:
@@ -547,25 +553,26 @@ class SmsCollection(Resource):
                             mqtt_publisher.gammu_machine.SendSMS,
                             message
                         )
+                        # Success - remove from queue
+                        mqtt_publisher.sms_queue.remove(number, sms_text)
                         results.append(number)
                         mqtt_publisher.sms_counter.increment()
                         logging.info(
                             f"✅ SMS sent to {number} after retry"
                         )
                     except Exception as retry_error:
-                        # Final failure - queue for later retry
+                        # Final failure - already in queue, just log
                         logging.error(
                             f"❌ SMS retry failed for {number}: {retry_error}"
                         )
                         logging.info(
-                            f"📥 Queuing SMS to {number} for later retry..."
+                            f"📥 SMS to {number} remains queued for later"
                         )
-                        mqtt_publisher.queue_sms_for_retry(number, sms_text, smsc)
                         # Don't raise - continue with other messages
                 else:
-                    # Non-recoverable error - still try to queue
+                    # Non-recoverable error - already in queue, just log
                     logging.error(f"❌ SMS failed for {number}: {e}")
-                    mqtt_publisher.queue_sms_for_retry(number, sms_text, smsc)
+                    logging.info(f"📥 SMS to {number} remains queued for later")
                     # Don't raise - continue with other messages
         
         mqtt_publisher.publish_sms_counter()

@@ -2281,7 +2281,9 @@ class MQTTPublisher:
         if self._reconnect_gammu():
             logger.info("✅ Automatic modem reconnection successful!")
             self.consecutive_failures = 0
-            self.failure_start_time = None  # Reset restart timer on success
+            # NOTE: Do NOT reset failure_start_time here!
+            # The reconnect may succeed but modem can still be in bad state.
+            # Only reset on actual successful Gammu operation (in track_gammu_operation)
         else:
             logger.error(f"❌ Automatic modem reconnection failed. Will retry in {self.reconnect_cooldown}s")
             # Track failure time for restart timeout (applies to ALL errors, not just specific codes)
@@ -2340,10 +2342,13 @@ class MQTTPublisher:
         """Emergency modem reset for hung state recovery - full reconnect or restart"""
         logger.warning("🚨 Triggering emergency modem recovery...")
         
-        # Check if device is unavailable (Code 2: ERR_DEVICEOPENERROR)
-        # This means USB device is gone - addon restart is the only fix
-        if error_code == 2:
-            logger.error("🔴 Device unavailable (USB disconnected) - restart required!")
+        # Check for device I/O errors (USB is broken - addon restart is the only fix)
+        # Code 2: ERR_DEVICEOPENERROR - device unavailable
+        # Code 11: ERR_DEVICEWRITEERROR - error writing to device
+        if error_code in (2, 11):
+            error_names = {2: 'Device unavailable', 11: 'Device write error'}
+            logger.error(f"🔴 {error_names.get(error_code, 'Device error')} "
+                         "(USB broken) - restart required!")
             if self.auto_restart_on_failure:
                 logger.warning("🔄 Auto-restarting addon to recover device...")
                 time.sleep(2)  # Brief pause for logs to flush
@@ -2385,7 +2390,9 @@ class MQTTPublisher:
             try:
                 self.gammu_machine.GetManufacturer()
                 logger.info("✅ Modem responsive after soft reset")
-                self.failure_start_time = None  # Reset failure timer on success
+                # NOTE: Do NOT reset failure_start_time here!
+                # GetManufacturer can succeed but SMS operations still fail.
+                # Only reset timer on actual successful operation in track_gammu_operation()
                 return True
             except Exception:
                 logger.warning("⚠️ Modem still unresponsive, trying full reconnect...")
@@ -2396,7 +2403,9 @@ class MQTTPublisher:
         if self._reconnect_gammu():
             logger.info("✅ Full modem reconnect successful, waiting 5s...")
             time.sleep(5)
-            self.failure_start_time = None  # Reset failure timer on success
+            # NOTE: Do NOT reset failure_start_time here!
+            # Reconnect can succeed but operations still fail.
+            # Only reset timer on actual successful operation in track_gammu_operation()
             return True
         else:
             logger.error("❌ Full modem reconnect failed")
@@ -2412,11 +2421,25 @@ class MQTTPublisher:
                     # Python-level timeout (15s) as second defense layer
                     # Primary defense is Gammu commtimeout=10s in config
                     result = future.result(timeout=15)
+                    
+                    # Check if we were previously failing (modem recovered)
+                    was_failing = self.failure_start_time is not None
+                    
                     self.device_tracker.record_success()
                     self.consecutive_failures = 0  # Reset failure counter on success
                     self.failure_start_time = None  # Reset restart timer on success
                     self.publish_device_status()
                     logger.debug(f"✅ Gammu operation '{operation_name}' succeeded")
+                    
+                    # If modem just recovered, process any pending SMS
+                    if was_failing and self.sms_queue.get_count() > 0:
+                        logger.info("📥 Modem recovered! Processing pending SMS...")
+                        # Schedule processing in background to not block current op
+                        import threading
+                        threading.Thread(
+                            target=self.process_pending_sms,
+                            daemon=True
+                        ).start()
 
                     # Small delay after each operation to let modem "breathe"
                     # Prevents buffer overflow on modems like Huawei E1750
@@ -2437,14 +2460,18 @@ class MQTTPublisher:
                     # These errors indicate the modem is in a bad state and needs a reset
                     # Reference: https://docs.gammu.org/c/error.html
                     RECOVERABLE_ERROR_CODES = {
-                        2: 'ERR_DEVICEOPENERROR',  # Device unavailable (USB gone)
-                        14: 'ERR_TIMEOUT',         # Command timed out
-                        31: 'ERR_EMPTYSMSC',       # SMSC number is empty
-                        33: 'ERR_NOTCONNECTED',    # Phone NOT connected
-                        37: 'ERR_BUG',             # Bug in implementation/phone
-                        56: 'ERR_PHONE_INTERNAL',  # Internal phone error
-                        69: 'ERR_GETTING_SMSC',    # Failed to get SMSC from phone
+                        2: 'ERR_DEVICEOPENERROR',   # Device unavailable (USB gone)
+                        11: 'ERR_DEVICEWRITEERROR', # Error writing to device (USB broken)
+                        14: 'ERR_TIMEOUT',          # Command timed out
+                        31: 'ERR_EMPTYSMSC',        # SMSC number is empty
+                        33: 'ERR_NOTCONNECTED',     # Phone NOT connected
+                        37: 'ERR_BUG',              # Bug in implementation/phone
+                        56: 'ERR_PHONE_INTERNAL',   # Internal phone error
+                        69: 'ERR_GETTING_SMSC',     # Failed to get SMSC from phone
                     }
+                    
+                    # Device I/O errors that require immediate restart (USB is broken)
+                    DEVICE_ERROR_CODES = {2, 11}  # DEVICEOPENERROR, DEVICEWRITEERROR
                     
                     needs_reset_retry = False
                     error_code = None

@@ -2,11 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.10.0-test] - 2025-11-29
+## [2.10.1] - 2025-11-29
+
+### Fixed
+
+- **Critical: Restart timer was being reset prematurely** 🐛
+
+  - Timer was resetting when reconnect "succeeded" even if modem still broken
+  - Now only resets on actual successful Gammu operation
+  - Fixes issue where 2-minute restart timeout never triggered
+
+- **Critical: Code 11 (ERR_DEVICEWRITEERROR) not handled** 🐛
+
+  - "Error writing to the device" now triggers immediate restart
+  - Same handling as Code 2 (device unavailable)
+
+- **Critical: Queued SMS not sent after modem recovery** 🐛
+  - Pending SMS now processed when modem comes back online
+  - No longer waits for addon restart to retry queued messages
+
+## [2.10.0] - 2025-11-29
 
 ### Added
 
 - **SMS Queue with Persistence** 📥 - Failed SMS are now queued for automatic retry
+
   - Messages queued to `/data/pending_sms.json` for persistence across restarts
   - Queued messages automatically sent when modem recovers
   - Queue processed on addon startup after modem initialization
@@ -14,6 +34,7 @@ All notable changes to this project will be documented in this file.
   - Duplicate prevention (same number+text won't be queued twice)
 
 - **Auto-Restart on Persistent Failure** 🔄 - New `auto_restart_on_failure` option
+
   - Addon automatically restarts after 2 minutes of continuous modem failure
   - Immediate restart on device unavailable error (USB disconnected)
   - Restart handled by HA Supervisor for clean recovery
@@ -31,7 +52,7 @@ All notable changes to this project will be documented in this file.
   - Response includes count of sent and queued messages
   - Other recipients still receive messages if one fails
 
-## [2.9.2-test] - 2025-11-29
+## [2.9.2] - 2025-11-29
 
 ### Fixed
 
@@ -42,7 +63,7 @@ All notable changes to this project will be documented in this file.
   - Additional 5s wait after reconnect before SMS retry
   - Fixes issue where retry failed with same ERR_NOTCONNECTED error
 
-## [2.9.1-test] - 2025-11-29
+## [2.9.1] - 2025-11-29
 
 ### Added
 
@@ -56,11 +77,12 @@ All notable changes to this project will be documented in this file.
   - All trigger: emergency reset + 7s wait + automatic retry
   - Reference: https://docs.gammu.org/c/error.html
 
-## [2.9.0-test] - 2025-11-28
+## [2.9.0] - 2025-11-28
 
 ### Added
 
 - **ERR_EMPTYSMSC Auto-Recovery** 🔄 - Automatic detection and recovery from modem hung state
+
   - Detects ERR_EMPTYSMSC (error code 31) when modem cannot retrieve SMSC number
   - Triggers emergency modem soft reset automatically
   - Waits 7 seconds for modem recovery
@@ -79,7 +101,7 @@ All notable changes to this project will be documented in this file.
   - More reliable than location-based SMSC lookup
   - Reduces dependency on modem state for SMSC retrieval
 
-## [2.8.7-test] - 2025-11-26
+## [2.8.7] - 2025-11-26
 
 ### Fixed
 
@@ -89,7 +111,7 @@ All notable changes to this project will be documented in this file.
   - Eliminates race condition that caused sensors to show "clearing" indefinitely
   - All status sensors (send/delete/delivery) immediately show correct values
 
-## [2.8.6-test] - 2025-11-26
+## [2.8.6] - 2025-11-26
 
 ### Fixed
 
@@ -98,7 +120,7 @@ All notable changes to this project will be documented in this file.
   - All status sensors (send/delete/delivery) now receive valid JSON at all times
   - Resolves "Erroneous JSON" and "'value_json' is undefined" errors in HA logs
 
-## [2.8.5-test] - 2025-11-26
+## [2.8.5] - 2025-11-26
 
 ### Fixed
 
@@ -108,7 +130,7 @@ All notable changes to this project will be documented in this file.
   - Resolves delivery_status stuck on "initializing" during HA restarts
   - USSD Code now properly respects pattern validation (requires USSD format)
 
-## [2.8.4-test] - 2025-11-26
+## [2.8.4] - 2025-11-26
 
 ### Fixed
 
@@ -144,6 +166,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **Last SMS Sensors Restoration** 🔄 - Fixed blank SMS sensors after restart
+
   - Last received SMS data is now restored from history on addon startup
   - SMS state messages use MQTT retain to persist across Home Assistant restarts
   - "Last SMS Received" and "Last SMS Sender" sensors populate immediately after restart
@@ -214,6 +237,31 @@ All notable changes to this project will be documented in this file.
 
 ## [2.6.1] - 2025-11-24
 
+### Fixed
+
+- Fixed SMS monitoring polling logs not appearing in debug mode (condition was checking for 'verbose' instead of 'debug')
+
+## [2.6.0] - 2025-11-24
+
+### Added
+
+- **GSM Network Type Sensor** 📶 - Cellular technology detection with AT command support
+
+  - Displays network technology (2G/3G/4G/5G/NB-IoT/EN-DC) from modem
+  - Uses AT+CEREG? and AT+CGREG? commands to retrieve Access Technology (AcT)
+  - Automatically detects LTE, UMTS, GSM, 5G NR, and other network types
+  - 5-minute caching to minimize modem disconnects and maximize reliability
+  - Falls back to "Unknown" if modem doesn't support AcT reporting
+  - Full 3GPP TS 27.007 compliance (AcT values 0-13)
+  - Tested and working on SIM7600G-H and similar LTE modems
+
+- **Packet Location Area Code Sensor** 📍 - New diagnostic sensor
+  - Tracks location area code for packet-switched (data) connections
+  - Complements existing LAC sensor (circuit-switched voice)
+  - Useful for monitoring data network roaming and handoffs
+
+## [2.5.0] - 2025-11-24
+
 ### Added
 
 - **GSM Network Type Sensor** 📶 - New diagnostic sensor for cellular technology detection
@@ -229,6 +277,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **Auto-Recovery Bug** 🐛 - Critical fix for automatic modem recovery
+
   - Fixed issue where background threads continued using old broken Gammu connection after recovery
   - All operations now use `self.gammu_machine` instead of function parameter
   - SMS monitoring, status publishing, and initial states now pick up new connection immediately
@@ -244,6 +293,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Automatic Modem Recovery** 🔄 - Recover from modem communication failures without restart
+
   - New `auto_recovery` option (default: `true`) - configurable automatic recovery
   - Monitors modem communication for consecutive failures
   - Triggers reconnection after 5 consecutive failures
@@ -292,6 +342,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Configurable Status Update Interval** 📊 - Control how often signal and network info updates
+
   - New `status_update_interval` option (default: 300 seconds / 5 minutes)
   - Range: 30-3600 seconds (30 seconds to 1 hour)
   - Controls update frequency for signal strength, network info, and BER
@@ -312,6 +363,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **SMS Check Interval** - Reduced minimum from 10 to 5 seconds
+
   - `sms_check_interval` now accepts 5-300 seconds (previously 10-300)
   - Default changed to 5 seconds for faster SMS detection
   - Allows near-instant SMS notifications for time-sensitive use cases
@@ -420,17 +472,20 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Base Image Update** - Updated to Alpine 3.22 base image
+
   - Security improvements and CVE patches
   - Performance optimizations
   - Updated Python versions (3.13.x)
   - Modernized tooling (pip 25.2, Bashio 0.17.5)
 
 - **Docker Configuration** - Fixed multi-architecture build support
+
   - Removed hardcoded architecture from Dockerfile
   - Proper ARG BUILD_FROM usage for multi-arch builds
   - Updated Dockerfile labels with correct version and maintainer
 
 - **Startup Logging & Dependencies** - Enhanced version visibility and fixed dependencies
+
   - Added version display in startup logs
   - Fixed version loading to read from config.yaml
   - Added PyYAML and requests to dependencies
@@ -443,6 +498,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant
+
   - USSD Code text field - Enter USSD codes (validates format: starts with \*, e.g., \*225#, \*#100#)
   - Send USSD button - Execute USSD code and receive network response
   - USSD Response sensor - Displays network response with timestamp
@@ -451,6 +507,7 @@ All notable changes to this project will be documented in this file.
   - Error handling with user-friendly messages
 
 - **SMS History Tracking** - Received messages stored with persistence
+
   - Messages include phone number, full message text, and timestamp
   - Available as JSON attributes on Last SMS Received sensor
   - Persistent storage survives addon restarts

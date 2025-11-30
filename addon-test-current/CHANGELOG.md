@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.10.3] - 2025-11-29
+
+### Fixed
+
+- **Improved error code extraction from Gammu exceptions** 🐛
+
+  - Added fallback string parsing for error codes when dict extraction fails
+  - Added debug logging to diagnose extraction failures
+  - Now handles edge cases in exception structure more robustly
+
+- **Made all shared data classes thread-safe** 🔧
+  - SMSQueue: Added threading.Lock() to prevent race conditions
+  - SMSCounter: Added threading.Lock() for counter operations
+  - SMSHistory: Added threading.Lock() for message history access
+  - SMSDeliveryTracker: Added threading.Lock() for delivery tracking
+  - DeviceConnectivityTracker: Added threading.Lock() for status tracking
+  - All public methods now protected with lock
+  - Prevents data corruption when accessed from multiple threads
+
+## [2.10.2] - 2025-11-29
+
+### Fixed
+
+- **Critical: sys.exit(1) doesn't work from threads** 🐛
+  - Auto-restart was being called but process didn't actually exit
+  - SMS monitoring runs in a background thread where sys.exit() only kills the thread
+  - Changed to os.\_exit(1) which forcefully terminates the entire process
+  - Now addon will actually restart when device errors (Code 2/11) are detected
+
 ## [2.10.1] - 2025-11-29
 
 ### Fixed

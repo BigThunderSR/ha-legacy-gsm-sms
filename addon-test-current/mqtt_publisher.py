@@ -41,6 +41,7 @@ class SMSQueue:
         self.queue_file = queue_file
         self.expiry_seconds = expiry_seconds
         self.pending = []
+        self._lock = threading.Lock()  # Thread safety for queue operations
         self._load()
 
     def _load(self):
@@ -92,58 +93,66 @@ class SMSQueue:
             self._save()
 
     def add(self, number: str, text: str, smsc: str = None) -> bool:
-        """Add SMS to pending queue for retry"""
-        # Check if same message already queued (prevent duplicates)
-        for msg in self.pending:
-            if msg.get('number') == number and msg.get('text') == text:
-                logger.debug(f"📥 SMS already queued for {number}, skipping duplicate")
-                return False
-        
-        message = {
-            'number': number,
-            'text': text,
-            'smsc': smsc,
-            'queued_at': time.time(),
-            'attempts': 0
-        }
-        self.pending.append(message)
-        self._save()
-        logger.info(f"📥 SMS queued for retry: {number} ({len(self.pending)} total in queue)")
-        return True
+        """Add SMS to pending queue for retry (thread-safe)"""
+        with self._lock:
+            # Check if same message already queued (prevent duplicates)
+            for msg in self.pending:
+                if msg.get('number') == number and msg.get('text') == text:
+                    logger.debug(f"📥 SMS already queued for {number}, skipping duplicate")
+                    return False
+            
+            message = {
+                'number': number,
+                'text': text,
+                'smsc': smsc,
+                'queued_at': time.time(),
+                'attempts': 0
+            }
+            self.pending.append(message)
+            self._save()
+            logger.info(f"📥 SMS queued for retry: {number} "
+                       f"({len(self.pending)} total in queue)")
+            return True
 
     def remove(self, number: str, text: str) -> bool:
-        """Remove SMS from queue (after successful send)"""
-        for i, msg in enumerate(self.pending):
-            if msg.get('number') == number and msg.get('text') == text:
-                self.pending.pop(i)
-                self._save()
-                logger.info(f"📥 SMS removed from queue: {number} ({len(self.pending)} remaining)")
-                return True
-        return False
+        """Remove SMS from queue (after successful send) (thread-safe)"""
+        with self._lock:
+            for i, msg in enumerate(self.pending):
+                if msg.get('number') == number and msg.get('text') == text:
+                    self.pending.pop(i)
+                    self._save()
+                    logger.info(f"📥 SMS removed from queue: {number} "
+                               f"({len(self.pending)} remaining)")
+                    return True
+            return False
 
     def increment_attempts(self, number: str, text: str):
-        """Increment attempt counter for a message"""
-        for msg in self.pending:
-            if msg.get('number') == number and msg.get('text') == text:
-                msg['attempts'] = msg.get('attempts', 0) + 1
-                self._save()
-                return msg['attempts']
-        return 0
+        """Increment attempt counter for a message (thread-safe)"""
+        with self._lock:
+            for msg in self.pending:
+                if msg.get('number') == number and msg.get('text') == text:
+                    msg['attempts'] = msg.get('attempts', 0) + 1
+                    self._save()
+                    return msg['attempts']
+            return 0
 
     def get_pending(self) -> list:
-        """Get all pending messages (clears expired first)"""
-        self._clear_expired()
-        return self.pending.copy()
+        """Get all pending messages (clears expired first) (thread-safe)"""
+        with self._lock:
+            self._clear_expired()
+            return self.pending.copy()
 
     def get_count(self) -> int:
-        """Get count of pending messages"""
-        return len(self.pending)
+        """Get count of pending messages (thread-safe)"""
+        with self._lock:
+            return len(self.pending)
 
     def clear(self):
-        """Clear all pending messages"""
-        self.pending = []
-        self._save()
-        logger.info("📥 SMS queue cleared")
+        """Clear all pending messages (thread-safe)"""
+        with self._lock:
+            self.pending = []
+            self._save()
+            logger.info("📥 SMS queue cleared")
 
 
 def detect_unicode_needed(text: str) -> bool:
@@ -155,12 +164,13 @@ def detect_unicode_needed(text: str) -> bool:
         return True
 
 class SMSCounter:
-    """Tracks sent and received SMS counts with persistent storage"""
+    """Tracks sent and received SMS counts with persistent storage (thread-safe)"""
 
     def __init__(self, counter_file: str = SMS_COUNTER_FILE):
         self.counter_file = counter_file
         self.sent_count = 0
         self.received_count = 0
+        self._lock = threading.Lock()
         self._load()
 
     def _load(self):
@@ -171,7 +181,10 @@ class SMSCounter:
                     data = json.load(f)
                     self.sent_count = data.get('sent_count', 0)
                     self.received_count = data.get('received_count', 0)
-                    logger.info(f"📊 Loaded SMS counters from file: sent={self.sent_count}, received={self.received_count}")
+                    logger.info(
+                        f"📊 Loaded SMS counters: sent={self.sent_count}, "
+                        f"received={self.received_count}"
+                    )
             else:
                 logger.info("📊 SMS counter file not found, starting from 0")
         except Exception as e:
@@ -182,7 +195,6 @@ class SMSCounter:
     def _save(self):
         """Save counter to JSON file"""
         try:
-            # Ensure /data directory exists
             os.makedirs(os.path.dirname(self.counter_file), exist_ok=True)
 
             data = {
@@ -191,21 +203,26 @@ class SMSCounter:
             }
             with open(self.counter_file, 'w') as f:
                 json.dump(data, f)
-            logger.debug(f"📊 Saved SMS counters to file: sent={self.sent_count}, received={self.received_count}")
+            logger.debug(
+                f"📊 Saved SMS counters: sent={self.sent_count}, "
+                f"received={self.received_count}"
+            )
         except Exception as e:
             logger.error(f"Error saving SMS counter: {e}")
 
     def increment_sent(self):
         """Increment sent counter and save"""
-        self.sent_count += 1
-        self._save()
-        return self.sent_count
+        with self._lock:
+            self.sent_count += 1
+            self._save()
+            return self.sent_count
 
     def increment_received(self):
         """Increment received counter and save"""
-        self.received_count += 1
-        self._save()
-        return self.received_count
+        with self._lock:
+            self.received_count += 1
+            self._save()
+            return self.received_count
 
     def increment(self):
         """Increment sent counter (backward compatibility)"""
@@ -213,17 +230,19 @@ class SMSCounter:
 
     def reset_sent(self):
         """Reset sent counter to 0"""
-        self.sent_count = 0
-        self._save()
-        logger.info("📊 SMS sent counter reset to 0")
-        return self.sent_count
+        with self._lock:
+            self.sent_count = 0
+            self._save()
+            logger.info("📊 SMS sent counter reset to 0")
+            return self.sent_count
 
     def reset_received(self):
         """Reset received counter to 0"""
-        self.received_count = 0
-        self._save()
-        logger.info("📊 SMS received counter reset to 0")
-        return self.received_count
+        with self._lock:
+            self.received_count = 0
+            self._save()
+            logger.info("📊 SMS received counter reset to 0")
+            return self.received_count
 
     def reset(self):
         """Reset sent counter (backward compatibility)"""
@@ -231,23 +250,27 @@ class SMSCounter:
 
     def get_sent_count(self):
         """Get current sent count"""
-        return self.sent_count
+        with self._lock:
+            return self.sent_count
 
     def get_received_count(self):
         """Get current received count"""
-        return self.received_count
+        with self._lock:
+            return self.received_count
 
     def get_count(self):
         """Get sent count (backward compatibility)"""
-        return self.sent_count
+        with self._lock:
+            return self.sent_count
 
 class SMSHistory:
-    """Tracks received SMS history with persistent storage"""
+    """Tracks received SMS history with persistent storage (thread-safe)"""
 
     def __init__(self, history_file='/data/sms_history.json', max_messages=10):
         self.history_file = history_file
         self.max_messages = max_messages
         self.messages = []
+        self._lock = threading.Lock()
         self._load()
 
     def _load(self):
@@ -257,9 +280,10 @@ class SMSHistory:
                 with open(self.history_file, 'r') as f:
                     data = json.load(f)
                     self.messages = data.get('messages', [])
-                    # Keep only max_messages
                     self.messages = self.messages[-self.max_messages:]
-                    logger.info(f"📜 Loaded SMS history: {len(self.messages)} messages")
+                    logger.info(
+                        f"📜 Loaded SMS history: {len(self.messages)} messages"
+                    )
             else:
                 logger.info("📜 SMS history file not found, starting fresh")
         except Exception as e:
@@ -269,7 +293,6 @@ class SMSHistory:
     def _save(self):
         """Save history to JSON file"""
         try:
-            # Ensure /data directory exists
             os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
 
             data = {'messages': self.messages}
@@ -281,42 +304,45 @@ class SMSHistory:
 
     def add_message(self, number, text, timestamp=None):
         """Add a new message to history"""
-        if timestamp is None:
-            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        
-        message = {
-            "number": number,
-            "text": text,  # Store full message text
-            "timestamp": timestamp
-        }
-        
-        self.messages.append(message)
-        
-        # Keep only last max_messages
-        if len(self.messages) > self.max_messages:
-            self.messages = self.messages[-self.max_messages:]
-        
-        self._save()
-        logger.debug(f"📜 Added message to history from {number}")
-        return self.messages
+        with self._lock:
+            if timestamp is None:
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+
+            message = {
+                "number": number,
+                "text": text,
+                "timestamp": timestamp
+            }
+
+            self.messages.append(message)
+
+            if len(self.messages) > self.max_messages:
+                self.messages = self.messages[-self.max_messages:]
+
+            self._save()
+            logger.debug(f"📜 Added message to history from {number}")
+            return list(self.messages)
 
     def get_history(self):
         """Get all messages in history"""
-        return self.messages
+        with self._lock:
+            return list(self.messages)
 
     def clear(self):
         """Clear all history"""
-        self.messages = []
-        self._save()
-        logger.info("📜 SMS history cleared")
+        with self._lock:
+            self.messages = []
+            self._save()
+            logger.info("📜 SMS history cleared")
 
 class SMSDeliveryTracker:
-    """Tracks SMS delivery status and reports"""
+    """Tracks SMS delivery status and reports (thread-safe)"""
 
     def __init__(self, delivery_file='/data/sms_delivery.json', max_tracked=50):
         self.delivery_file = delivery_file
         self.max_tracked = max_tracked
         self.pending_deliveries = {}  # message_ref -> delivery info
+        self._lock = threading.Lock()
         self._load()
 
     def _load(self):
@@ -356,61 +382,74 @@ class SMSDeliveryTracker:
 
     def track_sent_sms(self, message_ref, number, text_preview):
         """Track a sent SMS awaiting delivery report"""
-        if message_ref:
-            self.pending_deliveries[str(message_ref)] = {
-                "number": number,
-                "text_preview": text_preview[:50],  # First 50 chars for identification
-                "sent_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "sent"
-            }
-            self._save()
-            logger.info(f"📬 Tracking delivery for message ref {message_ref} to {number}")
+        with self._lock:
+            if message_ref:
+                self.pending_deliveries[str(message_ref)] = {
+                    "number": number,
+                    "text_preview": text_preview[:50],
+                    "sent_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "status": "sent"
+                }
+                self._save()
+                logger.info(
+                    f"📬 Tracking delivery for ref {message_ref} to {number}"
+                )
 
     def update_delivery_status(self, message_ref, status, timestamp=None):
         """Update delivery status for a message"""
-        ref_str = str(message_ref)
-        if ref_str in self.pending_deliveries:
-            self.pending_deliveries[ref_str]["status"] = status
-            self.pending_deliveries[ref_str]["delivered_timestamp"] = timestamp or time.strftime("%Y-%m-%d %H:%M:%S")
-            self._save()
-            logger.info(f"📬 Updated delivery status for ref {message_ref}: {status}")
-            return self.pending_deliveries[ref_str]
-        return None
+        with self._lock:
+            ref_str = str(message_ref)
+            if ref_str in self.pending_deliveries:
+                self.pending_deliveries[ref_str]["status"] = status
+                ts = timestamp or time.strftime("%Y-%m-%d %H:%M:%S")
+                self.pending_deliveries[ref_str]["delivered_timestamp"] = ts
+                self._save()
+                logger.info(
+                    f"📬 Updated delivery status for ref {message_ref}: {status}"
+                )
+                return dict(self.pending_deliveries[ref_str])
+            return None
 
     def get_pending_count(self):
         """Get count of messages awaiting delivery report"""
-        return len([d for d in self.pending_deliveries.values() if d.get('status') == 'sent'])
+        with self._lock:
+            return len([
+                d for d in self.pending_deliveries.values()
+                if d.get('status') == 'sent'
+            ])
 
     def get_all_deliveries(self):
         """Get all tracked deliveries"""
-        return self.pending_deliveries
+        with self._lock:
+            return dict(self.pending_deliveries)
 
     def clear_pending_deliveries(self):
         """Clear all pending delivery reports (useful for stuck reports)"""
-        count = len(self.pending_deliveries)
-        self.pending_deliveries = {}
-        self._save()
-        
-        # Verify the file was actually cleared
-        try:
-            if os.path.exists(self.delivery_file):
-                with open(self.delivery_file, 'r') as f:
-                    data = json.load(f)
-                    remaining = len(data.get('pending', {}))
-                    if remaining > 0:
-                        logger.error(
-                            f"📬 WARNING: File still contains {remaining} "
-                            f"entries after clear!"
-                        )
-                    else:
-                        logger.info(
-                            f"📬 Verified: Cleared {count} pending delivery "
-                            f"reports from file"
-                        )
-        except Exception as e:
-            logger.error(f"📬 Error verifying clear operation: {e}")
-        
-        return count
+        with self._lock:
+            count = len(self.pending_deliveries)
+            self.pending_deliveries = {}
+            self._save()
+            
+            # Verify the file was actually cleared
+            try:
+                if os.path.exists(self.delivery_file):
+                    with open(self.delivery_file, 'r') as f:
+                        data = json.load(f)
+                        remaining = len(data.get('pending', {}))
+                        if remaining > 0:
+                            logger.error(
+                                f"📬 WARNING: File still contains {remaining} "
+                                f"entries after clear!"
+                            )
+                        else:
+                            logger.info(
+                                f"📬 Verified: Cleared {count} pending delivery "
+                                f"reports from file"
+                            )
+            except Exception as e:
+                logger.error(f"📬 Error verifying clear operation: {e}")
+            
+            return count
 
 class BalanceSMSParser:
     """Parses SMS messages from network providers to extract account balance information"""
@@ -516,85 +555,116 @@ class BalanceSMSParser:
         return self.balance_data
 
 class DeviceConnectivityTracker:
-    """Tracks USB GSM device connectivity status based on gammu communication"""
+    """Tracks USB GSM device connectivity status (thread-safe)"""
 
-    def __init__(self, offline_timeout_seconds=900):  # 15 minutes default (increased from 10)
+    def __init__(self, offline_timeout_seconds=900):
         self.last_success_time = None
         self.consecutive_failures = 0
         self.last_error = None
         self.offline_timeout = offline_timeout_seconds
         self.total_operations = 0
         self.successful_operations = 0
-        self.initial_check_done = False  # Track if we've done initial modem check
-        
+        self.initial_check_done = False
+        self._lock = threading.Lock()
+
     def record_success(self):
         """Record successful gammu operation"""
-        self.last_success_time = time.time()
+        with self._lock:
+            self.last_success_time = time.time()
 
-        # Only reset consecutive failures if we had them logged
-        if self.consecutive_failures > 0:
-            logger.info(f"✅ Device recovery: resetting consecutive_failures from {self.consecutive_failures} to 0")
-            self.consecutive_failures = 0
-            
-            # Invalidate network type cache on recovery so we get fresh info
-            try:
-                from support import invalidate_network_type_cache
-                invalidate_network_type_cache()
-            except:
-                pass
+            if self.consecutive_failures > 0:
+                logger.info(
+                    f"✅ Device recovery: resetting consecutive_failures "
+                    f"from {self.consecutive_failures} to 0"
+                )
+                self.consecutive_failures = 0
 
-        self.last_error = None
-        self.total_operations += 1
-        self.successful_operations += 1
-        self.initial_check_done = True  # Mark initial check as done on first success
-        
+                try:
+                    from support import invalidate_network_type_cache
+                    invalidate_network_type_cache()
+                except:
+                    pass
+
+            self.last_error = None
+            self.total_operations += 1
+            self.successful_operations += 1
+            self.initial_check_done = True
+
     def record_failure(self, error_message=None):
         """Record failed gammu operation"""
-        self.consecutive_failures += 1
-        self.last_error = str(error_message) if error_message else "Communication failed"
-        self.total_operations += 1
-        
+        with self._lock:
+            self.consecutive_failures += 1
+            self.last_error = (
+                str(error_message) if error_message else "Communication failed"
+            )
+            self.total_operations += 1
+
     def get_status(self):
         """Get current device connectivity status"""
-        # If we haven't done initial check yet, assume offline
+        with self._lock:
+            if not self.initial_check_done:
+                return "offline"
+
+            if self.last_success_time is None:
+                return "offline"
+
+            if self.consecutive_failures >= 2:
+                return "offline"
+
+            time_since_last_success = time.time() - self.last_success_time
+            if time_since_last_success > self.offline_timeout:
+                return "offline"
+
+            return "online"
+
+    def get_status_data(self):
+        """Get detailed status information"""
+        with self._lock:
+            status = self._get_status_unlocked()
+
+            data = {
+                "status": status,
+                "consecutive_failures": self.consecutive_failures,
+                "total_operations": self.total_operations,
+                "successful_operations": self.successful_operations,
+                "last_error": self.last_error
+            }
+
+            if self.last_success_time:
+                data["last_seen"] = time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(self.last_success_time)
+                )
+                data["seconds_since_last_success"] = int(
+                    time.time() - self.last_success_time
+                )
+            else:
+                data["last_seen"] = None
+                data["seconds_since_last_success"] = None
+
+            return data
+
+    def _get_status_unlocked(self):
+        """Get status without acquiring lock (caller must hold lock)"""
         if not self.initial_check_done:
             return "offline"
 
         if self.last_success_time is None:
             return "offline"
 
-        # If we have 2 or more consecutive failures, go offline immediately
         if self.consecutive_failures >= 2:
             return "offline"
 
-        # Check time-based timeout (10 minutes without any communication)
         time_since_last_success = time.time() - self.last_success_time
         if time_since_last_success > self.offline_timeout:
             return "offline"
 
-        # Recent success and < 3 failures = online
         return "online"
-            
-    def get_status_data(self):
-        """Get detailed status information"""
-        status = self.get_status()
-        
-        data = {
-            "status": status,
-            "consecutive_failures": self.consecutive_failures,
-            "total_operations": self.total_operations,
-            "successful_operations": self.successful_operations,
-            "last_error": self.last_error
-        }
-        
-        if self.last_success_time:
-            data["last_seen"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.last_success_time))
-            data["seconds_since_last_success"] = int(time.time() - self.last_success_time)
-        else:
-            data["last_seen"] = None
-            data["seconds_since_last_success"] = None
-            
-        return data
+
+    def get_consecutive_failures(self):
+        """Get consecutive failure count (thread-safe)"""
+        with self._lock:
+            return self.consecutive_failures
+
 
 class MQTTPublisher:
     def __init__(self, config: Dict[str, Any]):
@@ -2336,7 +2406,7 @@ class MQTTPublisher:
                 f"🔴 Modem failed for {int(failure_duration)}s - triggering restart!"
             )
             time.sleep(2)  # Brief pause for logs to flush
-            sys.exit(1)  # HA Supervisor will restart us
+            os._exit(1)  # Force exit even from threads - HA Supervisor will restart us
     
     def _trigger_emergency_reset(self, error_code=None):
         """Emergency modem reset for hung state recovery - full reconnect or restart"""
@@ -2352,7 +2422,7 @@ class MQTTPublisher:
             if self.auto_restart_on_failure:
                 logger.warning("🔄 Auto-restarting addon to recover device...")
                 time.sleep(2)  # Brief pause for logs to flush
-                sys.exit(1)  # HA Supervisor will restart us
+                os._exit(1)  # Force exit even from threads - HA Supervisor will restart us
             else:
                 logger.warning("⚠️ Auto-restart disabled, manual intervention required")
                 return False
@@ -2373,7 +2443,7 @@ class MQTTPublisher:
                 f"🔴 Modem failed for {int(failure_duration)}s - triggering restart!"
             )
             time.sleep(2)  # Brief pause for logs to flush
-            sys.exit(1)  # HA Supervisor will restart us
+            os._exit(1)  # Force exit even from threads - HA Supervisor will restart us
         
         # Clear SMSC cache first
         self.cached_smsc = None
@@ -2476,13 +2546,30 @@ class MQTTPublisher:
                     needs_reset_retry = False
                     error_code = None
                     try:
-                        if (hasattr(e, 'args') and len(e.args) > 0 and
-                            isinstance(e.args[0], dict)):
-                            error_code = e.args[0].get('Code')
-                            if error_code in RECOVERABLE_ERROR_CODES:
-                                needs_reset_retry = True
-                    except Exception:
-                        pass
+                        # Try to extract error code from Gammu exception
+                        # Gammu exceptions have args[0] as a dict with 'Code' key
+                        if hasattr(e, 'args') and len(e.args) > 0:
+                            arg0 = e.args[0]
+                            if isinstance(arg0, dict):
+                                error_code = arg0.get('Code')
+                                if error_code is not None:
+                                    logger.debug(f"Extracted Gammu error code: {error_code}")
+                                    if error_code in RECOVERABLE_ERROR_CODES:
+                                        needs_reset_retry = True
+                            else:
+                                # Try parsing from string representation (fallback)
+                                # Format: "{'Text': '...', 'Code': 33, ...}"
+                                err_str = str(e)
+                                if "'Code':" in err_str:
+                                    import re
+                                    match = re.search(r"'Code':\s*(\d+)", err_str)
+                                    if match:
+                                        error_code = int(match.group(1))
+                                        logger.debug(f"Extracted error code from string: {error_code}")
+                                        if error_code in RECOVERABLE_ERROR_CODES:
+                                            needs_reset_retry = True
+                    except Exception as extract_err:
+                        logger.debug(f"Error code extraction failed: {extract_err}")
                     
                     if needs_reset_retry:
                         error_name = RECOVERABLE_ERROR_CODES.get(
@@ -2739,7 +2826,7 @@ class MQTTPublisher:
 
                     # After 2 consecutive failures, attempt soft reset to recover connection
                     # Then retry every 5 failures (5, 10, 15, 20...)
-                    failures = self.device_tracker.consecutive_failures
+                    failures = self.device_tracker.get_consecutive_failures()
                     if failures == 2 or (failures > 2 and failures % 5 == 0):
                         logger.warning(f"🔄 Attempting modem soft reset after {failures} failures...")
                         try:

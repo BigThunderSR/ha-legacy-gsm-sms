@@ -711,6 +711,11 @@ class MQTTPublisher:
         self.auto_restart_on_failure = config.get('auto_restart_on_failure', True)
         self.failure_start_time = None  # When continuous failures started
         self.restart_timeout = 120  # Restart after 2 min of continuous failure
+        
+        # Modem operation delay - helps prevent buffer overflows and crashes
+        # Configurable: 0.1 to 5.0 seconds (default 0.3s)
+        self.modem_operation_delay = config.get('modem_operation_delay', 0.3)
+        logger.info(f"⏱️ Modem operation delay: {self.modem_operation_delay}s")
 
         if config.get('mqtt_enabled', False):
             self._setup_client()
@@ -2573,9 +2578,11 @@ class MQTTPublisher:
                             daemon=True
                         ).start()
 
-                    # Small delay after each operation to let modem "breathe"
-                    # Prevents buffer overflow on modems like Huawei E1750
-                    time.sleep(0.3)
+                    # Configurable delay after each operation to let modem "breathe"
+                    # Prevents buffer overflow on modems like Huawei E1750 and SIM7600
+                    # Default: 0.3s, configurable via modem_operation_delay
+                    if self.modem_operation_delay > 0:
+                        time.sleep(self.modem_operation_delay)
 
                     return result
                 except concurrent.futures.TimeoutError:

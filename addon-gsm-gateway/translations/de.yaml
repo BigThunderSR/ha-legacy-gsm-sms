@@ -53,6 +53,9 @@ configuration:
   auto_restart_on_failure:
     name: Automatischer Neustart bei Fehler
     description: Add-on automatisch nach 2 Minuten anhaltender Modem-Fehler neu starten (schnellste Wiederherstellung)
+  modem_operation_delay:
+    name: Modem-Befehlsverzögerung
+    description: Verzögerung zwischen Modem-Befehlen in Sekunden (0,1-5,0). Erhöhen Sie diesen Wert, wenn das Modem häufig abstürzt.
   network_type_cache_seconds:
     name: Netzwerktyp-Cache-Dauer
     description: Wie lange Netzwerktyp-Ergebnisse zwischengespeichert werden, um häufige Modem-Abfragen zu vermeiden (Sekunden, 60-3600)

@@ -53,6 +53,9 @@ configuration:
   auto_restart_on_failure:
     name: Reinício Automático em Falha
     description: Reiniciar automaticamente o addon após 2 minutos de falha persistente do modem (recuperação mais rápida)
+  modem_operation_delay:
+    name: Atraso de Operação do Modem
+    description: Atraso entre comandos do modem em segundos (0.1-5.0). Aumente se o modem travar frequentemente.
   network_type_cache_seconds:
     name: Duração do Cache de Tipo de Rede
     description: Quanto tempo armazenar em cache os resultados do tipo de rede para evitar consultas frequentes ao modem (segundos, 60-3600)

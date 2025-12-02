@@ -53,6 +53,9 @@ configuration:
   auto_restart_on_failure:
     name: Automatyczny Restart przy Awarii
     description: Automatycznie restartuj addon po 2 minutach trwałej awarii modemu (najszybsze przywracanie)
+  modem_operation_delay:
+    name: Opóźnienie Operacji Modemu
+    description: Opóźnienie między poleceniami modemu w sekundach (0.1-5.0). Zwiększ, jeśli modem często się zawiesza.
   network_type_cache_seconds:
     name: Czas Przechowywania Typu Sieci
     description: Jak długo przechowywać wyniki typu sieci, aby uniknąć częstych zapytań do modemu (sekundy, 60-3600)

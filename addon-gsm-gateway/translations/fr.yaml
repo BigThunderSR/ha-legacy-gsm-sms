@@ -53,6 +53,9 @@ configuration:
   auto_restart_on_failure:
     name: Redémarrage Automatique en Cas d'Échec
     description: Redémarrer automatiquement l'addon après 2 minutes d'échec persistant du modem (récupération la plus rapide)
+  modem_operation_delay:
+    name: Délai d'Opération du Modem
+    description: Délai entre les commandes du modem en secondes (0.1-5.0). Augmentez si le modem plante fréquemment.
   network_type_cache_seconds:
     name: Durée du Cache de Type de Réseau
     description: Durée de mise en cache des résultats du type de réseau pour éviter les requêtes fréquentes au modem (secondes, 60-3600)

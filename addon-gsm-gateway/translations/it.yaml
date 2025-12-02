@@ -53,6 +53,9 @@ configuration:
   auto_restart_on_failure:
     name: Riavvio Automatico in Caso di Errore
     description: Riavviare automaticamente l'addon dopo 2 minuti di errore persistente del modem (recupero più veloce)
+  modem_operation_delay:
+    name: Ritardo Operazione Modem
+    description: Ritardo tra i comandi del modem in secondi (0.1-5.0). Aumentare se il modem si blocca frequentemente.
   network_type_cache_seconds:
     name: Durata Cache Tipo di Rete
     description: Per quanto tempo memorizzare nella cache i risultati del tipo di rete per evitare frequenti query al modem (secondi, 60-3600)

@@ -53,6 +53,9 @@ configuration:
   auto_restart_on_failure:
     name: Automatický Restart při Selhání
     description: Automaticky restartovat addon po 2 minutách přetrvávajícího selhání modemu (nejrychlejší obnova)
+  modem_operation_delay:
+    name: Zpoždění Operace Modemu
+    description: Zpoždění mezi příkazy modemu v sekundách (0.1-5.0). Zvyšte, pokud modem často padá.
   network_type_cache_seconds:
     name: Doba Ukládání Typu Sítě
     description: Jak dlouho ukládat výsledky typu sítě, aby se zabránilo častým dotazům modemu (sekundy, 60-3600)

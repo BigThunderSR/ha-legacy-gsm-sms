@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.0] - 2025-12-02
+
+### Added
+
+- **Configurable modem operation delay** 🆕
+  - New `modem_operation_delay` config option (default: 0.3 seconds)
+  - Adds delay between sequential modem commands to prevent buffer overflow
+  - Range: 0.1 to 5.0 seconds
+  - Helps prevent crashes on modems like SIM7600 and Huawei E1750
+  - Recommended: 0.5-1.0s for SIM7600 series experiencing frequent disconnects
+
 ## [2.11.0] - 2025-12-01
 
 ### Added

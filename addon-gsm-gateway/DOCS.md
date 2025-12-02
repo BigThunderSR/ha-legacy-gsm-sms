@@ -152,6 +152,7 @@ curl -X POST http://192.168.1.x:5000/sms \
 | `log_level`                | `info`  | Logging level: `warning`, `info`, or `debug` (🆕 v2.1.8)            |
 | `auto_recovery`            | `true`  | Automatically recover from modem failures (🆕 v2.4.0)               |
 | `auto_restart_on_failure`  | `true`  | Auto-restart addon after 2 min of persistent failure (🆕 v2.10.0)   |
+| `modem_operation_delay`    | `0.3`   | Delay between modem commands in seconds (0.1-5.0) (🆕 v2.12.0)      |
 
 ### Logging Levels (🆕 v2.1.8, Enhanced v2.2.1)
 
@@ -212,6 +213,39 @@ The `auto_restart_on_failure` setting enables automatic addon restart when the m
   - Use if you prefer manual control or have external monitoring
 
 **Use Case**: Some modems (e.g., SimTech) can enter a hung state that only clears after a power cycle. Since the addon controls the modem via USB, the fastest recovery is restarting the addon, which forces a complete USB re-enumeration.
+
+### Modem Operation Delay (🆕 v2.12.0)
+
+The `modem_operation_delay` setting controls the pause between sequential modem commands:
+
+- **Default: `0.3`** - 300ms delay after each modem operation
+- **Range: `0.1` to `5.0`** seconds
+
+**Why this helps:**
+
+Some modems (especially SIM7600, Huawei E1750) can crash or become unresponsive when commands are sent too quickly in succession. Adding a small delay between operations allows the modem's buffer to clear and prevents command overflow.
+
+**Symptoms indicating you need a higher delay:**
+
+- Frequent `ERR_DEVICEWRITEERROR` or `ERR_NOTCONNECTED` errors
+- Modem crashes after rapid SMS sends or signal checks
+- Errors cluster after multiple quick operations
+- Modem recovers after restart but crashes again quickly
+
+**Recommended settings:**
+
+| Modem Type     | Recommended Delay | Notes                               |
+| -------------- | ----------------- | ----------------------------------- |
+| Most modems    | `0.3` (default)   | Works for most USB GSM modems       |
+| SIM7600 series | `0.5` - `1.0`     | Particularly sensitive to rapid I/O |
+| Huawei E1750   | `0.5`             | Known buffer overflow issues        |
+| Stable modems  | `0.1` - `0.2`     | If no stability issues, can reduce  |
+
+**Configuration example:**
+
+```yaml
+modem_operation_delay: 0.5 # 500ms delay for better stability
+```
 
 ### SMS Queue for Reliability (🆕 v2.10.0)
 

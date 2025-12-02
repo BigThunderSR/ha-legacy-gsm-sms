@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: 2.11.0
+version: 2.12.0
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
@@ -76,6 +76,7 @@ options:
   log_level: "info"
   auto_recovery: true
   auto_restart_on_failure: true
+  modem_operation_delay: 0.3
   network_type_cache_seconds: 300
   balance_sms_enabled: false
   balance_sms_sender: "7069"
@@ -107,6 +108,7 @@ schema:
   log_level: list(warning|info|debug)
   auto_recovery: bool
   auto_restart_on_failure: bool
+  modem_operation_delay: float(0.1,5.0)
   network_type_cache_seconds: int(60,3600)
   balance_sms_enabled: bool
   balance_sms_sender: str

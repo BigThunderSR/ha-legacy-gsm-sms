@@ -1,8 +1,8 @@
 name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.10.4-test
+version: 2.11.0-test
 slug: "gsm_sms_gateway_test_current"
 description: |
-  🧪 TEST VERSION - Current development build for experimentation (v2.10.4-test)
+  🧪 TEST VERSION - Current development build for experimentation (v2.11.0-test)
 
   Testing: Queue-first SMS strategy to survive restarts.
   

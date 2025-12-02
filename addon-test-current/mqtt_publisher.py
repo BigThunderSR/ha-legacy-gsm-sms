@@ -181,10 +181,7 @@ class SMSCounter:
                     data = json.load(f)
                     self.sent_count = data.get('sent_count', 0)
                     self.received_count = data.get('received_count', 0)
-                    logger.info(
-                        f"📊 Loaded SMS counters: sent={self.sent_count}, "
-                        f"received={self.received_count}"
-                    )
+                    logger.info(f"📊 Loaded SMS counters from file: sent={self.sent_count}, received={self.received_count}")
             else:
                 logger.info("📊 SMS counter file not found, starting from 0")
         except Exception as e:
@@ -195,6 +192,7 @@ class SMSCounter:
     def _save(self):
         """Save counter to JSON file"""
         try:
+            # Ensure /data directory exists
             os.makedirs(os.path.dirname(self.counter_file), exist_ok=True)
 
             data = {
@@ -203,22 +201,19 @@ class SMSCounter:
             }
             with open(self.counter_file, 'w') as f:
                 json.dump(data, f)
-            logger.debug(
-                f"📊 Saved SMS counters: sent={self.sent_count}, "
-                f"received={self.received_count}"
-            )
+            logger.debug(f"📊 Saved SMS counters to file: sent={self.sent_count}, received={self.received_count}")
         except Exception as e:
             logger.error(f"Error saving SMS counter: {e}")
 
     def increment_sent(self):
-        """Increment sent counter and save"""
+        """Increment sent counter and save (thread-safe)"""
         with self._lock:
             self.sent_count += 1
             self._save()
             return self.sent_count
 
     def increment_received(self):
-        """Increment received counter and save"""
+        """Increment received counter and save (thread-safe)"""
         with self._lock:
             self.received_count += 1
             self._save()
@@ -229,7 +224,7 @@ class SMSCounter:
         return self.increment_sent()
 
     def reset_sent(self):
-        """Reset sent counter to 0"""
+        """Reset sent counter to 0 (thread-safe)"""
         with self._lock:
             self.sent_count = 0
             self._save()
@@ -237,7 +232,7 @@ class SMSCounter:
             return self.sent_count
 
     def reset_received(self):
-        """Reset received counter to 0"""
+        """Reset received counter to 0 (thread-safe)"""
         with self._lock:
             self.received_count = 0
             self._save()
@@ -249,12 +244,12 @@ class SMSCounter:
         return self.reset_sent()
 
     def get_sent_count(self):
-        """Get current sent count"""
+        """Get current sent count (thread-safe)"""
         with self._lock:
             return self.sent_count
 
     def get_received_count(self):
-        """Get current received count"""
+        """Get current received count (thread-safe)"""
         with self._lock:
             return self.received_count
 
@@ -280,10 +275,9 @@ class SMSHistory:
                 with open(self.history_file, 'r') as f:
                     data = json.load(f)
                     self.messages = data.get('messages', [])
+                    # Keep only max_messages
                     self.messages = self.messages[-self.max_messages:]
-                    logger.info(
-                        f"📜 Loaded SMS history: {len(self.messages)} messages"
-                    )
+                    logger.info(f"📜 Loaded SMS history: {len(self.messages)} messages")
             else:
                 logger.info("📜 SMS history file not found, starting fresh")
         except Exception as e:
@@ -293,6 +287,7 @@ class SMSHistory:
     def _save(self):
         """Save history to JSON file"""
         try:
+            # Ensure /data directory exists
             os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
 
             data = {'messages': self.messages}
@@ -303,33 +298,34 @@ class SMSHistory:
             logger.error(f"Error saving SMS history: {e}")
 
     def add_message(self, number, text, timestamp=None):
-        """Add a new message to history"""
+        """Add a new message to history (thread-safe)"""
         with self._lock:
             if timestamp is None:
                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-
+            
             message = {
                 "number": number,
-                "text": text,
+                "text": text,  # Store full message text
                 "timestamp": timestamp
             }
-
+            
             self.messages.append(message)
-
+            
+            # Keep only last max_messages
             if len(self.messages) > self.max_messages:
                 self.messages = self.messages[-self.max_messages:]
-
+            
             self._save()
             logger.debug(f"📜 Added message to history from {number}")
-            return list(self.messages)
+            return self.messages.copy()
 
     def get_history(self):
-        """Get all messages in history"""
+        """Get all messages in history (thread-safe)"""
         with self._lock:
-            return list(self.messages)
+            return self.messages.copy()
 
     def clear(self):
-        """Clear all history"""
+        """Clear all history (thread-safe)"""
         with self._lock:
             self.messages = []
             self._save()
@@ -786,6 +782,12 @@ class MQTTPublisher:
             client.subscribe(send_topic)
             logger.info(f"Subscribed to SMS send topic: {send_topic}")
 
+            # Subscribe to persistent SMS queue topic (for surviving addon restarts)
+            # This topic uses retained messages so SMS requests persist in MQTT broker
+            queue_sms_topic = f"{self.topic_prefix}/queue_sms"
+            client.subscribe(queue_sms_topic)
+            logger.info(f"Subscribed to SMS queue topic: {queue_sms_topic}")
+
             # Subscribe to SMS button topic
             button_topic = f"{self.topic_prefix}/send_button"
             client.subscribe(button_topic)
@@ -853,6 +855,7 @@ class MQTTPublisher:
 
             # Check message topic and handle accordingly
             send_topic = f"{self.topic_prefix}/send"
+            queue_sms_topic = f"{self.topic_prefix}/queue_sms"
             button_topic = f"{self.topic_prefix}/send_button"
             reset_counter_topic = f"{self.topic_prefix}/reset_counter_button"
             reset_received_counter_topic = f"{self.topic_prefix}/reset_received_counter_button"
@@ -868,6 +871,9 @@ class MQTTPublisher:
 
             if topic == send_topic:
                 self._handle_sms_send_command(payload)
+            elif topic == queue_sms_topic:
+                # Persistent SMS queue topic - survives addon restarts
+                self._handle_queued_sms_from_mqtt(payload, queue_sms_topic)
             elif topic == button_topic and payload == "PRESS":
                 # Button pressed - send SMS using current text inputs
                 self._handle_button_sms_send()
@@ -956,6 +962,62 @@ class MQTTPublisher:
             logger.error(f"Invalid JSON in SMS send command: {e}")
         except Exception as e:
             logger.error(f"Error handling SMS send command: {e}")
+
+    def _handle_queued_sms_from_mqtt(self, payload, topic):
+        """Handle SMS from persistent MQTT queue topic (survives addon restarts)
+        
+        This topic uses retained messages so SMS requests persist in the MQTT broker
+        even when the addon is down. When the addon starts, it receives the retained
+        message and adds it to the local queue for processing.
+        
+        Args:
+            payload: JSON payload with 'number' and 'text' fields
+            topic: The MQTT topic to clear after processing
+        """
+        try:
+            # Skip empty payloads (cleared retained messages)
+            if not payload or payload.strip() == '':
+                logger.debug("Empty queue_sms payload received, skipping")
+                return
+            
+            # Parse JSON payload
+            data = json.loads(payload)
+            number = data.get('number')
+            text = data.get('text')
+            smsc = data.get('smsc')  # Optional SMSC
+            
+            if not number or not text:
+                logger.error("Queued SMS missing required fields: number or text")
+                # Clear the invalid retained message
+                self.client.publish(topic, '', retain=True)
+                return
+            
+            logger.info(f"📥 Received SMS from MQTT queue: {number}")
+            
+            # Clear the retained message immediately to prevent re-processing
+            self.client.publish(topic, '', retain=True)
+            logger.info(f"📤 Cleared retained message from {topic}")
+            
+            # Add to local queue for processing
+            added = self.sms_queue.add(number, text, smsc)
+            if added:
+                logger.info(f"📥 SMS added to local queue from MQTT: {number}")
+            else:
+                logger.info(f"📥 SMS already in queue (duplicate): {number}")
+            
+            # If gammu machine is ready, trigger immediate processing
+            if hasattr(self, 'gammu_machine') and self.gammu_machine:
+                logger.info("📤 Triggering immediate queue processing...")
+                self.process_pending_sms()
+            else:
+                logger.info("⏳ Gammu not ready, SMS will be sent when modem connects")
+                
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in queued SMS: {e}")
+            # Clear invalid retained message
+            self.client.publish(topic, '', retain=True)
+        except Exception as e:
+            logger.error(f"Error handling queued SMS from MQTT: {e}")
     
     def _send_ussd_via_gammu(self, ussd_code):
         """Send USSD code using gammu machine and return response

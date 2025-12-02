@@ -84,7 +84,30 @@ data:
   payload: '{"number": "+420123456789", "text": "Alert!"}'
 ```
 
-### Method 4: REST API
+### Method 4: MQTT with Persistence (Recommended for Critical SMS)
+
+Use this method for SMS that must be delivered even if the addon is restarting. The message is retained in the MQTT broker until the addon processes it.
+
+```yaml
+service: mqtt.publish
+data:
+  topic: "homeassistant/sensor/sms_gateway/queue_sms"
+  payload: '{"number": "+420123456789", "text": "HA Started!"}'
+  retain: true
+```
+
+**When to use this:**
+
+- HA startup/shutdown notifications
+- Critical alerts that must not be lost
+- Any SMS sent when the addon might be unavailable
+
+**Requirements:**
+
+- MQTT broker must have retained message persistence enabled (disk storage)
+- For EMQX: Set `retainer.storage_type = disc` in configuration
+
+### Method 5: REST API
 
 ```bash
 curl -X POST http://192.168.1.x:5000/sms \

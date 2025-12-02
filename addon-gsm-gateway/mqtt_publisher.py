@@ -782,6 +782,12 @@ class MQTTPublisher:
             client.subscribe(send_topic)
             logger.info(f"Subscribed to SMS send topic: {send_topic}")
 
+            # Subscribe to persistent SMS queue topic (for surviving addon restarts)
+            # This topic uses retained messages so SMS requests persist in MQTT broker
+            queue_sms_topic = f"{self.topic_prefix}/queue_sms"
+            client.subscribe(queue_sms_topic)
+            logger.info(f"Subscribed to SMS queue topic: {queue_sms_topic}")
+
             # Subscribe to SMS button topic
             button_topic = f"{self.topic_prefix}/send_button"
             client.subscribe(button_topic)
@@ -849,6 +855,7 @@ class MQTTPublisher:
 
             # Check message topic and handle accordingly
             send_topic = f"{self.topic_prefix}/send"
+            queue_sms_topic = f"{self.topic_prefix}/queue_sms"
             button_topic = f"{self.topic_prefix}/send_button"
             reset_counter_topic = f"{self.topic_prefix}/reset_counter_button"
             reset_received_counter_topic = f"{self.topic_prefix}/reset_received_counter_button"
@@ -864,6 +871,9 @@ class MQTTPublisher:
 
             if topic == send_topic:
                 self._handle_sms_send_command(payload)
+            elif topic == queue_sms_topic:
+                # Persistent SMS queue topic - survives addon restarts
+                self._handle_queued_sms_from_mqtt(payload, queue_sms_topic)
             elif topic == button_topic and payload == "PRESS":
                 # Button pressed - send SMS using current text inputs
                 self._handle_button_sms_send()
@@ -952,6 +962,62 @@ class MQTTPublisher:
             logger.error(f"Invalid JSON in SMS send command: {e}")
         except Exception as e:
             logger.error(f"Error handling SMS send command: {e}")
+
+    def _handle_queued_sms_from_mqtt(self, payload, topic):
+        """Handle SMS from persistent MQTT queue topic (survives addon restarts)
+        
+        This topic uses retained messages so SMS requests persist in the MQTT broker
+        even when the addon is down. When the addon starts, it receives the retained
+        message and adds it to the local queue for processing.
+        
+        Args:
+            payload: JSON payload with 'number' and 'text' fields
+            topic: The MQTT topic to clear after processing
+        """
+        try:
+            # Skip empty payloads (cleared retained messages)
+            if not payload or payload.strip() == '':
+                logger.debug("Empty queue_sms payload received, skipping")
+                return
+            
+            # Parse JSON payload
+            data = json.loads(payload)
+            number = data.get('number')
+            text = data.get('text')
+            smsc = data.get('smsc')  # Optional SMSC
+            
+            if not number or not text:
+                logger.error("Queued SMS missing required fields: number or text")
+                # Clear the invalid retained message
+                self.client.publish(topic, '', retain=True)
+                return
+            
+            logger.info(f"📥 Received SMS from MQTT queue: {number}")
+            
+            # Clear the retained message immediately to prevent re-processing
+            self.client.publish(topic, '', retain=True)
+            logger.info(f"📤 Cleared retained message from {topic}")
+            
+            # Add to local queue for processing
+            added = self.sms_queue.add(number, text, smsc)
+            if added:
+                logger.info(f"📥 SMS added to local queue from MQTT: {number}")
+            else:
+                logger.info(f"📥 SMS already in queue (duplicate): {number}")
+            
+            # If gammu machine is ready, trigger immediate processing
+            if hasattr(self, 'gammu_machine') and self.gammu_machine:
+                logger.info("📤 Triggering immediate queue processing...")
+                self.process_pending_sms()
+            else:
+                logger.info("⏳ Gammu not ready, SMS will be sent when modem connects")
+                
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in queued SMS: {e}")
+            # Clear invalid retained message
+            self.client.publish(topic, '', retain=True)
+        except Exception as e:
+            logger.error(f"Error handling queued SMS from MQTT: {e}")
     
     def _send_ussd_via_gammu(self, ussd_code):
         """Send USSD code using gammu machine and return response

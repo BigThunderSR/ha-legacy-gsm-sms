@@ -489,9 +489,21 @@ class SmsCollection(Resource):
                 # Comma-separated string
                 numbers = [n.strip() for n in sms_number_str.split(',')]
         
+        # Auto-detect unicode if not explicitly specified
+        # This matches the behavior of MQTT send methods
+        unicode_mode = data.get('unicode')
+        if unicode_mode is None:
+            # Auto-detect: check if text contains non-ASCII characters (emojis, etc.)
+            try:
+                sms_text.encode('ascii')
+                unicode_mode = False
+            except UnicodeEncodeError:
+                unicode_mode = True
+                logging.info("🔤 Auto-detected Unicode mode for non-ASCII text")
+        
         smsinfo = {
             "Class": -1,
-            "Unicode": data.get('unicode', False),
+            "Unicode": unicode_mode,
             "Entries": [
                 {
                     "ID": "ConcatenatedTextLong",

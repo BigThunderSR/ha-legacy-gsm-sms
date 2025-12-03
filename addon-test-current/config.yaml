@@ -1,11 +1,7 @@
-name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.13.0-test
-slug: "gsm_sms_gateway_test_current"
+name: "GSM SMS Gateway Enhanced"
+version: 2.13.1
+slug: "gsm_sms_gateway_enhanced"
 description: |
-  🧪 TEST VERSION - Current development build for experimentation (v2.13.0-test)
-
-  Testing: Queue-first SMS strategy to survive restarts.
-  
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
   Based on PavelVe's SMS Gammu Gateway (https://github.com/PavelVe/hassio-addons).
   
@@ -18,8 +14,8 @@ arch:
   - aarch64
   - amd64
 
-url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms/tree/main/addon-test-current"
-#image: "ghcr.io/bigthundersr/gsm-sms-gateway-enhanced-{arch}"  # Commented out to allow local builds
+url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms/tree/main/addon-gsm-gateway"
+image: "ghcr.io/bigthundersr/gsm-sms-gateway-enhanced-{arch}"
 #boot: auto
 #host_network: false
 #startup: services

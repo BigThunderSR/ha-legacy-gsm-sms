@@ -908,24 +908,32 @@ data:
 
 ### Unicode Support (Special Characters)
 
-**MQTT Method (Automatic Detection):**
-When sending SMS via MQTT, Unicode mode is automatically detected based on message content. If your message contains non-ASCII characters (háčky, čárky, emojis), Unicode encoding is automatically enabled.
+**Automatic Detection (🆕 v2.13.1):**
+Both MQTT and REST API automatically detect when Unicode mode is needed. If your message contains non-ASCII characters (háčky, čárky, emojis), Unicode encoding is automatically enabled.
 
 ```yaml
+# MQTT - Unicode auto-detected
 service: mqtt.publish
 data:
   topic: "homeassistant/sensor/sms_gateway/send"
-  payload: '{"number": "+420123456789", "text": "Příliš žluťoučký kůň"}'
-  # Unicode automatically detected - no "unicode" parameter needed!
+  payload: '{"number": "+420123456789", "text": "Příliš žluťoučký kůň 🎉"}'
 ```
 
-**REST API Method (Explicit Parameter):**
-For REST API, you must explicitly set the `unicode` parameter:
+```yaml
+# REST API - Unicode auto-detected
+service: rest_command.send_sms
+data:
+  target: "+420123456789"
+  message: "Příliš žluťoučký kůň 🎉"
+```
+
+**Manual Override (Optional):**
+You can still explicitly set `unicode: true` or `unicode: false` to override auto-detection:
 
 ```json
 {
   "number": "+420123456789",
-  "text": "Příliš žluťoučký kůň",
+  "text": "Force Unicode mode",
   "unicode": true
 }
 ```

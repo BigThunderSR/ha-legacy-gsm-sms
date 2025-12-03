@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.1] - 2025-12-03
+
+### Fixed
+
+- **REST API now auto-detects Unicode mode for SMS** 🐛
+  - Fixed emoji/special characters being sent as `??` via REST API actions
+  - REST API now matches MQTT behavior: auto-detects Unicode when not explicitly set
+  - If `unicode` parameter is omitted, checks if text contains non-ASCII characters
+  - Explicitly setting `unicode: true/false` still honored for manual control
+
 ## [2.13.0] - 2025-12-03
 
 ### Changed

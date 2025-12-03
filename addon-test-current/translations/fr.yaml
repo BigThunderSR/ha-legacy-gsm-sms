@@ -58,7 +58,7 @@ configuration:
     description: Délai entre les commandes du modem en secondes (0.1-5.0). Augmentez si le modem plante fréquemment.
   network_type_cache_seconds:
     name: Durée du Cache de Type de Réseau
-    description: Durée de mise en cache des résultats du type de réseau pour éviter les requêtes fréquentes au modem (secondes, 60-3600)
+    description: Durée du cache pour le type de réseau (2G/3G/4G). 0 = uniquement à la reconnexion (recommandé). 1-3600 = rafraîchissement périodique.
   sms_cost_per_message:
     name: Coût par SMS
     description: Coût par message SMS envoyé. Définir à 0 pour désactiver le suivi des coûts.

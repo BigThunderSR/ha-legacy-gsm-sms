@@ -58,7 +58,7 @@ configuration:
     description: Zpoždění mezi příkazy modemu v sekundách (0.1-5.0). Zvyšte, pokud modem často padá.
   network_type_cache_seconds:
     name: Doba Ukládání Typu Sítě
-    description: Jak dlouho ukládat výsledky typu sítě, aby se zabránilo častým dotazům modemu (sekundy, 60-3600)
+    description: Doba cache pro typ sítě (2G/3G/4G). 0 = pouze při opětovném připojení (doporučeno). 1-3600 = periodická aktualizace.
   sms_cost_per_message:
     name: Cena za SMS
     description: Cena za jednu odeslanou SMS zprávu. Nastavte 0 pro vypnutí sledování nákladů.

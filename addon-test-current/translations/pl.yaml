@@ -58,7 +58,7 @@ configuration:
     description: Opóźnienie między poleceniami modemu w sekundach (0.1-5.0). Zwiększ, jeśli modem często się zawiesza.
   network_type_cache_seconds:
     name: Czas Przechowywania Typu Sieci
-    description: Jak długo przechowywać wyniki typu sieci, aby uniknąć częstych zapytań do modemu (sekundy, 60-3600)
+    description: Czas cache dla typu sieci (2G/3G/4G). 0 = tylko przy ponownym połączeniu (zalecane). 1-3600 = okresowe odświeżanie.
   sms_cost_per_message:
     name: Koszt za SMS
     description: Koszt za wysłaną wiadomość SMS. Ustaw 0, aby wyłączyć śledzenie kosztów.

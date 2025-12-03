@@ -58,7 +58,7 @@ configuration:
     description: Retardo entre comandos del módem en segundos (0.1-5.0). Aumente si el módem se bloquea frecuentemente.
   network_type_cache_seconds:
     name: Duración de Caché de Tipo de Red
-    description: Cuánto tiempo almacenar en caché los resultados del tipo de red para evitar consultas frecuentes al módem (segundos, 60-3600)
+    description: Duración de caché para tipo de red (2G/3G/4G). 0 = solo al reconectar (recomendado). 1-3600 = actualización periódica.
   sms_cost_per_message:
     name: Costo por SMS
     description: Costo por mensaje SMS enviado. Establecer en 0 para deshabilitar el seguimiento de costos.

@@ -58,7 +58,7 @@ configuration:
     description: Vertraging tussen modem commando's in seconden (0.1-5.0). Verhoog als de modem vaak crasht.
   network_type_cache_seconds:
     name: Netwerktype Cache Duur
-    description: Hoe lang netwerktype resultaten in cache bewaren om frequente modem queries te voorkomen (seconden, 60-3600)
+    description: Cache duur voor netwerktype (2G/3G/4G). 0 = alleen bij herverbinding (aanbevolen). 1-3600 = periodieke verversing.
   sms_cost_per_message:
     name: Kosten per SMS
     description: Kosten per verzonden SMS-bericht. Stel in op 0 om kostenbewaking uit te schakelen.

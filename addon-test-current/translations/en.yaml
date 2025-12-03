@@ -58,7 +58,7 @@ configuration:
     description: Delay between modem commands in seconds (0.1-5.0). Increase if modem crashes frequently.
   network_type_cache_seconds:
     name: Network Type Cache Duration
-    description: How long to cache network type results to avoid frequent modem queries (seconds, 60-3600)
+    description: Cache duration for network type (2G/3G/4G). Set to 0 for reconnect-only (recommended). Values 1-3600 refresh periodically.
   sms_cost_per_message:
     name: SMS Cost per Message
     description: Cost per sent SMS message. Set to 0 to disable cost tracking.

@@ -162,11 +162,19 @@ def get_network_type(machine):
     import os
     
     # Check cache first
+    # If _network_type_cache_seconds <= 0, cache never expires (only on modem reconnect)
+    # Otherwise, cache expires after the configured duration
     global _network_type_cache, _network_type_cache_seconds
     current_time = time_module.time()
-    if (_network_type_cache['type'] is not None and 
-        current_time - _network_type_cache['timestamp'] < _network_type_cache_seconds):
-        return _network_type_cache['type']
+    if _network_type_cache['type'] is not None:
+        # Cache exists - check if it's still valid
+        if _network_type_cache_seconds <= 0:
+            # Cache never expires (reconnect-only mode)
+            return _network_type_cache['type']
+        cache_age = current_time - _network_type_cache['timestamp']
+        if cache_age < _network_type_cache_seconds:
+            # Cache hasn't expired yet
+            return _network_type_cache['type']
     
     try:
         # Get the device path from Gammu config

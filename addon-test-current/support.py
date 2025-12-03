@@ -150,7 +150,7 @@ def encodeSms(smsinfo):
 def get_network_type(machine):
     """Get network type (2G/3G/4G/LTE) via AT commands
     
-    Uses AT+CREG? command to retrieve Access Technology (AcT) parameter
+    Uses AT+CEREG? command to retrieve Access Technology (AcT) parameter
     Returns human-readable network type string
     
     Note: Temporarily disconnects Gammu to send AT commands, then reconnects
@@ -162,11 +162,19 @@ def get_network_type(machine):
     import os
     
     # Check cache first
+    # If _network_type_cache_seconds <= 0, cache never expires (only on modem reconnect)
+    # Otherwise, cache expires after the configured duration
     global _network_type_cache, _network_type_cache_seconds
     current_time = time_module.time()
-    if (_network_type_cache['type'] is not None and 
-        current_time - _network_type_cache['timestamp'] < _network_type_cache_seconds):
-        return _network_type_cache['type']
+    if _network_type_cache['type'] is not None:
+        # Cache exists - check if it's still valid
+        if _network_type_cache_seconds <= 0:
+            # Cache never expires (reconnect-only mode)
+            return _network_type_cache['type']
+        cache_age = current_time - _network_type_cache['timestamp']
+        if cache_age < _network_type_cache_seconds:
+            # Cache hasn't expired yet
+            return _network_type_cache['type']
     
     try:
         # Get the device path from Gammu config
@@ -174,21 +182,17 @@ def get_network_type(machine):
         device_path = config.get('Device', '')
         
         if not device_path:
-            logging.warning("No device path found in Gammu config")
             return 'Unknown'
         
         # Resolve symlinks to get actual device
         if os.path.islink(device_path):
             device_path = os.path.realpath(device_path)
-            logging.info(f"🔍 Resolved device path for AT commands: {device_path}")
         
         # Temporarily disconnect Gammu to free the serial port
         try:
             machine.Terminate()
-            time.sleep(0.5)  # Give time for port to be released
-            logging.info(f"🔍 Temporarily closed Gammu connection")
-        except Exception as e:
-            logging.warning(f"Could not terminate Gammu: {e}")
+            time.sleep(0.5)
+        except Exception:
             return 'Unknown'
         
         # Open serial connection
@@ -202,35 +206,26 @@ def get_network_type(machine):
                 write_timeout=2
             )
             
-            # Small delay to let modem respond
             time.sleep(0.1)
-            
-            # Clear any existing data
             ser.reset_input_buffer()
             ser.reset_output_buffer()
             
             # Use AT+CEREG? (EPS/LTE registration) - most reliable for LTE modems
-            # Note: For optimal results, try CEREG first (LTE), then CGREG (GPRS), then CREG (CS)
-            
             ser.write(b'AT+CEREG=2\r\n')
             time.sleep(0.2)
-            response1 = ser.read_all().decode('utf-8', errors='ignore')
-            logging.info(f"🔍 AT+CEREG=2 response: {response1.strip()}")
+            ser.read_all()
             
             ser.write(b'AT+CEREG?\r\n')
             time.sleep(0.2)
-            response2 = ser.read_all().decode('utf-8', errors='ignore')
-            logging.info(f"🔍 AT+CEREG? response: {response2.strip()}")
+            response = ser.read_all().decode('utf-8', errors='ignore')
             
-            for line in response2.split('\n'):
+            for line in response.split('\n'):
                 if '+CEREG:' in line:
                     parts = line.split(':')[1].strip().split(',')
-                    logging.info(f"🔍 Parsed CEREG parts: {parts}")
                     if len(parts) >= 5:
                         try:
                             act = int(parts[4].strip().strip('"'))
                             network_type = map_act_to_network_type(act)
-                            logging.info(f"🔍 AT+CEREG? detected: {network_type} (AcT={act})")
                         except (ValueError, IndexError):
                             pass
             
@@ -238,30 +233,24 @@ def get_network_type(machine):
             if network_type == 'Unknown':
                 ser.write(b'AT+CGREG=2\r\n')
                 time.sleep(0.2)
-                response3 = ser.read_all().decode('utf-8', errors='ignore')
+                ser.read_all()
                 
                 ser.write(b'AT+CGREG?\r\n')
                 time.sleep(0.2)
-                response4 = ser.read_all().decode('utf-8', errors='ignore')
-                logging.info(f"🔍 AT+CGREG? response: {response4.strip()}")
+                response = ser.read_all().decode('utf-8', errors='ignore')
                 
-                for line in response4.split('\n'):
+                for line in response.split('\n'):
                     if '+CGREG:' in line:
                         parts = line.split(':')[1].strip().split(',')
-                        logging.info(f"🔍 Parsed CGREG parts: {parts}")
                         if len(parts) >= 5:
                             try:
                                 act = int(parts[4].strip().strip('"'))
                                 network_type = map_act_to_network_type(act)
-                                logging.info(f"🔍 AT+CGREG? detected: {network_type} (AcT={act})")
                             except (ValueError, IndexError):
                                 pass
             
-            if network_type == 'Unknown':
-                logging.warning("No AcT parameter found in AT+CEREG? or AT+CGREG? response")
-            
-        except Exception as e:
-            logging.warning(f"Error sending AT commands: {e}")
+        except Exception:
+            pass
             
         finally:
             if ser and ser.is_open:
@@ -271,9 +260,8 @@ def get_network_type(machine):
         # Reconnect Gammu
         try:
             machine.Init()
-            logging.info(f"🔍 Reconnected Gammu successfully")
-        except Exception as e:
-            logging.error(f"Failed to reconnect Gammu: {e}")
+        except Exception:
+            pass
         
         # Update cache
         _network_type_cache['type'] = network_type
@@ -281,8 +269,7 @@ def get_network_type(machine):
         
         return network_type
         
-    except Exception as e:
-        logging.warning(f"Could not detect network type via AT commands: {e}")
+    except Exception:
         # Try to reconnect Gammu if it was disconnected
         try:
             machine.Init()
@@ -310,35 +297,3 @@ def map_act_to_network_type(act):
         13: "4G+5G (EN-DC)"
     }
     return act_map.get(act, f"Unknown (AcT={act})")
-
-
-def get_network_type_at(machine):
-    """Get network type using direct AT commands (if supported)
-    
-    This function attempts to use AT+CREG? to get Access Technology.
-    Note: Requires modem that supports AT command passthrough.
-    
-    Access Technology values (3GPP TS 27.007):
-    0 = GSM (2G)
-    1 = GSM Compact (2G)
-    2 = UTRAN (3G)
-    3 = GSM w/EGPRS (EDGE/2.5G)
-    4 = UTRAN w/HSDPA (3G+/HSPA)
-    5 = UTRAN w/HSUPA (3G+/HSPA+)
-    6 = UTRAN w/HSDPA and HSUPA (3G+/HSPA+)
-    7 = E-UTRAN (LTE/4G)
-    8 = EC-GSM-IoT (2G IoT)
-    9 = E-UTRAN (NB-S1 mode) (NB-IoT)
-    10 = E-UTRA connected to 5GCN (LTE anchored to 5G core)
-    11 = NR connected to 5GCN (5G NR)
-    12 = NG-RAN (5G)
-    13 = E-UTRA-NR dual connectivity (EN-DC/4G+5G)
-    """
-    try:
-        # Gammu doesn't provide direct AT command interface in standard API
-        # This would require custom implementation or modem-specific backend
-        # For now, return Unknown - can be enhanced with pyserial if needed
-        return 'Unknown'
-    except Exception as e:
-        print(f"Warning: AT command network type detection failed: {e}")
-        return 'Unknown'

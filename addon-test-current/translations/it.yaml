@@ -58,7 +58,7 @@ configuration:
     description: Ritardo tra i comandi del modem in secondi (0.1-5.0). Aumentare se il modem si blocca frequentemente.
   network_type_cache_seconds:
     name: Durata Cache Tipo di Rete
-    description: Per quanto tempo memorizzare nella cache i risultati del tipo di rete per evitare frequenti query al modem (secondi, 60-3600)
+    description: Durata cache per tipo di rete (2G/3G/4G). 0 = solo alla riconnessione (consigliato). 1-3600 = aggiornamento periodico.
   sms_cost_per_message:
     name: Costo per SMS
     description: Costo per messaggio SMS inviato. Impostare a 0 per disabilitare il monitoraggio dei costi.

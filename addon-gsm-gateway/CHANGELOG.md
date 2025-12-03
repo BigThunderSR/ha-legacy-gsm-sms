@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.0] - 2025-12-03
+
+### Changed
+
+- **Network type detection now reconnect-only by default** 🔧
+  - `network_type_cache_seconds` default changed from 300 to 0
+  - Value of 0 means network type (2G/3G/4G) is only checked on modem reconnection
+  - This avoids the disruptive Gammu disconnect/reconnect cycle during periodic updates
+  - Helps prevent modem crashes on sensitive hardware like SIM7600
+  - Set to 1-3600 for periodic refresh if needed (not recommended for unstable modems)
+
 ## [2.12.0] - 2025-12-02
 
 ### Added

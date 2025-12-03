@@ -170,6 +170,7 @@ def get_network_type(machine):
         # Cache exists - check if it's still valid
         if _network_type_cache_seconds <= 0:
             # Cache never expires (reconnect-only mode)
+            logging.info(f"🔍 DEBUG: Using cached network type (reconnect-only mode): {_network_type_cache['type']}")
             return _network_type_cache['type']
         cache_age = current_time - _network_type_cache['timestamp']
         if cache_age < _network_type_cache_seconds:
@@ -182,17 +183,21 @@ def get_network_type(machine):
         device_path = config.get('Device', '')
         
         if not device_path:
+            logging.warning("No device path found in Gammu config")
             return 'Unknown'
         
         # Resolve symlinks to get actual device
         if os.path.islink(device_path):
             device_path = os.path.realpath(device_path)
+            logging.info(f"🔍 Resolved device path for AT commands: {device_path}")
         
         # Temporarily disconnect Gammu to free the serial port
         try:
             machine.Terminate()
-            time.sleep(0.5)
-        except Exception:
+            time.sleep(0.5)  # Give time for port to be released
+            logging.info(f"🔍 Temporarily closed Gammu connection")
+        except Exception as e:
+            logging.warning(f"Could not terminate Gammu: {e}")
             return 'Unknown'
         
         # Open serial connection
@@ -206,26 +211,35 @@ def get_network_type(machine):
                 write_timeout=2
             )
             
+            # Small delay to let modem respond
             time.sleep(0.1)
+            
+            # Clear any existing data
             ser.reset_input_buffer()
             ser.reset_output_buffer()
             
             # Use AT+CEREG? (EPS/LTE registration) - most reliable for LTE modems
+            # Note: For optimal results, try CEREG first (LTE), then CGREG (GPRS), then CREG (CS)
+            
             ser.write(b'AT+CEREG=2\r\n')
             time.sleep(0.2)
-            ser.read_all()
+            response1 = ser.read_all().decode('utf-8', errors='ignore')
+            logging.info(f"🔍 AT+CEREG=2 response: {response1.strip()}")
             
             ser.write(b'AT+CEREG?\r\n')
             time.sleep(0.2)
-            response = ser.read_all().decode('utf-8', errors='ignore')
+            response2 = ser.read_all().decode('utf-8', errors='ignore')
+            logging.info(f"🔍 AT+CEREG? response: {response2.strip()}")
             
-            for line in response.split('\n'):
+            for line in response2.split('\n'):
                 if '+CEREG:' in line:
                     parts = line.split(':')[1].strip().split(',')
+                    logging.info(f"🔍 Parsed CEREG parts: {parts}")
                     if len(parts) >= 5:
                         try:
                             act = int(parts[4].strip().strip('"'))
                             network_type = map_act_to_network_type(act)
+                            logging.info(f"🔍 AT+CEREG? detected: {network_type} (AcT={act})")
                         except (ValueError, IndexError):
                             pass
             
@@ -233,24 +247,30 @@ def get_network_type(machine):
             if network_type == 'Unknown':
                 ser.write(b'AT+CGREG=2\r\n')
                 time.sleep(0.2)
-                ser.read_all()
+                response3 = ser.read_all().decode('utf-8', errors='ignore')
                 
                 ser.write(b'AT+CGREG?\r\n')
                 time.sleep(0.2)
-                response = ser.read_all().decode('utf-8', errors='ignore')
+                response4 = ser.read_all().decode('utf-8', errors='ignore')
+                logging.info(f"🔍 AT+CGREG? response: {response4.strip()}")
                 
-                for line in response.split('\n'):
+                for line in response4.split('\n'):
                     if '+CGREG:' in line:
                         parts = line.split(':')[1].strip().split(',')
+                        logging.info(f"🔍 Parsed CGREG parts: {parts}")
                         if len(parts) >= 5:
                             try:
                                 act = int(parts[4].strip().strip('"'))
                                 network_type = map_act_to_network_type(act)
+                                logging.info(f"🔍 AT+CGREG? detected: {network_type} (AcT={act})")
                             except (ValueError, IndexError):
                                 pass
             
-        except Exception:
-            pass
+            if network_type == 'Unknown':
+                logging.warning("No AcT parameter found in AT+CEREG? or AT+CGREG? response")
+            
+        except Exception as e:
+            logging.warning(f"Error sending AT commands: {e}")
             
         finally:
             if ser and ser.is_open:
@@ -260,8 +280,9 @@ def get_network_type(machine):
         # Reconnect Gammu
         try:
             machine.Init()
-        except Exception:
-            pass
+            logging.info(f"🔍 Reconnected Gammu successfully")
+        except Exception as e:
+            logging.error(f"Failed to reconnect Gammu: {e}")
         
         # Update cache
         _network_type_cache['type'] = network_type
@@ -269,7 +290,8 @@ def get_network_type(machine):
         
         return network_type
         
-    except Exception:
+    except Exception as e:
+        logging.warning(f"Could not detect network type via AT commands: {e}")
         # Try to reconnect Gammu if it was disconnected
         try:
             machine.Init()

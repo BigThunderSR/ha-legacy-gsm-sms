@@ -1,7 +1,11 @@
-name: "GSM SMS Gateway Enhanced"
-version: 2.13.1
-slug: "gsm_sms_gateway_enhanced"
+name: "TEST - GSM SMS Gateway (Current Development)"
+version: 2.13.1-test
+slug: "gsm_sms_gateway_test_current"
 description: |
+  🧪 TEST VERSION - Current development build for experimentation (v2.13.1-test)
+
+  Testing: REST API Unicode auto-detection for emoji support.
+  
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
   Based on PavelVe's SMS Gammu Gateway (https://github.com/PavelVe/hassio-addons).
   
@@ -14,8 +18,8 @@ arch:
   - aarch64
   - amd64
 
-url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms/tree/main/addon-gsm-gateway"
-image: "ghcr.io/bigthundersr/gsm-sms-gateway-enhanced-{arch}"
+url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms/tree/main/addon-test-current"
+#image: "ghcr.io/bigthundersr/gsm-sms-gateway-enhanced-{arch}"  # Commented out to allow local builds
 #boot: auto
 #host_network: false
 #startup: services

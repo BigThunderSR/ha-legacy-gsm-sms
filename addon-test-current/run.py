@@ -448,11 +448,9 @@ class SmsCollection(Resource):
             parser.add_argument('number', required=False, help='Phone number(s), comma separated')
             parser.add_argument('target', required=False, help='Phone number (alias for number)')
             parser.add_argument('smsc', required=False, help='SMS Center number (optional)')
-            parser.add_argument('unicode', type=bool, required=False, default=False, help='Use Unicode encoding')
+            parser.add_argument('unicode', type=bool, required=False, default=None, help='Use Unicode encoding (auto-detect if not specified)')
             data = parser.parse_args()
-        else:
-            # Ensure unicode has a default value when using JSON
-            data.setdefault('unicode', False)
+        # Note: Don't set unicode default here - let auto-detection handle it
         
         # Support both 'text' and 'message' parameters
         sms_text = data.get('text') or data.get('message')

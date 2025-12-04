@@ -2,31 +2,42 @@
 
 import logging
 
+import gammu
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEVICE, CONF_NAME, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv, discovery
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
+    ATTR_MESSAGE,
+    ATTR_NUMBER,
+    ATTR_UNICODE,
     CONF_BAUD_SPEED,
     DEFAULT_BAUD_SPEED,
+    DEFAULT_SMS_HISTORY_MAX,
     DOMAIN,
     GATEWAY,
     HASS_CONFIG,
     NETWORK_COORDINATOR,
+    SERVICE_DELETE_ALL_SMS,
+    SERVICE_RESET_RECEIVED_COUNTER,
+    SERVICE_RESET_SENT_COUNTER,
+    SERVICE_SEND_SMS,
     SIGNAL_COORDINATOR,
     SMS_GATEWAY,
+    SMS_MANAGER,
 )
 from .coordinator import NetworkCoordinator, SignalCoordinator
 from .gateway import create_legacy_gsm_sms_gateway
+from .sms_manager import SMSManager
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.BUTTON, Platform.TEXT]
 
 LEGACY_GSM_SMS_CONFIG_SCHEMA = {vol.Required(CONF_DEVICE): cv.isdevice}
 
@@ -40,6 +51,15 @@ CONFIG_SCHEMA = vol.Schema(
         )
     },
     extra=vol.ALLOW_EXTRA,
+)
+
+# Service schemas
+SEND_SMS_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_NUMBER): cv.string,
+        vol.Required(ATTR_MESSAGE): cv.string,
+        vol.Optional(ATTR_UNICODE, default=True): cv.boolean,
+    }
 )
 
 
@@ -67,6 +87,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     signal_coordinator = SignalCoordinator(hass, gateway)
     network_coordinator = NetworkCoordinator(hass, gateway)
 
+    # Initialize SMS manager for tracking counters and history
+    sms_manager = SMSManager(hass, max_history=DEFAULT_SMS_HISTORY_MAX)
+
+    # Set SMS manager on gateway for incoming message tracking
+    gateway.set_sms_manager(sms_manager)
+
     # Fetch initial data so we have data when entities subscribe
     await signal_coordinator.async_config_entry_first_refresh()
     await network_coordinator.async_config_entry_first_refresh()
@@ -76,9 +102,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         SIGNAL_COORDINATOR: signal_coordinator,
         NETWORK_COORDINATOR: network_coordinator,
         GATEWAY: gateway,
+        SMS_MANAGER: sms_manager,
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Register services
+    await _async_register_services(hass, gateway, sms_manager)
 
     # set up notify platform, no entry support for notify component yet,
     # have to use discovery to load platform.
@@ -94,11 +124,86 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def _async_register_services(
+    hass: HomeAssistant, gateway, sms_manager: SMSManager
+) -> None:
+    """Register integration services."""
+
+    async def handle_send_sms(call: ServiceCall) -> None:
+        """Handle send SMS service call."""
+        number = call.data[ATTR_NUMBER]
+        message = call.data[ATTR_MESSAGE]
+        unicode_mode = call.data.get(ATTR_UNICODE, True)
+
+        _LOGGER.info("Service call: Sending SMS to %s", number)
+
+        try:
+            smsinfo = {
+                "Class": -1,
+                "Unicode": unicode_mode,
+                "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": message}],
+            }
+
+            encoded = gammu.EncodeSMS(smsinfo)
+            for encoded_message in encoded:
+                encoded_message["SMSC"] = {"Location": 1}
+                encoded_message["Number"] = number
+                await gateway.send_sms_async(encoded_message)
+
+            sms_manager.record_sms_sent()
+            sms_manager.record_modem_success()
+            _LOGGER.info("SMS sent successfully to %s", number)
+
+        except gammu.GSMError as e:
+            _LOGGER.error("Failed to send SMS: %s", e)
+            sms_manager.record_modem_failure(str(e))
+            raise
+
+    async def handle_delete_all_sms(call: ServiceCall) -> None:
+        """Handle delete all SMS service call."""
+        _LOGGER.info("Service call: Deleting all SMS from SIM")
+        try:
+            deleted_count = await gateway.delete_all_sms_async()
+            sms_manager.record_modem_success()
+            _LOGGER.info("Deleted %d SMS messages", deleted_count)
+        except gammu.GSMError as e:
+            _LOGGER.error("Failed to delete SMS: %s", e)
+            sms_manager.record_modem_failure(str(e))
+            raise
+
+    async def handle_reset_sent_counter(call: ServiceCall) -> None:
+        """Handle reset sent counter service call."""
+        sms_manager.reset_sent_counter()
+        _LOGGER.info("SMS sent counter reset via service")
+
+    async def handle_reset_received_counter(call: ServiceCall) -> None:
+        """Handle reset received counter service call."""
+        sms_manager.reset_received_counter()
+        _LOGGER.info("SMS received counter reset via service")
+
+    hass.services.async_register(
+        DOMAIN, SERVICE_SEND_SMS, handle_send_sms, schema=SEND_SMS_SCHEMA
+    )
+    hass.services.async_register(DOMAIN, SERVICE_DELETE_ALL_SMS, handle_delete_all_sms)
+    hass.services.async_register(
+        DOMAIN, SERVICE_RESET_SENT_COUNTER, handle_reset_sent_counter
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_RESET_RECEIVED_COUNTER, handle_reset_received_counter
+    )
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         gateway = hass.data[DOMAIN].pop(SMS_GATEWAY)[GATEWAY]
         await gateway.terminate_async()
+
+        # Unregister services
+        hass.services.async_remove(DOMAIN, SERVICE_SEND_SMS)
+        hass.services.async_remove(DOMAIN, SERVICE_DELETE_ALL_SMS)
+        hass.services.async_remove(DOMAIN, SERVICE_RESET_SENT_COUNTER)
+        hass.services.async_remove(DOMAIN, SERVICE_RESET_RECEIVED_COUNTER)
 
     return unload_ok

@@ -26,9 +26,18 @@ class Gateway:
         self.manufacturer = None
         self.model = None
         self.firmware = None
+        self._sms_manager = None  # Will be set after initialization
+        self._last_network_code = None  # Cache for network code
+
+    def set_sms_manager(self, sms_manager):
+        """Set the SMS manager for tracking received messages."""
+        self._sms_manager = sms_manager
 
     async def init_async(self):
-        """Initialize the sms gateway asynchronously. This method is also called in config flow to verify connection."""
+        """Initialize the sms gateway asynchronously.
+
+        This method is also called in config flow to verify connection.
+        """
         await self._worker.init_async()
         self.manufacturer = await self.get_manufacturer_async()
         self.model = await self.get_model_async()
@@ -143,7 +152,21 @@ class Gateway:
                 "date": message["date"],
                 "text": message["message"],
             }
+
+            # Track in SMS manager if available
+            if self._sms_manager:
+                self._sms_manager.record_sms_received(
+                    number=message["phone"],
+                    text=message["message"],
+                    timestamp=message["date"],
+                )
+                self._sms_manager.record_modem_success()
+
+            # Fire event for automations (legacy event name for compatibility)
             self._hass.bus.async_fire(f"{DOMAIN}.incoming_legacy_gsm_sms", event_data)
+
+            # Also fire new event name for consistency with addon
+            self._hass.bus.async_fire(f"{DOMAIN}.incoming_sms", event_data)
 
     async def send_sms_async(self, message):
         """Send legacy GSM SMS message via the worker."""
@@ -227,8 +250,10 @@ class Gateway:
         
         # Map Gammu's state to match addon format
         state = network_info.get("State", "Unknown")
-        # Gammu states: HomeNetwork, RoamingNetwork, RequestingNetwork, RegistrationDenied, Unknown, NoNetwork
-        # Map to addon format: "Registered (Home)", "Registered (Roaming)", "Searching", "Registration Denied", "Unknown", "Not Registered"
+        # Gammu states: HomeNetwork, RoamingNetwork, RequestingNetwork,
+        # RegistrationDenied, Unknown, NoNetwork
+        # Map to addon format: "Registered (Home)", "Registered (Roaming)",
+        # "Searching", "Registration Denied", "Unknown", "Not Registered"
         state_map = {
             "HomeNetwork": "Registered (Home)",
             "RoamingNetwork": "Registered (Roaming)",
@@ -275,6 +300,60 @@ class Gateway:
         if firmware[1]:  # Date
             display = f"{display} ({firmware[1]})"
         return display
+
+    async def get_sms_status_async(self):
+        """Get SMS storage status (used/total slots)."""
+        return await self._worker.get_sms_status_async()
+
+    async def get_sim_imsi_async(self):
+        """Get the SIM card IMSI."""
+        return await self._worker.get_sim_imsi_async()
+
+    async def delete_sms_async(self, folder: int, location: int):
+        """Delete a specific SMS message.
+
+        Args:
+            folder: SMS folder (0 = Inbox typically)
+            location: Location/slot number of the SMS
+        """
+        return await self._worker.delete_sms_async(folder, location)
+
+    async def delete_all_sms_async(self):
+        """Delete all SMS messages from the SIM card.
+
+        Returns:
+            int: Number of SMS deleted
+        """
+        deleted_count = 0
+        try:
+            status = await self.get_sms_status_async()
+            sim_size = status.get("SIMSize", 50)
+            _LOGGER.info("Attempting to delete SMS from %d locations", sim_size)
+
+            # Try to delete each location across different folders
+            for location in range(1, sim_size + 1):
+                for folder in [0, 1, 2]:  # Inbox, Outbox, Sent
+                    try:
+                        await self.delete_sms_async(folder, location)
+                        deleted_count += 1
+                        _LOGGER.debug(
+                            "Deleted SMS at folder=%d, location=%d", folder, location
+                        )
+                        break  # Success - don't try other folders
+                    except gammu.ERR_EMPTY:
+                        pass  # No SMS at this location
+                    except gammu.GSMError as e:
+                        _LOGGER.debug(
+                            "No SMS at folder=%d, location=%d: %s",
+                            folder,
+                            location,
+                            e,
+                        )
+        except gammu.GSMError as e:
+            _LOGGER.error("Error deleting all SMS: %s", e)
+
+        _LOGGER.info("Deleted %d SMS messages", deleted_count)
+        return deleted_count
 
     async def terminate_async(self):
         """Terminate modem connection."""

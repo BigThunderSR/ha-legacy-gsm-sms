@@ -1,18 +1,36 @@
 """Config flow for Legacy GSM SMS integration."""
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 
 import gammu
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_DEVICE
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
 
-from .const import CONF_BAUD_SPEED, DEFAULT_BAUD_SPEED, DEFAULT_BAUD_SPEEDS, DOMAIN
+from .const import (
+    CONF_AUTO_DELETE_READ_SMS,
+    CONF_BAUD_SPEED,
+    CONF_SMS_CHECK_INTERVAL,
+    CONF_SMS_HISTORY_MAX,
+    DEFAULT_AUTO_DELETE_READ_SMS,
+    DEFAULT_BAUD_SPEED,
+    DEFAULT_BAUD_SPEEDS,
+    DEFAULT_SMS_CHECK_INTERVAL,
+    DEFAULT_SMS_HISTORY_MAX,
+    DOMAIN,
+)
 from .gateway import create_legacy_gsm_sms_gateway
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,6 +75,12 @@ class LegacyGSMSMSFlowHandler(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Get the options flow for this handler."""
+        return LegacyGSMSMSOptionsFlowHandler(config_entry)
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -81,6 +105,50 @@ class LegacyGSMSMSFlowHandler(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
         )
+
+
+class LegacyGSMSMSOptionsFlowHandler(OptionsFlow):
+    """Handle options flow for Legacy GSM SMS integration."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_SMS_CHECK_INTERVAL,
+                    default=self.config_entry.options.get(
+                        CONF_SMS_CHECK_INTERVAL, DEFAULT_SMS_CHECK_INTERVAL
+                    ),
+                ): selector.selector(
+                    {"number": {"min": 5, "max": 300, "step": 5, "mode": "slider"}}
+                ),
+                vol.Optional(
+                    CONF_AUTO_DELETE_READ_SMS,
+                    default=self.config_entry.options.get(
+                        CONF_AUTO_DELETE_READ_SMS, DEFAULT_AUTO_DELETE_READ_SMS
+                    ),
+                ): selector.selector({"boolean": {}}),
+                vol.Optional(
+                    CONF_SMS_HISTORY_MAX,
+                    default=self.config_entry.options.get(
+                        CONF_SMS_HISTORY_MAX, DEFAULT_SMS_HISTORY_MAX
+                    ),
+                ): selector.selector(
+                    {"number": {"min": 1, "max": 100, "step": 1, "mode": "slider"}}
+                ),
+            }
+        )
+
+        return self.async_show_form(step_id="init", data_schema=options_schema)
 
 
 class CannotConnect(HomeAssistantError):

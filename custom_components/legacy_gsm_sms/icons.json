@@ -6,7 +6,55 @@
       },
       "cid": {
         "default": "mdi:radio-tower"
+      },
+      "sms_sent_count": {
+        "default": "mdi:counter"
+      },
+      "sms_received_count": {
+        "default": "mdi:message-badge"
+      },
+      "last_sms": {
+        "default": "mdi:message-text"
+      },
+      "modem_status": {
+        "default": "mdi:connection"
       }
+    },
+    "button": {
+      "send_sms": {
+        "default": "mdi:message-plus"
+      },
+      "delete_all_sms": {
+        "default": "mdi:delete-sweep"
+      },
+      "reset_sent_counter": {
+        "default": "mdi:restart"
+      },
+      "reset_received_counter": {
+        "default": "mdi:restart"
+      }
+    },
+    "text": {
+      "phone_number": {
+        "default": "mdi:phone"
+      },
+      "message_text": {
+        "default": "mdi:message-text"
+      }
+    }
+  },
+  "services": {
+    "send_sms": {
+      "service": "mdi:message-plus"
+    },
+    "delete_all_sms": {
+      "service": "mdi:delete-sweep"
+    },
+    "reset_sent_counter": {
+      "service": "mdi:restart"
+    },
+    "reset_received_counter": {
+      "service": "mdi:restart"
     }
   }
 }

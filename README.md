@@ -152,6 +152,26 @@ data:
     - "+1234567890"
 ```
 
+Or using the new `legacy_gsm_sms.send_sms` service:
+
+```yaml
+service: legacy_gsm_sms.send_sms
+data:
+  number: "+1234567890"
+  message: "Hello from Home Assistant!"
+  unicode: true # Optional, defaults to true
+```
+
+### Sending SMS via UI
+
+The HACS integration now includes text input entities and a button for sending SMS directly from the Home Assistant UI:
+
+1. Set the phone number in the "Phone Number" text input entity
+2. Set the message in the "Message Text" text input entity
+3. Press the "Send SMS" button
+
+The text fields will automatically clear after sending.
+
 ### Receiving SMS
 
 When an SMS is received, an event `legacy_gsm_sms.incoming_legacy_gsm_sms` is fired with the following data:
@@ -172,6 +192,46 @@ action:
     message: "SMS from {{ trigger.event.data.phone }}: {{ trigger.event.data.text }}"
     title: "SMS Received"
 ```
+
+### New Sensors and Entities (v2.0.0)
+
+The HACS integration now includes several new entities matching the addon capabilities:
+
+**Sensors:**
+
+- **SMS Sent Count** - Total number of SMS sent (persisted across restarts)
+- **SMS Received Count** - Total number of SMS received (persisted across restarts)
+- **Last SMS Received** - Shows the last received SMS with attributes for sender and timestamp
+- **Modem Status** - Shows whether the modem is online/offline
+
+**Buttons:**
+
+- **Send SMS** - Sends an SMS using the phone number and message text inputs
+- **Delete All SMS** - Deletes all SMS from the SIM card
+- **Reset Sent Counter** - Resets the sent SMS counter to zero
+- **Reset Received Counter** - Resets the received SMS counter to zero
+
+**Text Inputs:**
+
+- **Phone Number** - Enter the recipient phone number for SMS
+- **Message Text** - Enter the SMS message content
+
+### Services
+
+The integration provides the following services:
+
+- `legacy_gsm_sms.send_sms` - Send an SMS message
+- `legacy_gsm_sms.delete_all_sms` - Delete all SMS from SIM
+- `legacy_gsm_sms.reset_sent_counter` - Reset sent counter
+- `legacy_gsm_sms.reset_received_counter` - Reset received counter
+
+### Configuration Options
+
+After installation, you can configure the integration via Settings > Devices & Services > Legacy GSM SMS > Configure:
+
+- **SMS Check Interval** - How often to check for new SMS (5-300 seconds, default: 10)
+- **Auto-delete read SMS** - Automatically delete SMS after reading (default: enabled)
+- **Maximum SMS History** - Number of SMS to keep in history (1-100, default: 10)
 
 ## Troubleshooting (HACS Integration)
 

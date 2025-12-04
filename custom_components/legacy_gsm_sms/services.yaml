@@ -1,0 +1,38 @@
+send_sms:
+  name: Send SMS
+  description: Send an SMS message via the GSM modem.
+  fields:
+    number:
+      name: Phone Number
+      description: The phone number to send the SMS to.
+      required: true
+      example: "+1234567890"
+      selector:
+        text:
+    message:
+      name: Message
+      description: The text message to send.
+      required: true
+      example: "Hello from Home Assistant!"
+      selector:
+        text:
+          multiline: true
+    unicode:
+      name: Unicode
+      description: Whether to send the message as Unicode. If not specified, auto-detection is used.
+      required: false
+      default: true
+      selector:
+        boolean:
+
+delete_all_sms:
+  name: Delete All SMS
+  description: Delete all SMS messages stored on the SIM card.
+
+reset_sent_counter:
+  name: Reset Sent Counter
+  description: Reset the SMS sent counter to zero.
+
+reset_received_counter:
+  name: Reset Received Counter
+  description: Reset the SMS received counter to zero.

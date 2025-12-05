@@ -12,7 +12,7 @@ Enhanced SMS Gateway with comprehensive network diagnostics and operator identif
 
 This add-on provides an enhanced SMS gateway solution for Home Assistant with advanced network monitoring capabilities. It offers both REST API and MQTT interfaces for sending and receiving SMS messages through USB GSM modems, plus detailed network diagnostics.
 
-**Why use this add-on?** Starting with Home Assistant 2025.12, Gammu will be removed from HA OS/Supervised, breaking the HACS integration. This add-on includes Gammu and will continue working on all Home Assistant installation types.
+**Why use this add-on?** The official Home Assistant SMS integration was removed in 2025.12. While the [HACS integration](../README.md#hacs-integration) currently works (via pre-built wheels), it's not officially supported and may break in the future. This add-on includes Gammu and is guaranteed to work on all Home Assistant installation types.
 
 **Credits and Attribution:**
 

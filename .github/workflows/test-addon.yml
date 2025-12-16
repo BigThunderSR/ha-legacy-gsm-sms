@@ -15,6 +15,9 @@ on:
       - '.github/workflows/test-addon.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test-gsm-gateway:
     name: Test addon-gsm-gateway

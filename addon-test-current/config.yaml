@@ -1,7 +1,11 @@
-name: "GSM SMS Gateway Enhanced"
-version: 2.14.0
-slug: "gsm_sms_gateway_enhanced"
+name: "TEST - GSM SMS Gateway (Current Development)"
+version: 2.14.0-test
+slug: "gsm_sms_gateway_test_current"
 description: |
+  🧪 TEST VERSION - Current development build for experimentation (v2.14.0-test)
+
+  Testing: Flash SMS support, multiple recipients, RPi 5 serial ports.
+  
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
   Based on PavelVe's SMS Gammu Gateway (https://github.com/PavelVe/hassio-addons).
   
@@ -9,13 +13,12 @@ description: |
   
   ⚠️ IMPORTANT: Do not run this add-on and the HACS Legacy GSM SMS integration simultaneously!
   Both will try to access the same serial device, causing conflicts.
-  Stop/uninstall any existing GSM integrations before starting this add-on.
 arch:
   - aarch64
   - amd64
 
-url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms/tree/main/addon-gsm-gateway"
-image: "ghcr.io/bigthundersr/gsm-sms-gateway-enhanced-{arch}"
+url: "https://github.com/BigThunderSR/ha-legacy-gsm-sms/tree/main/addon-test-current"
+image: "ghcr.io/bigthundersr/gsm-sms-gateway-test-current-{arch}"
 #boot: auto
 #host_network: false
 #startup: services

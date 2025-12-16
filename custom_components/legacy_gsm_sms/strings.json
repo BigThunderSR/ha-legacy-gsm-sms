@@ -70,6 +70,9 @@
       "send_sms": {
         "name": "Send SMS"
       },
+      "send_flash_sms": {
+        "name": "Send Flash SMS"
+      },
       "delete_all_sms": {
         "name": "Delete All SMS"
       },
@@ -92,11 +95,11 @@
   "services": {
     "send_sms": {
       "name": "Send SMS",
-      "description": "Send an SMS message via the GSM modem.",
+      "description": "Send an SMS message via the GSM modem. Supports multiple recipients (comma-separated).",
       "fields": {
         "number": {
           "name": "Phone Number",
-          "description": "The phone number to send the SMS to."
+          "description": "The phone number(s) to send the SMS to. Use commas to separate multiple numbers."
         },
         "message": {
           "name": "Message",
@@ -105,6 +108,10 @@
         "unicode": {
           "name": "Unicode",
           "description": "Whether to send the message as Unicode."
+        },
+        "flash": {
+          "name": "Flash SMS",
+          "description": "Send as Flash SMS (Class 0) that displays on screen without saving."
         }
       }
     },

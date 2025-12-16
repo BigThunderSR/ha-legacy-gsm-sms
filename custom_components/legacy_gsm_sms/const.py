@@ -37,6 +37,7 @@ SERVICE_RESET_RECEIVED_COUNTER = "reset_received_counter"
 ATTR_NUMBER = "number"
 ATTR_MESSAGE = "message"
 ATTR_UNICODE = "unicode"
+ATTR_FLASH = "flash"
 
 # SMS Counter file paths (relative to HA config dir)
 SMS_COUNTER_FILE = "sms_counter.json"

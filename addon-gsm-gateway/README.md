@@ -36,6 +36,8 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 ### 📱 SMS & USSD Management
 
 - **Send SMS** via REST API, MQTT, or Home Assistant UI
+- **Flash SMS Support** ⚡ (🆕 v2.14.0) - Send urgent alerts that display on screen without saving
+- **Multiple Recipients** - Send to comma-separated numbers in single request
 - **Receive SMS** with automatic MQTT notifications
 - **SMS History** - Configurable message history with timestamps (default: 10, up to 100)
 - **Delivery Reports** - Optional delivery status tracking (disabled by default, some carriers charge)
@@ -219,7 +221,26 @@ sms_delivery_reports: false
 3. Find the **SMS Gateway** device
 4. Enter phone number in **Phone Number** field (e.g., `+12345678900`)
 5. Enter message in **Message Text** field
-6. Click **Send SMS** button
+6. Click **Send SMS** button (or **Send Flash SMS** for urgent alerts)
+
+> **💡 Tip:** Use comma-separated numbers to send to multiple recipients at once (e.g., `+12345678900,+10987654321`)
+
+### Sending Flash SMS ⚡ (v2.14.0)
+
+Flash SMS (Class 0) messages display immediately on the recipient's screen without being saved to their inbox. Perfect for urgent alerts!
+
+**From Home Assistant UI:**
+
+1. Enter phone number and message as above
+2. Click **Send Flash SMS** button instead of regular Send
+
+**Via Automation:**
+
+```yaml
+service: button.press
+target:
+  entity_id: button.sms_gateway_send_flash_button
+```
 
 ### Sending SMS via Automation
 
@@ -294,6 +315,24 @@ curl -X POST "http://homeassistant.local:5000/send_sms" \
   -u admin:password \
   -H "Content-Type: application/json" \
   -d '{"phone_number": "+12345678900", "message": "Hello"}'
+```
+
+**Send Flash SMS:** ⚡
+
+```bash
+curl -X POST "http://homeassistant.local:5000/send_sms" \
+  -u admin:password \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number": "+12345678900", "message": "URGENT!", "flash": true}'
+```
+
+**Send to Multiple Recipients:**
+
+```bash
+curl -X POST "http://homeassistant.local:5000/send_sms" \
+  -u admin:password \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number": "+12345678900,+10987654321", "message": "Hello everyone!"}'
 ```
 
 **Get Signal Status:**

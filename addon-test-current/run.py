@@ -360,7 +360,8 @@ sms_model = api.model('SMS', {
     'text': fields.String(required=True, description='SMS message text', example='Hello, how are you?'),
     'number': fields.String(required=True, description='Phone number (international format)', example='+420123456789'),
     'smsc': fields.String(required=False, description='SMS Center number (optional)', example='+420603052000'),
-    'unicode': fields.Boolean(required=False, description='Use Unicode encoding', default=False)
+    'unicode': fields.Boolean(required=False, description='Use Unicode encoding', default=False),
+    'flash': fields.Boolean(required=False, description='Send as Flash SMS (displays on screen, not saved)', default=False)
 })
 
 sms_response = api.model('SMS Response', {
@@ -449,6 +450,7 @@ class SmsCollection(Resource):
             parser.add_argument('target', required=False, help='Phone number (alias for number)')
             parser.add_argument('smsc', required=False, help='SMS Center number (optional)')
             parser.add_argument('unicode', type=bool, required=False, default=None, help='Use Unicode encoding (auto-detect if not specified)')
+            parser.add_argument('flash', type=bool, required=False, default=False, help='Send as Flash SMS')
             data = parser.parse_args()
         # Note: Don't set unicode default here - let auto-detection handle it
         
@@ -498,9 +500,15 @@ class SmsCollection(Resource):
             except UnicodeEncodeError:
                 unicode_mode = True
                 logging.info("🔤 Auto-detected Unicode mode for non-ASCII text")
-        
+
+        # Determine SMS class based on flash parameter
+        flash_mode = data.get('flash', False)
+        sms_class = 0 if flash_mode else -1
+        if flash_mode:
+            logging.info("⚡ Sending Flash SMS (will display on screen without saving)")
+
         smsinfo = {
-            "Class": -1,
+            "Class": sms_class,
             "Unicode": unicode_mode,
             "Entries": [
                 {

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.15.1] - 2025-12-16
+
+### Fixed
+
+- **Fixed restart timer not being checked repeatedly after initial timeout** 🐛
+  - The restart timer was only checked once at the moment of timeout
+  - Subsequent SMS monitoring cycles didn't re-check the timer
+  - Now `_check_restart_timeout()` is called on every failed SMS monitoring cycle
+  - Addon will correctly restart after `hard_offline_restart_timeout` seconds
+
 ## [2.15.0] - 2025-12-16
 
 ### Added

@@ -3039,6 +3039,10 @@ class MQTTPublisher:
                     # track_gammu_operation already recorded the failure and published status
                     logger.warning(f"❌ SMS monitoring cycle failed (modem offline): {e}")
 
+                    # Check restart timeout on EVERY failed cycle (not just inside track_gammu_operation)
+                    # This ensures the restart timer keeps being checked even after initial timeout
+                    self._check_restart_timeout()
+
                     # After 2 consecutive failures, attempt soft reset to recover connection
                     # Then retry every 5 failures (5, 10, 15, 20...)
                     failures = self.device_tracker.get_consecutive_failures()

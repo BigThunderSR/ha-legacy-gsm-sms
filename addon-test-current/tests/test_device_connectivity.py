@@ -317,3 +317,52 @@ class TestIntegrationScenario:
 
         assert restart_triggered_at is not None
         assert restart_triggered_at == 30  # Should trigger at exactly 30s
+
+    def test_repeated_sms_failures_trigger_restart(self):
+        """
+        THIS IS THE EXACT BUG SCENARIO from 2025-12-16:
+        
+        Log showed:
+        [15:58:01] WARNING: 🔴 Hard offline: retrieveAllSms timed out
+        [15:58:01] INFO: ⏱️ Failure tracking started at 15:58:01
+        [15:58:01] INFO: ⏱️ Modem failing for 0s (restart after 30s, hard offline)
+        
+        Then 5+ minutes passed with NO restart because _check_restart_timeout()
+        was only called once at the initial timeout, not on subsequent cycles.
+        
+        This test verifies that repeated calls to _check_restart_timeout()
+        (as would happen on each failed SMS monitoring cycle) will eventually
+        trigger the restart.
+        """
+        pub = MockMQTTPublisher(hard_offline_restart_timeout=30)
+        
+        # Initial timeout - sets failure_start_time
+        pub.track_timeout("retrieveAllSms")
+        assert pub.device_tracker.hard_offline is True
+        assert pub.failure_start_time is not None
+        initial_start_time = pub.failure_start_time
+        
+        # Verify restart NOT triggered yet (0s elapsed)
+        assert pub._would_restart is False
+        
+        # Simulate SMS monitoring loop calling _check_restart_timeout
+        # on each 10s cycle. This is what the fix adds.
+        # After 4 cycles (40s total), restart should have triggered.
+        
+        restart_triggered = False
+        for cycle in range(1, 5):  # Cycles at 10s, 20s, 30s, 40s
+            # Simulate time passing (10s per cycle)
+            pub.failure_start_time = initial_start_time - (cycle * 10)
+            
+            # This is what the SMS monitoring loop now does on each failure
+            pub._check_restart_timeout()
+            
+            if pub._would_restart:
+                restart_triggered = True
+                assert cycle == 3, f"Restart should trigger at cycle 3 (30s), not {cycle}"
+                break
+        
+        assert restart_triggered, (
+            "CRITICAL BUG: Restart never triggered after 40s of failures! "
+            "The _check_restart_timeout() must be called on each failed cycle."
+        )

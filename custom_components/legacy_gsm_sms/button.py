@@ -24,6 +24,11 @@ BUTTON_DESCRIPTIONS = (
         icon="mdi:message-plus",
     ),
     ButtonEntityDescription(
+        key="send_flash_sms",
+        translation_key="send_flash_sms",
+        icon="mdi:message-flash",
+    ),
+    ButtonEntityDescription(
         key="delete_all_sms",
         translation_key="delete_all_sms",
         icon="mdi:delete-sweep",
@@ -94,7 +99,9 @@ class SMSButton(ButtonEntity):
         key = self.entity_description.key
 
         if key == "send_sms":
-            await self._handle_send_sms()
+            await self._handle_send_sms(flash_mode=False)
+        elif key == "send_flash_sms":
+            await self._handle_send_sms(flash_mode=True)
         elif key == "delete_all_sms":
             await self._handle_delete_all_sms()
         elif key == "reset_sent_counter":
@@ -104,10 +111,11 @@ class SMSButton(ButtonEntity):
             self._sms_manager.reset_received_counter()
             _LOGGER.info("SMS received counter reset")
 
-    async def _handle_send_sms(self) -> None:
+    async def _handle_send_sms(self, flash_mode: bool = False) -> None:
         """Handle send SMS button press.
 
         This reads from the text input entities and sends the SMS.
+        Supports multiple recipients (comma-separated) and Flash SMS mode.
         """
         # Get entity IDs from registry using unique_ids
         phone_entity_id = self._get_entity_id_by_unique_id("phone_number")
@@ -141,27 +149,43 @@ class SMSButton(ButtonEntity):
         phone = phone_state.state
         message = message_state.state
 
-        _LOGGER.info("Sending SMS to %s via button", phone)
+        # Support multiple recipients (comma-separated)
+        recipients = [n.strip() for n in phone.split(",") if n.strip()]
+        if not recipients:
+            _LOGGER.warning("No valid phone numbers provided")
+            return
+
+        # Flash SMS uses Class 0, normal SMS uses Class -1 (default)
+        sms_class = 0 if flash_mode else -1
+
+        if flash_mode:
+            _LOGGER.info(
+                "Sending Flash SMS (Class 0) to %d recipient(s) via button",
+                len(recipients),
+            )
 
         try:
-            # Prepare SMS info
-            smsinfo = {
-                "Class": -1,
-                "Unicode": True,
-                "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": message}],
-            }
+            for recipient in recipients:
+                _LOGGER.info("Sending SMS to %s via button", recipient)
 
-            # Encode the message
-            encoded = gammu.EncodeSMS(smsinfo)
+                # Prepare SMS info
+                smsinfo = {
+                    "Class": sms_class,
+                    "Unicode": True,
+                    "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": message}],
+                }
 
-            # Send each part of the message
-            for encoded_message in encoded:
-                encoded_message["SMSC"] = {"Location": 1}
-                encoded_message["Number"] = phone
-                await self._gateway.send_sms_async(encoded_message)
+                # Encode the message
+                encoded = gammu.EncodeSMS(smsinfo)
 
-            self._sms_manager.record_sms_sent()
-            _LOGGER.info("SMS sent successfully to %s", phone)
+                # Send each part of the message
+                for encoded_message in encoded:
+                    encoded_message["SMSC"] = {"Location": 1}
+                    encoded_message["Number"] = recipient
+                    await self._gateway.send_sms_async(encoded_message)
+
+                self._sms_manager.record_sms_sent()
+                _LOGGER.info("SMS sent successfully to %s", recipient)
 
             # Clear the text inputs after successful send
             await self._hass.services.async_call(

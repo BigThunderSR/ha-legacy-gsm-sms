@@ -155,15 +155,39 @@ data:
   number: "+1234567890"
   message: "Hello from Home Assistant!"
   unicode: true # Optional, defaults to true
+  flash: false # Optional, send as Flash SMS (Class 0)
+```
+
+#### Sending to Multiple Recipients
+
+You can send to multiple phone numbers by separating them with commas:
+
+```yaml
+service: legacy_gsm_sms.send_sms
+data:
+  number: "+1234567890, +0987654321"
+  message: "Hello everyone!"
+```
+
+#### Flash SMS (Class 0)
+
+Flash SMS messages display directly on the recipient's screen without being saved to their inbox. Note that support varies by device - modern smartphones may not honor this setting.
+
+```yaml
+service: legacy_gsm_sms.send_sms
+data:
+  number: "+1234567890"
+  message: "Urgent alert!"
+  flash: true
 ```
 
 ### Sending SMS via UI
 
-The HACS integration now includes text input entities and a button for sending SMS directly from the Home Assistant UI:
+The HACS integration now includes text input entities and buttons for sending SMS directly from the Home Assistant UI:
 
-1. Set the phone number in the "Phone Number" text input entity
+1. Set the phone number in the "Phone Number" text input entity (supports multiple comma-separated numbers)
 2. Set the message in the "Message Text" text input entity
-3. Press the "Send SMS" button
+3. Press the "Send SMS" button (or "Send Flash SMS" for Class 0 messages)
 
 The text fields will automatically clear after sending.
 
@@ -202,6 +226,7 @@ The HACS integration now includes several new entities matching the addon capabi
 **Buttons:**
 
 - **Send SMS** - Sends an SMS using the phone number and message text inputs
+- **Send Flash SMS** - Sends a Flash SMS (Class 0) that displays on screen without saving
 - **Delete All SMS** - Deletes all SMS from the SIM card
 - **Reset Sent Counter** - Resets the sent SMS counter to zero
 - **Reset Received Counter** - Resets the received SMS counter to zero
@@ -215,7 +240,7 @@ The HACS integration now includes several new entities matching the addon capabi
 
 The integration provides the following services:
 
-- `legacy_gsm_sms.send_sms` - Send an SMS message
+- `legacy_gsm_sms.send_sms` - Send an SMS message (supports multiple recipients and Flash SMS)
 - `legacy_gsm_sms.delete_all_sms` - Delete all SMS from SIM
 - `legacy_gsm_sms.reset_sent_counter` - Reset sent counter
 - `legacy_gsm_sms.reset_received_counter` - Reset received counter

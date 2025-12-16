@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - HACS Integration
+
+### Added
+
+- **Flash SMS (Class 0)** - Send Flash SMS that display directly on screen without saving to inbox
+  - New `flash` parameter in `legacy_gsm_sms.send_sms` service
+  - New "Send Flash SMS" button entity
+  - Support via notify platform with `data: {flash: true}`
+  - Note: Modern smartphones may not fully support Flash SMS
+- **Multiple Recipients in send_sms service** - The `legacy_gsm_sms.send_sms` service and button UI now support comma-separated phone numbers
+  - Example: `+1234567890, +0987654321`
+  - Note: The notify platform already supported multiple targets via list
+
+### Credits
+
+Features ported from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-addons) v1.5.4-v1.5.5.
+
 ## [2.0.0]
 
 ### Added - Feature Parity with Addon

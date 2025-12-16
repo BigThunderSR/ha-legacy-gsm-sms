@@ -13,6 +13,8 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .const import CONF_UNICODE, DOMAIN, GATEWAY, SMS_GATEWAY, SMS_MANAGER
 
+CONF_FLASH = "flash"
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -57,11 +59,19 @@ class LegacyGSMSMSNotificationService(BaseNotificationService):
 
         if extended_data is None:
             is_unicode = True
+            is_flash = False
         else:
             is_unicode = extended_data.get(CONF_UNICODE, True)
+            is_flash = extended_data.get(CONF_FLASH, False)
+
+        # Flash SMS uses Class 0, normal SMS uses Class -1 (default)
+        sms_class = 0 if is_flash else -1
+
+        if is_flash:
+            _LOGGER.info("Sending Flash SMS (Class 0)")
 
         smsinfo = {
-            "Class": -1,
+            "Class": sms_class,
             "Unicode": is_unicode,
             "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": message}],
         }

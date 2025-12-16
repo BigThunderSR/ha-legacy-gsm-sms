@@ -13,6 +13,7 @@ from homeassistant.helpers import config_validation as cv, discovery
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
+    ATTR_FLASH,
     ATTR_MESSAGE,
     ATTR_NUMBER,
     ATTR_UNICODE,
@@ -59,6 +60,7 @@ SEND_SMS_SCHEMA = vol.Schema(
         vol.Required(ATTR_NUMBER): cv.string,
         vol.Required(ATTR_MESSAGE): cv.string,
         vol.Optional(ATTR_UNICODE, default=True): cv.boolean,
+        vol.Optional(ATTR_FLASH, default=False): cv.boolean,
     }
 )
 
@@ -134,30 +136,46 @@ async def _async_register_services(
         number = call.data[ATTR_NUMBER]
         message = call.data[ATTR_MESSAGE]
         unicode_mode = call.data.get(ATTR_UNICODE, True)
+        flash_mode = call.data.get(ATTR_FLASH, False)
 
-        _LOGGER.info("Service call: Sending SMS to %s", number)
+        # Support multiple recipients (comma-separated)
+        recipients = [n.strip() for n in number.split(",") if n.strip()]
+        if not recipients:
+            _LOGGER.error("No valid phone numbers provided")
+            return
 
-        try:
-            smsinfo = {
-                "Class": -1,
-                "Unicode": unicode_mode,
-                "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": message}],
-            }
+        # Flash SMS uses Class 0, normal SMS uses Class -1 (default)
+        sms_class = 0 if flash_mode else -1
 
-            encoded = gammu.EncodeSMS(smsinfo)
-            for encoded_message in encoded:
-                encoded_message["SMSC"] = {"Location": 1}
-                encoded_message["Number"] = number
-                await gateway.send_sms_async(encoded_message)
+        if flash_mode:
+            _LOGGER.info(
+                "Sending Flash SMS (Class 0) to %d recipient(s)", len(recipients)
+            )
 
-            sms_manager.record_sms_sent()
-            sms_manager.record_modem_success()
-            _LOGGER.info("SMS sent successfully to %s", number)
+        for recipient in recipients:
+            _LOGGER.info("Service call: Sending SMS to %s", recipient)
 
-        except gammu.GSMError as e:
-            _LOGGER.error("Failed to send SMS: %s", e)
-            sms_manager.record_modem_failure(str(e))
-            raise
+            try:
+                smsinfo = {
+                    "Class": sms_class,
+                    "Unicode": unicode_mode,
+                    "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": message}],
+                }
+
+                encoded = gammu.EncodeSMS(smsinfo)
+                for encoded_message in encoded:
+                    encoded_message["SMSC"] = {"Location": 1}
+                    encoded_message["Number"] = recipient
+                    await gateway.send_sms_async(encoded_message)
+
+                sms_manager.record_sms_sent()
+                sms_manager.record_modem_success()
+                _LOGGER.info("SMS sent successfully to %s", recipient)
+
+            except gammu.GSMError as e:
+                _LOGGER.error("Failed to send SMS to %s: %s", recipient, e)
+                sms_manager.record_modem_failure(str(e))
+                raise
 
     async def handle_delete_all_sms(call: ServiceCall) -> None:
         """Handle delete all SMS service call."""

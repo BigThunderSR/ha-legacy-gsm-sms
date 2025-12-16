@@ -1,10 +1,10 @@
 send_sms:
   name: Send SMS
-  description: Send an SMS message via the GSM modem.
+  description: Send an SMS message via the GSM modem. Supports multiple recipients (comma-separated).
   fields:
     number:
       name: Phone Number
-      description: The phone number to send the SMS to.
+      description: The phone number(s) to send the SMS to. Use commas to separate multiple numbers.
       required: true
       example: "+1234567890"
       selector:
@@ -22,6 +22,13 @@ send_sms:
       description: Whether to send the message as Unicode. If not specified, auto-detection is used.
       required: false
       default: true
+      selector:
+        boolean:
+    flash:
+      name: Flash SMS
+      description: Send as Flash SMS (Class 0) that displays on screen without saving. Note that modern smartphones may not support this feature.
+      required: false
+      default: false
       selector:
         boolean:
 

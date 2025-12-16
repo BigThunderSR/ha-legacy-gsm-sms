@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.14.1] - 2025-12-16
+## [2.15.0] - 2025-12-16
+
+### Added
+
+- **New configuration option: `hard_offline_restart_timeout`** ⚙️
+  - Configurable timeout (10-120 seconds) before restart when modem times out completely
+  - Default: 30 seconds (vs. 120s for normal failures)
+  - Faster recovery from frozen modem state
 
 ### Fixed
 
@@ -14,6 +21,11 @@ All notable changes to this project will be documented in this file.
   - Status polling can no longer clear `hard_offline` - only SMS operations can
   - New MQTT status fields: `hard_offline` (boolean), `hard_offline_operation` (string)
   - Modem now correctly shows "offline" when SMS operations are timing out
+
+- **Fixed auto-restart not triggering when modem is in hard offline state** 🐛
+  - The restart timer was being reset by successful status polling (GetSignalQuality)
+  - Now the restart timer persists through status polls when in `hard_offline` state
+  - Addon will correctly restart after timeout threshold is reached
 
 ## [2.14.0] - 2025-12-15
 

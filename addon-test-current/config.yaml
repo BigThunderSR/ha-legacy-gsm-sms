@@ -1,8 +1,8 @@
 name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.14.1-test
+version: 2.15.0-test
 slug: "gsm_sms_gateway_test_current"
 description: |
-  🧪 TEST VERSION - Current development build for experimentation (v2.14.1-test)
+  🧪 TEST VERSION - Current development build for experimentation (v2.15.0-test)
 
   Testing: Flash SMS support, multiple recipients, RPi 5 serial ports.
   
@@ -82,6 +82,7 @@ options:
   log_level: "info"
   auto_recovery: true
   auto_restart_on_failure: true
+  hard_offline_restart_timeout: 30
   modem_operation_delay: 0.3
   network_type_cache_seconds: 0
   balance_sms_enabled: false
@@ -114,6 +115,7 @@ schema:
   log_level: list(warning|info|debug)
   auto_recovery: bool
   auto_restart_on_failure: bool
+  hard_offline_restart_timeout: int(10,120)
   modem_operation_delay: float(0.1,5.0)
   network_type_cache_seconds: int(0,3600)
   balance_sms_enabled: bool

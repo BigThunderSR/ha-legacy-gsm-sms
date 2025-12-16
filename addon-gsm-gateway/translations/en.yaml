@@ -53,6 +53,9 @@ configuration:
   auto_restart_on_failure:
     name: Auto-Restart on Failure
     description: Automatically restart addon after 2 minutes of persistent modem failure (fastest recovery)
+  hard_offline_restart_timeout:
+    name: Hard Offline Restart Timeout
+    description: Seconds to wait before restart when modem times out completely (10-120, default 30). Shorter than normal 120s timeout for faster recovery from frozen modem.
   modem_operation_delay:
     name: Modem Operation Delay
     description: Delay between modem commands in seconds (0.1-5.0). Increase if modem crashes frequently.

@@ -765,6 +765,10 @@ class MQTTPublisher:
         self.auto_restart_on_failure = config.get('auto_restart_on_failure', True)
         self.failure_start_time = None  # When continuous failures started
         self.restart_timeout = 120  # Restart after 2 min of continuous failure
+        # Shorter timeout for hard offline (modem timed out completely)
+        self.hard_offline_restart_timeout = config.get(
+            'hard_offline_restart_timeout', 30
+        )
         
         # Modem operation delay - helps prevent buffer overflows and crashes
         # Configurable: 0.1 to 5.0 seconds (default 0.3s)
@@ -2574,6 +2578,8 @@ class MQTTPublisher:
         
         This is called for ALL failures (not just specific error codes) to ensure
         the addon restarts after prolonged modem problems of any kind.
+        
+        Uses shorter timeout when in hard_offline state (modem completely frozen).
         """
         if not self.auto_restart_on_failure:
             return
@@ -2584,10 +2590,16 @@ class MQTTPublisher:
             logger.info(f"⏱️ Failure tracking started at {time.strftime('%H:%M:%S')}")
         
         failure_duration = current_time - self.failure_start_time
-        logger.info(f"⏱️ Modem failing for {int(failure_duration)}s "
-                    f"(restart after {self.restart_timeout}s)")
         
-        if failure_duration >= self.restart_timeout:
+        # Use shorter timeout when modem is in hard offline state (completely frozen)
+        is_hard_offline = self.device_tracker.hard_offline
+        effective_timeout = self.hard_offline_restart_timeout if is_hard_offline else self.restart_timeout
+        timeout_type = "hard offline" if is_hard_offline else "standard"
+        
+        logger.info(f"⏱️ Modem failing for {int(failure_duration)}s "
+                    f"(restart after {effective_timeout}s, {timeout_type})")
+        
+        if failure_duration >= effective_timeout:
             logger.error(
                 f"🔴 Modem failed for {int(failure_duration)}s - triggering restart!"
             )
@@ -2683,7 +2695,15 @@ class MQTTPublisher:
                     
                     self.device_tracker.record_success(operation_name=operation_name)
                     self.consecutive_failures = 0  # Reset failure counter on success
-                    self.failure_start_time = None  # Reset restart timer on success
+                    
+                    # Only reset restart timer if NOT in hard_offline state
+                    # In hard_offline, we want the timer to keep running until restart
+                    if not self.device_tracker.hard_offline:
+                        self.failure_start_time = None  # Reset restart timer on success
+                    else:
+                        # Still in hard offline - check if we should restart
+                        self._check_restart_timeout()
+                    
                     self.publish_device_status()
                     logger.debug(f"✅ Gammu operation '{operation_name}' succeeded")
                     

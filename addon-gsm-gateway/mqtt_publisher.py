@@ -3026,6 +3026,13 @@ class MQTTPublisher:
             while self.connected and not self.disconnecting:
                 from support import retrieveAllSms, deleteSms
 
+                # When in hard_offline, skip ALL modem operations to avoid blocking
+                # Just check restart timeout and wait
+                if self.device_tracker.hard_offline:
+                    self._check_restart_timeout()
+                    time.sleep(check_interval)
+                    continue
+
                 # Check for new SMS with connectivity tracking (this will handle errors and update status)
                 try:
                     all_sms = self.track_gammu_operation("retrieveAllSms", retrieveAllSms, self.gammu_machine)
@@ -3042,6 +3049,13 @@ class MQTTPublisher:
                     # Check restart timeout on EVERY failed cycle (not just inside track_gammu_operation)
                     # This ensures the restart timer keeps being checked even after initial timeout
                     self._check_restart_timeout()
+
+                    # When in hard_offline (modem completely frozen), skip retry attempts
+                    # that would block for 15+ seconds. Just wait for restart timeout.
+                    if self.device_tracker.hard_offline:
+                        logger.debug("Skipping soft reset - modem in hard_offline state, waiting for restart")
+                        time.sleep(check_interval)
+                        continue
 
                     # After 2 consecutive failures, attempt soft reset to recover connection
                     # Then retry every 5 failures (5, 10, 15, 20...)
@@ -3207,6 +3221,12 @@ class MQTTPublisher:
             
         def _publish_loop():
             while self.connected and not self.disconnecting:
+                # When in hard_offline, skip modem operations to avoid blocking
+                # The SMS monitoring loop handles restart timeout checking
+                if self.device_tracker.hard_offline:
+                    time.sleep(interval)
+                    continue
+
                 signal = None
                 network = None
                 
@@ -3219,6 +3239,12 @@ class MQTTPublisher:
                 except Exception as e:
                     # track_gammu_operation already recorded the failure
                     pass  # Warning already logged by track_gammu_operation
+
+                # Check hard_offline again before second operation
+                # (could have been set during GetSignalQuality timeout)
+                if self.device_tracker.hard_offline:
+                    time.sleep(interval)
+                    continue
 
                 # Get network info with connectivity tracking
                 try:

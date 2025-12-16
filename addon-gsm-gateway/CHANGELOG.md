@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.15.2] - 2025-12-16
+
+### Fixed
+
+- **Fixed restart timer blocked by hung modem operations** 🐛
+  - When modem is in hard_offline state (completely frozen), skip ALL modem operations
+  - SMS monitoring loop: Skip modem ops at top of loop, check restart timer, sleep 10s
+  - Status publishing loop: Skip modem ops at top of loop, also check between GetSignalQuality and GetNetworkInfo
+  - Previously each blocked operation added 15+ seconds delay before restart
+  - Restart now triggers within ~45 seconds (best case) to ~50 seconds (worst case)
+
 ## [2.15.1] - 2025-12-16
 
 ### Fixed

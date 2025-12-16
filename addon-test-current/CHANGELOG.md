@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.14.1] - 2025-12-16
+
+### Fixed
+
+- **Fixed modem not being marked offline on SMS operation timeout** 🐛
+  - When `retrieveAllSms` timed out after 15s, the modem stayed "online" because:
+    - The offline threshold required 2+ consecutive failures
+    - Status polling (`GetSignalQuality`) would succeed and reset the failure counter
+  - Added `hard_offline` state that is set immediately on timeout errors
+  - Status polling can no longer clear `hard_offline` - only SMS operations can
+  - New MQTT status fields: `hard_offline` (boolean), `hard_offline_operation` (string)
+  - Modem now correctly shows "offline" when SMS operations are timing out
+
 ## [2.14.0] - 2025-12-15
 
 ### Added

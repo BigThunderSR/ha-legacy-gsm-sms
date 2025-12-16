@@ -562,11 +562,42 @@ class DeviceConnectivityTracker:
         self.successful_operations = 0
         self.initial_check_done = False
         self._lock = threading.Lock()
+        # Track if we're in a "hard offline" state due to timeout
+        # This prevents status polling from incorrectly clearing the offline state
+        self.hard_offline = False
+        self.hard_offline_operation = None  # Which operation caused hard offline
 
-    def record_success(self):
+    def record_success(self, operation_name=None):
         """Record successful gammu operation"""
         with self._lock:
             self.last_success_time = time.time()
+
+            # If we're in hard offline state, only recover if:
+            # 1. The same operation type that failed now succeeds, OR
+            # 2. An SMS operation succeeds (critical path)
+            # This prevents GetSignalQuality from clearing offline state when retrieveAllSms is failing
+            if self.hard_offline:
+                is_sms_operation = operation_name and 'sms' in operation_name.lower()
+                is_same_operation = operation_name and operation_name == self.hard_offline_operation
+                
+                if is_sms_operation or is_same_operation:
+                    logger.info(
+                        f"✅ Device recovery from hard offline: {operation_name} succeeded "
+                        f"(was failing: {self.hard_offline_operation})"
+                    )
+                    self.hard_offline = False
+                    self.hard_offline_operation = None
+                    self.consecutive_failures = 0
+                else:
+                    # Status polling succeeded but we're still in hard offline
+                    # Don't reset failure counter - keep modem marked offline
+                    logger.debug(
+                        f"Device still hard offline (waiting for SMS operation), "
+                        f"{operation_name} succeeded but {self.hard_offline_operation} was failing"
+                    )
+                    self.total_operations += 1
+                    self.successful_operations += 1
+                    return  # Don't clear failures or error
 
             if self.consecutive_failures > 0:
                 logger.info(
@@ -586,7 +617,7 @@ class DeviceConnectivityTracker:
             self.successful_operations += 1
             self.initial_check_done = True
 
-    def record_failure(self, error_message=None):
+    def record_failure(self, error_message=None, is_timeout=False, operation_name=None):
         """Record failed gammu operation"""
         with self._lock:
             self.consecutive_failures += 1
@@ -594,6 +625,16 @@ class DeviceConnectivityTracker:
                 str(error_message) if error_message else "Communication failed"
             )
             self.total_operations += 1
+            
+            # Timeout errors are critical - mark hard offline immediately
+            # This ensures status polling can't incorrectly clear the offline state
+            if is_timeout:
+                self.hard_offline = True
+                self.hard_offline_operation = operation_name
+                logger.warning(
+                    f"🔴 Hard offline: {operation_name} timed out - "
+                    f"modem marked offline until SMS operation succeeds"
+                )
 
     def get_status(self):
         """Get current device connectivity status"""
@@ -605,6 +646,10 @@ class DeviceConnectivityTracker:
                 return "offline"
 
             if self.consecutive_failures >= 2:
+                return "offline"
+            
+            # Hard offline takes precedence (timeout occurred)
+            if self.hard_offline:
                 return "offline"
 
             time_since_last_success = time.time() - self.last_success_time
@@ -623,8 +668,13 @@ class DeviceConnectivityTracker:
                 "consecutive_failures": self.consecutive_failures,
                 "total_operations": self.total_operations,
                 "successful_operations": self.successful_operations,
-                "last_error": self.last_error
+                "last_error": self.last_error,
+                "hard_offline": self.hard_offline
             }
+            
+            # Include which operation caused hard offline
+            if self.hard_offline and self.hard_offline_operation:
+                data["hard_offline_operation"] = self.hard_offline_operation
 
             if self.last_success_time:
                 data["last_seen"] = time.strftime(
@@ -648,6 +698,10 @@ class DeviceConnectivityTracker:
             return "offline"
 
         if self.consecutive_failures >= 2:
+            return "offline"
+        
+        # Hard offline takes precedence (timeout occurred)
+        if self.hard_offline:
             return "offline"
 
         time_since_last_success = time.time() - self.last_success_time
@@ -2627,7 +2681,7 @@ class MQTTPublisher:
                     # Check if we were previously failing (modem recovered)
                     was_failing = self.failure_start_time is not None
                     
-                    self.device_tracker.record_success()
+                    self.device_tracker.record_success(operation_name=operation_name)
                     self.consecutive_failures = 0  # Reset failure counter on success
                     self.failure_start_time = None  # Reset restart timer on success
                     self.publish_device_status()
@@ -2653,7 +2707,11 @@ class MQTTPublisher:
                 except concurrent.futures.TimeoutError:
                     # Operation timed out at Python level
                     self.consecutive_failures += 1
-                    self.device_tracker.record_failure(f"{operation_name}: Python timeout (15s)")
+                    self.device_tracker.record_failure(
+                        f"{operation_name}: Python timeout (15s)",
+                        is_timeout=True,
+                        operation_name=operation_name
+                    )
                     self.publish_device_status()
                     self._attempt_reconnect_if_needed()
                     self._check_restart_timeout()  # Check if restart is needed
@@ -2720,7 +2778,10 @@ class MQTTPublisher:
                     
                     # All other errors (including Gammu commtimeout errors)
                     self.consecutive_failures += 1
-                    self.device_tracker.record_failure(f"{operation_name}: {str(e)}")
+                    self.device_tracker.record_failure(
+                        f"{operation_name}: {str(e)}",
+                        operation_name=operation_name
+                    )
                     self.publish_device_status()
                     self._attempt_reconnect_if_needed()
                     self._check_restart_timeout()  # Check if restart is needed

@@ -395,6 +395,27 @@ If you see duplicate sensors after upgrading:
 - Check antenna connection
 - View **GSM Signal Strength (dBm)** diagnostic sensor for raw signal value
 
+### Modem Shows Offline When SMS Operations Fail
+
+The **Modem Status** sensor tracks device connectivity. When SMS operations (like retrieving messages) time out, the modem is marked as "offline" with a `hard_offline` state. This prevents false "online" readings when only signal polling succeeds but SMS functionality is broken.
+
+**Status Attributes:**
+
+- `status`: "online" or "offline"
+- `hard_offline`: `true` if a timeout caused the offline state (won't clear from signal polling alone)
+- `hard_offline_operation`: Which operation timed out (e.g., "retrieveAllSms")
+- `consecutive_failures`: Number of failed operations
+- `last_error`: Description of the last error
+
+**Recovery:**
+
+The modem will automatically return to "online" when an SMS operation succeeds. If the modem stays offline:
+
+1. Check the addon logs for timeout errors
+2. Verify the USB connection is stable
+3. Try restarting the addon
+4. Check if the SIM card needs to be reseated
+
 ### Network Type Shows "Unknown"
 
 The **GSM Network Type** sensor displays the cellular network technology (2G/3G/4G/5G) your modem is connected to. If it shows "Unknown":

@@ -366,3 +366,100 @@ class TestIntegrationScenario:
             "CRITICAL BUG: Restart never triggered after 40s of failures! "
             "The _check_restart_timeout() must be called on each failed cycle."
         )
+
+
+class TestLockRaceCondition:
+    """Tests for the lock race condition fix (v2.15.3).
+    
+    The bug: Thread A checks hard_offline=False, then waits at gammu_lock.
+    Thread B times out, sets hard_offline=True, releases lock.
+    Thread A acquires lock and proceeds even though hard_offline is now True.
+    
+    The fix: Check hard_offline AFTER acquiring the lock, inside track_gammu_operation.
+    """
+
+    def test_hard_offline_check_after_lock_acquisition(self):
+        """
+        Simulates the race condition scenario:
+        1. Thread A checks hard_offline=False (before lock)
+        2. Thread B sets hard_offline=True
+        3. Thread A should re-check hard_offline after acquiring lock
+        """
+        pub = MockMQTTPublisher()
+        lock = threading.Lock()
+        operation_executed = threading.Event()
+        
+        def simulate_track_gammu_operation():
+            """Simulates the fixed track_gammu_operation logic."""
+            with lock:
+                # This is the FIX: check hard_offline AFTER acquiring lock
+                if pub.device_tracker.hard_offline:
+                    # Should skip and check restart
+                    pub._check_restart_timeout()
+                    return "skipped"
+                else:
+                    operation_executed.set()
+                    return "executed"
+        
+        # Initially hard_offline is False
+        assert pub.device_tracker.hard_offline is False
+        
+        # Thread A: Check hard_offline (False), then wait at lock
+        # Simulate this by having Thread A acquire lock first
+        lock.acquire()
+        
+        # Now simulate Thread B setting hard_offline while Thread A holds lock
+        # (In reality, Thread A would be waiting, but we're testing the check)
+        pub.device_tracker.hard_offline = True
+        pub.device_tracker.hard_offline_operation = "retrieveAllSms"
+        pub.failure_start_time = time.time()
+        
+        # Release lock - now the "next thread" should check hard_offline
+        lock.release()
+        
+        # Thread C comes in after hard_offline is set
+        result = simulate_track_gammu_operation()
+        
+        # The operation should be SKIPPED because hard_offline is True
+        assert result == "skipped"
+        assert not operation_executed.is_set()
+
+    def test_queued_operations_skip_when_hard_offline(self):
+        """
+        Verify that multiple queued operations all skip immediately
+        when hard_offline is set, rather than each timing out.
+        """
+        pub = MockMQTTPublisher()
+        lock = threading.Lock()
+        skipped_count = 0
+        executed_count = 0
+        
+        def simulate_operation():
+            nonlocal skipped_count, executed_count
+            with lock:
+                if pub.device_tracker.hard_offline:
+                    skipped_count += 1
+                    pub._check_restart_timeout()
+                    return
+                # Simulate operation
+                time.sleep(0.01)
+                executed_count += 1
+        
+        # Set hard_offline
+        pub.device_tracker.hard_offline = True
+        pub.failure_start_time = time.time() - 10  # 10s ago
+        
+        # Simulate multiple operations trying to run
+        threads = [
+            threading.Thread(target=simulate_operation)
+            for _ in range(5)
+        ]
+        
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        
+        # All operations should have been skipped
+        assert skipped_count == 5
+        assert executed_count == 0

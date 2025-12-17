@@ -2683,6 +2683,13 @@ class MQTTPublisher:
         """Execute gammu operation with connectivity tracking, thread safety, and Python-level timeout"""
         # Use lock to serialize all Gammu operations (prevent race conditions on serial port)
         with self.gammu_lock:
+            # Check hard_offline AFTER acquiring lock - another thread may have set it while we waited
+            # This prevents queueing up multiple 15s timeout operations when modem is frozen
+            if self.device_tracker.hard_offline:
+                logger.debug(f"Skipping {operation_name} - modem in hard_offline state")
+                self._check_restart_timeout()
+                raise TimeoutError(f"Modem in hard_offline state, skipping {operation_name}")
+            
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(gammu_function, *args, **kwargs)
                 try:

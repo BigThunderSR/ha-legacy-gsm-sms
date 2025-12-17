@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.15.4] - 2025-12-17
+
+### Fixed
+
+- **Fixed ThreadPoolExecutor blocking on timeout** 🐛
+
+  - Root cause: Using `with ThreadPoolExecutor() as executor:` context manager calls `shutdown(wait=True)` on exit
+  - When a 15s Python timeout occurred, the exception was raised but the context manager's `__exit__` blocked waiting for the underlying Gammu thread to complete (which could take 9+ minutes)
+  - Changed from context manager to manual executor management with `shutdown(wait=False)`
+  - Now when a timeout occurs, the function returns immediately without waiting for the hung thread
+  - This ensures restart timer is checked every 10 seconds and addon restarts within ~30-45 seconds of modem freeze
+
+- **Fixed `seconds_since_last_success` sensor not updating when modem offline** 🐛
+  - When in hard_offline state, the loops were skipping modem operations but also not publishing device status
+  - Now `publish_device_status()` is called in both SMS monitoring and status publishing loops even during hard_offline
+  - This keeps the `seconds_since_last_success` sensor updating in real-time while offline
+
 ## [2.15.3] - 2025-12-17
 
 ### Fixed

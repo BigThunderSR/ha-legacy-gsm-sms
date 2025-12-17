@@ -2690,7 +2690,10 @@ class MQTTPublisher:
                 self._check_restart_timeout()
                 raise TimeoutError(f"Modem in hard_offline state, skipping {operation_name}")
             
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            # Use ThreadPoolExecutor WITHOUT context manager to avoid shutdown(wait=True)
+            # which would block until the hung thread completes (could be minutes!)
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+            try:
                 future = executor.submit(gammu_function, *args, **kwargs)
                 try:
                     # Python-level timeout (15s) as second defense layer
@@ -2813,6 +2816,10 @@ class MQTTPublisher:
                     self._attempt_reconnect_if_needed()
                     self._check_restart_timeout()  # Check if restart is needed
                     raise
+            finally:
+                # CRITICAL: shutdown(wait=False) to NOT wait for hung thread
+                # The thread may still be blocked in Gammu for minutes, but we don't care
+                executor.shutdown(wait=False)
     
     def _publish_initial_states(self):
         """Publish initial sensor states on startup"""
@@ -3034,9 +3041,10 @@ class MQTTPublisher:
                 from support import retrieveAllSms, deleteSms
 
                 # When in hard_offline, skip ALL modem operations to avoid blocking
-                # Just check restart timeout and wait
+                # Just check restart timeout, publish status (to update seconds_since_last_success), and wait
                 if self.device_tracker.hard_offline:
                     self._check_restart_timeout()
+                    self.publish_device_status()  # Update seconds_since_last_success sensor
                     time.sleep(check_interval)
                     continue
 
@@ -3230,7 +3238,9 @@ class MQTTPublisher:
             while self.connected and not self.disconnecting:
                 # When in hard_offline, skip modem operations to avoid blocking
                 # The SMS monitoring loop handles restart timeout checking
+                # Still publish status to update seconds_since_last_success sensor
                 if self.device_tracker.hard_offline:
+                    self.publish_device_status()
                     time.sleep(interval)
                     continue
 
@@ -3249,7 +3259,9 @@ class MQTTPublisher:
 
                 # Check hard_offline again before second operation
                 # (could have been set during GetSignalQuality timeout)
+                # Still publish status to update seconds_since_last_success sensor
                 if self.device_tracker.hard_offline:
+                    self.publish_device_status()
                     time.sleep(interval)
                     continue
 

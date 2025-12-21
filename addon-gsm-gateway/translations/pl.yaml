@@ -80,6 +80,9 @@ configuration:
   balance_sms_sender:
     name: Numer nadawcy SMS salda
     description: Numer telefonu wysyłający informacje o saldzie (nadawca odpowiedzi)
+  balance_currency:
+    name: Kod waluty
+    description: Kod waluty ISO 4217 do wyświetlania salda (np. USD, EUR, PLN)
   balance_keywords:
     name: Słowa kluczowe salda
     description: "Słowa kluczowe do wykrywania SMS salda (np: Pozostało, wygasa, saldo)"

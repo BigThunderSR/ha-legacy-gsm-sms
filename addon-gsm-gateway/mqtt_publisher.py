@@ -450,11 +450,14 @@ class SMSDeliveryTracker:
 class BalanceSMSParser:
     """Parses SMS messages from network providers to extract account balance information"""
     
-    def __init__(self, balance_file='/data/balance_data.json'):
+    def __init__(self, balance_file='/data/balance_data.json', currency='USD'):
         self.balance_file = balance_file
+        self.currency = currency
         self.balance_data = {
             "account_balance": None,
+            "account_balance_currency": currency,
             "data_remaining": None,
+            "data_remaining_unit": "MB",
             "minutes_remaining": None,
             "messages_remaining": None,
             "plan_expiry": None,
@@ -463,12 +466,48 @@ class BalanceSMSParser:
         }
         self._load()
     
+    def _migrate_old_format(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Migrate old string-based format to new numeric format"""
+        migrated = False
+        
+        # Migrate data_remaining from "200.00 MB" to 200.0
+        if isinstance(data.get('data_remaining'), str):
+            import re
+            match = re.match(r'([\d.]+)\s*(MB|GB)?', data['data_remaining'])
+            if match:
+                value = float(match.group(1))
+                unit = match.group(2) or 'MB'
+                if unit.upper() == 'GB':
+                    value *= 1024
+                data['data_remaining'] = value
+                data['data_remaining_unit'] = 'MB'
+                migrated = True
+                logger.info(f"💰 Migrated data_remaining to numeric: {value}")
+        
+        # Migrate account_balance from "$3.00" to 3.0
+        if isinstance(data.get('account_balance'), str):
+            import re
+            match = re.match(r'[\$€£]?([\d.]+)', data['account_balance'])
+            if match:
+                value = float(match.group(1))
+                data['account_balance'] = value
+                data['account_balance_currency'] = self.currency
+                migrated = True
+                logger.info(f"💰 Migrated account_balance to numeric: {value}")
+        
+        if migrated:
+            logger.info("💰 Migrated balance data from old format to new numeric format")
+        
+        return data
+    
     def _load(self):
         """Load saved balance data from JSON file"""
         try:
             if os.path.exists(self.balance_file):
                 with open(self.balance_file, 'r') as f:
                     data = json.load(f)
+                    # Migrate old format if needed
+                    data = self._migrate_old_format(data)
                     self.balance_data.update(data)
                     logger.info(f"💰 Loaded balance data from {self.balance_file}")
         except Exception as e:
@@ -489,6 +528,10 @@ class BalanceSMSParser:
         Example messages:
         - "You have 200.00 MB of High Speed Data Remaining 200 Minutes & 934 Messages."
         - "Your plan expires on 2025-12-20. You have balance of $3.00"
+        
+        Values are stored as numeric types for proper Home Assistant device classes:
+        - data_remaining: float (in MB)
+        - account_balance: float
         """
         import re
         
@@ -496,17 +539,21 @@ class BalanceSMSParser:
         self.balance_data["last_updated"] = time.strftime('%Y-%m-%d %H:%M:%S')
         self.balance_data["raw_message"] = message_text
         
-        # Parse data remaining (MB or GB)
-        data_match = re.search(r'([\d.]+)\s*(MB|GB)\s*(?:of\s*)?(?:High\s*Speed\s*)?Data', message_text, re.IGNORECASE)
+        # Parse data remaining (MB or GB) - store as numeric MB
+        data_match = re.search(
+            r'([\d.]+)\s*(MB|GB)\s*(?:of\s*)?(?:High\s*Speed\s*)?Data',
+            message_text, re.IGNORECASE
+        )
         if data_match:
             amount = float(data_match.group(1))
             unit = data_match.group(2).upper()
             # Convert to MB for consistency
             if unit == "GB":
                 amount *= 1024
-            self.balance_data["data_remaining"] = f"{amount} MB"
+            self.balance_data["data_remaining"] = amount
+            self.balance_data["data_remaining_unit"] = "MB"
             updated = True
-            logger.info(f"💰 Parsed data: {self.balance_data['data_remaining']}")
+            logger.info(f"💰 Parsed data: {amount} MB")
         
         # Parse minutes remaining
         minutes_match = re.search(r'([\d,]+)\s*Minutes', message_text, re.IGNORECASE)
@@ -524,16 +571,21 @@ class BalanceSMSParser:
             updated = True
             logger.info(f"💰 Parsed messages: {messages}")
         
-        # Parse account balance (dollar amount)
-        balance_match = re.search(r'balance\s*of\s*\$?([\d.]+)', message_text, re.IGNORECASE)
+        # Parse account balance (dollar amount) - store as numeric
+        balance_match = re.search(
+            r'balance\s*of\s*\$?([\d.]+)', message_text, re.IGNORECASE
+        )
         if balance_match:
             balance = float(balance_match.group(1))
-            self.balance_data["account_balance"] = f"${balance:.2f}"
+            self.balance_data["account_balance"] = balance
+            self.balance_data["account_balance_currency"] = self.currency
             updated = True
-            logger.info(f"💰 Parsed account balance: {self.balance_data['account_balance']}")
+            logger.info(f"💰 Parsed account balance: {balance} {self.currency}")
         
         # Parse plan expiry date
-        expiry_match = re.search(r'expires?\s*on\s*([\d-]+)', message_text, re.IGNORECASE)
+        expiry_match = re.search(
+            r'expires?\s*on\s*([\d-]+)', message_text, re.IGNORECASE
+        )
         if expiry_match:
             expiry_date = expiry_match.group(1)
             self.balance_data["plan_expiry"] = expiry_date
@@ -542,7 +594,7 @@ class BalanceSMSParser:
         
         if updated:
             self._save()
-            logger.info(f"💰 Balance data updated from SMS")
+            logger.info("💰 Balance data updated from SMS")
         
         return self.balance_data
     
@@ -750,8 +802,9 @@ class MQTTPublisher:
         # Initialize balance SMS parser if enabled
         self.balance_parser = None
         if config.get('balance_sms_enabled', False):
-            self.balance_parser = BalanceSMSParser()
-            logger.info("💰 Balance SMS parsing enabled")
+            balance_currency = config.get('balance_currency', 'USD')
+            self.balance_parser = BalanceSMSParser(currency=balance_currency)
+            logger.info(f"💰 Balance SMS parsing enabled (currency: {balance_currency})")
         
         # SMSC caching for reliable SMS sending
         self.cached_smsc = None
@@ -1847,6 +1900,7 @@ class MQTTPublisher:
             "value_template": "{{ value_json.count }}",
             "icon": "mdi:counter",
             "state_class": "total_increasing",
+            "unit_of_measurement": "messages",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
@@ -1859,6 +1913,7 @@ class MQTTPublisher:
             "value_template": "{{ value_json.count }}",
             "icon": "mdi:message-badge",
             "state_class": "total_increasing",
+            "unit_of_measurement": "messages",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
         }
@@ -1970,11 +2025,16 @@ class MQTTPublisher:
         }
 
         # Balance sensors (only added if balance_sms_enabled is true)
+        balance_currency = self.config.get('balance_currency', 'USD')
+        
         balance_account_config = {
             "name": "Account Balance",
             "unique_id": "sms_gateway_account_balance",
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.account_balance }}",
+            "device_class": "monetary",
+            "state_class": "measurement",
+            "unit_of_measurement": balance_currency,
             "icon": "mdi:cash",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
@@ -1985,6 +2045,9 @@ class MQTTPublisher:
             "unique_id": "sms_gateway_data_remaining",
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.data_remaining }}",
+            "device_class": "data_size",
+            "state_class": "measurement",
+            "unit_of_measurement": "MB",
             "icon": "mdi:database",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
@@ -1996,6 +2059,7 @@ class MQTTPublisher:
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.minutes_remaining }}",
             "unit_of_measurement": "min",
+            "device_class": "duration",
             "icon": "mdi:phone",
             "state_class": "measurement",
             "device": DEVICE_CONFIG,
@@ -2019,6 +2083,7 @@ class MQTTPublisher:
             "unique_id": "sms_gateway_plan_expiry",
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.plan_expiry }}",
+            "device_class": "date",
             "icon": "mdi:calendar-end",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
@@ -2089,6 +2154,7 @@ class MQTTPublisher:
                 "value_template": "{{ value_json.cost }}",
                 "icon": "mdi:cash",
                 "unit_of_measurement": sms_cost_currency,
+                "device_class": "monetary",
                 "state_class": "total",
                 "device": DEVICE_CONFIG,
                 **AVAILABILITY_CONFIG

@@ -2,12 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.16.0] - 2025-12-21
+
+### ⚠️ BREAKING CHANGES
+
+- **Balance sensors now use numeric values instead of strings**
+  - `sensor.sms_gateway_data_remaining`: Changed from `"200.00 MB"` to `200.0` (numeric)
+  - `sensor.sms_gateway_account_balance`: Changed from `"$3.00"` to `3.0` (numeric)
+  - **Migration:** If you have automations using these sensors with string comparisons or templates expecting the unit in the value, you'll need to update them
+  - Existing saved balance data is automatically migrated to the new format on first load
+
+### Added
+
+- **Proper Home Assistant sensor device classes** 🏷️
+  - `sensor.sms_gateway_signal_dbm`: Already had `device_class: signal_strength` ✓
+  - `sensor.sms_gateway_sent_count`: Added `unit_of_measurement: messages`
+  - `sensor.sms_gateway_received_count`: Added `unit_of_measurement: messages`
+  - `sensor.sms_gateway_total_cost`: Added `device_class: monetary`
+  - `sensor.sms_gateway_minutes_remaining`: Added `device_class: duration`
+  - `sensor.sms_gateway_plan_expiry`: Added `device_class: date`
+  - `sensor.sms_gateway_data_remaining`: Added `device_class: data_size`, `state_class: measurement`, `unit: MB`
+  - `sensor.sms_gateway_account_balance`: Added `device_class: monetary`, `state_class: measurement`
+
+- **New configuration option: `balance_currency`** 💰
+  - ISO 4217 currency code for account balance display (default: `USD`)
+  - Examples: `USD`, `EUR`, `GBP`, `CZK`, `PLN`
+  - Used for the `unit_of_measurement` of the account balance sensor
+
+### Improved
+
+- **Better Home Assistant integration**
+  - Sensors now support proper statistics and graphs
+  - Unit conversions work correctly (HA can convert MB to GB, etc.)
+  - Currency display follows HA's localization settings
+  - Duration sensor formats nicely in HA UI
+
+### Technical
+
+- Balance parser now stores numeric values with separate unit fields
+- Added `_migrate_old_format()` method for backward compatibility with saved data
+- Added translations for `balance_currency` in all 10 supported languages
+
 ## [2.15.4] - 2025-12-17
 
 ### Fixed
 
 - **Fixed ThreadPoolExecutor blocking on timeout** 🐛
-
   - Root cause: Using `with ThreadPoolExecutor() as executor:` context manager calls `shutdown(wait=True)` on exit
   - When a 15s Python timeout occurred, the exception was raised but the context manager's `__exit__` blocked waiting for the underlying Gammu thread to complete (which could take 9+ minutes)
   - Changed from context manager to manual executor management with `shutdown(wait=False)`
@@ -62,7 +102,6 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **Fixed modem not being marked offline on SMS operation timeout** 🐛
-
   - When `retrieveAllSms` timed out after 15s, the modem stayed "online" because:
     - The offline threshold required 2+ consecutive failures
     - Status polling (`GetSignalQuality`) would succeed and reset the failure counter
@@ -83,7 +122,6 @@ All notable changes to this project will be documented in this file.
 _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-addons) upstream (v1.5.4-v1.5.5)_
 
 - **Flash SMS Support (Class 0 Messages)** ⚡
-
   - Flash SMS displays immediately on recipient's phone screen without being saved
   - New "Send Flash SMS" button entity in Home Assistant
   - Support for `flash: true` parameter in MQTT send command payload
@@ -92,7 +130,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
   - Note: Not all phones/carriers support Flash SMS
 
 - **Multiple Recipients via MQTT** 📱
-
   - MQTT SMS sending now supports comma-separated phone numbers
   - Example: `{"number": "+1234567890,+0987654321", "text": "Hello"}`
   - SMS counter increments correctly for each recipient
@@ -177,7 +214,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Fixed
 
 - **Improved error code extraction from Gammu exceptions** 🐛
-
   - Added fallback string parsing for error codes when dict extraction fails
   - Added debug logging to diagnose extraction failures
   - Now handles edge cases in exception structure more robustly
@@ -206,13 +242,11 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Fixed
 
 - **Critical: Restart timer was being reset prematurely** 🐛
-
   - Timer was resetting when reconnect "succeeded" even if modem still broken
   - Now only resets on actual successful Gammu operation
   - Fixes issue where 2-minute restart timeout never triggered
 
 - **Critical: Code 11 (ERR_DEVICEWRITEERROR) not handled** 🐛
-
   - "Error writing to the device" now triggers immediate restart
   - Same handling as Code 2 (device unavailable)
 
@@ -225,7 +259,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Added
 
 - **SMS Queue with Persistence** 📥 - Failed SMS are now queued for automatic retry
-
   - Messages queued to `/data/pending_sms.json` for persistence across restarts
   - Queued messages automatically sent when modem recovers
   - Queue processed on addon startup after modem initialization
@@ -233,7 +266,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
   - Duplicate prevention (same number+text won't be queued twice)
 
 - **Auto-Restart on Persistent Failure** 🔄 - New `auto_restart_on_failure` option
-
   - Addon automatically restarts after 2 minutes of continuous modem failure
   - Immediate restart on device unavailable error (USB disconnected)
   - Restart handled by HA Supervisor for clean recovery
@@ -281,7 +313,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Added
 
 - **ERR_EMPTYSMSC Auto-Recovery** 🔄 - Automatic detection and recovery from modem hung state
-
   - Detects ERR_EMPTYSMSC (error code 31) when modem cannot retrieve SMSC number
   - Triggers emergency modem soft reset automatically
   - Waits 7 seconds for modem recovery
@@ -365,7 +396,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Fixed
 
 - **Last SMS Sensors Restoration** 🔄 - Fixed blank SMS sensors after restart
-
   - Last received SMS data is now restored from history on addon startup
   - SMS state messages use MQTT retain to persist across Home Assistant restarts
   - "Last SMS Received" and "Last SMS Sender" sensors populate immediately after restart
@@ -445,7 +475,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Added
 
 - **GSM Network Type Sensor** 📶 - Cellular technology detection with AT command support
-
   - Displays network technology (2G/3G/4G/5G/NB-IoT/EN-DC) from modem
   - Uses AT+CEREG? and AT+CGREG? commands to retrieve Access Technology (AcT)
   - Automatically detects LTE, UMTS, GSM, 5G NR, and other network types
@@ -476,7 +505,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Fixed
 
 - **Auto-Recovery Bug** 🐛 - Critical fix for automatic modem recovery
-
   - Fixed issue where background threads continued using old broken Gammu connection after recovery
   - All operations now use `self.gammu_machine` instead of function parameter
   - SMS monitoring, status publishing, and initial states now pick up new connection immediately
@@ -492,7 +520,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Added
 
 - **Automatic Modem Recovery** 🔄 - Recover from modem communication failures without restart
-
   - New `auto_recovery` option (default: `true`) - configurable automatic recovery
   - Monitors modem communication for consecutive failures
   - Triggers reconnection after 5 consecutive failures
@@ -541,7 +568,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Added
 
 - **Configurable Status Update Interval** 📊 - Control how often signal and network info updates
-
   - New `status_update_interval` option (default: 300 seconds / 5 minutes)
   - Range: 30-3600 seconds (30 seconds to 1 hour)
   - Controls update frequency for signal strength, network info, and BER
@@ -562,7 +588,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Changed
 
 - **SMS Check Interval** - Reduced minimum from 10 to 5 seconds
-
   - `sms_check_interval` now accepts 5-300 seconds (previously 10-300)
   - Default changed to 5 seconds for faster SMS detection
   - Allows near-instant SMS notifications for time-sensitive use cases
@@ -671,20 +696,17 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Changed
 
 - **Base Image Update** - Updated to Alpine 3.22 base image
-
   - Security improvements and CVE patches
   - Performance optimizations
   - Updated Python versions (3.13.x)
   - Modernized tooling (pip 25.2, Bashio 0.17.5)
 
 - **Docker Configuration** - Fixed multi-architecture build support
-
   - Removed hardcoded architecture from Dockerfile
   - Proper ARG BUILD_FROM usage for multi-arch builds
   - Updated Dockerfile labels with correct version and maintainer
 
 - **Startup Logging & Dependencies** - Enhanced version visibility and fixed dependencies
-
   - Added version display in startup logs
   - Fixed version loading to read from config.yaml
   - Added PyYAML and requests to dependencies
@@ -697,7 +719,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
 ### Added
 
 - **USSD Support** - Send USSD codes (e.g., \*#100# for balance check) directly from Home Assistant
-
   - USSD Code text field - Enter USSD codes (validates format: starts with \*, e.g., \*225#, \*#100#)
   - Send USSD button - Execute USSD code and receive network response
   - USSD Response sensor - Displays network response with timestamp
@@ -706,7 +727,6 @@ _Features synced from [PavelVe/hassio-addons](https://github.com/PavelVe/hassio-
   - Error handling with user-friendly messages
 
 - **SMS History Tracking** - Received messages stored with persistence
-
   - Messages include phone number, full message text, and timestamp
   - Available as JSON attributes on Last SMS Received sensor
   - Persistent storage survives addon restarts

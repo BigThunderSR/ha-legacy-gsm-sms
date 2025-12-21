@@ -1,5 +1,5 @@
 name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.15.4-test
+version: 2.16.0-test
 slug: "gsm_sms_gateway_test_current"
 description: |
   🧪 TEST VERSION - Current development build for experimentation (v2.15.0-test)
@@ -87,6 +87,7 @@ options:
   network_type_cache_seconds: 0
   balance_sms_enabled: false
   balance_sms_sender: "7069"
+  balance_currency: "USD"
   balance_keywords:
     - "Remaining"
     - "expires"
@@ -120,5 +121,6 @@ schema:
   network_type_cache_seconds: int(0,3600)
   balance_sms_enabled: bool
   balance_sms_sender: str
+  balance_currency: str
   balance_keywords:
     - str

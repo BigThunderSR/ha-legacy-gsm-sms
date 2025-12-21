@@ -80,6 +80,9 @@ configuration:
   balance_sms_sender:
     name: Balance SMS-Absendernummer
     description: Telefonnummer, die Guthaben-Informationen sendet (der Antwortabsender)
+  balance_currency:
+    name: Währungscode
+    description: ISO 4217 Währungscode für die Kontoguthabenanzeige (z.B. USD, EUR, GBP)
   balance_keywords:
     name: Saldo-Schlüsselwörter
     description: "Schlüsselwörter zur Erkennung von Saldo-SMS (z.B: Verbleibend, läuft ab, Guthaben)"

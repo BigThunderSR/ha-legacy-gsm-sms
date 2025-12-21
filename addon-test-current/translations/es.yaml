@@ -80,6 +80,9 @@ configuration:
   balance_sms_sender:
     name: Número remitente de SMS de saldo
     description: Número de teléfono que envía información de saldo (el remitente de respuesta)
+  balance_currency:
+    name: Código de moneda
+    description: Código de moneda ISO 4217 para mostrar el saldo (ej. USD, EUR, MXN)
   balance_keywords:
     name: Palabras clave de saldo
     description: "Palabras clave para detectar SMS de saldo (ej: Restante, expira, saldo de)"

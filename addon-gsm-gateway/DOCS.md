@@ -300,13 +300,14 @@ The `status_update_interval` setting controls how often the addon queries and pu
 - **Stationary setups with stable signal**: 300-600 seconds (default or higher)
 - **Battery-powered modems**: 600-1800 seconds to reduce power consumption
 
-### Balance SMS Tracking Settings (🆕 v2.1.7)
+### Balance SMS Tracking Settings (🆕 v2.1.7, Updated v2.16.0)
 
 | Parameter             | Default                         | Description                                                       |
 | --------------------- | ------------------------------- | ----------------------------------------------------------------- |
 | `balance_sms_enabled` | `false`                         | Enable automatic parsing of balance SMS messages                  |
 | `balance_sms_sender`  | `7069`                          | Phone number that sends balance information (the response sender) |
 | `balance_keywords`    | `["Remaining", "expires", ...]` | Keywords in the response message to detect balance SMS            |
+| `balance_currency`    | `USD`                           | ISO 4217 currency code for account balance (e.g., USD, EUR, GBP)  |
 
 **How it works:**
 
@@ -394,17 +395,19 @@ After enabling MQTT, these entities are automatically created:
 | `sensor.sms_gateway_sms_received_count` | Sensor | Total SMS received through addon (🆕 v2.8.0)           |
 | `sensor.sms_gateway_total_cost`         | Sensor | Total cost of sent SMS (if `sms_cost_per_message > 0`) |
 
-### Balance Sensors (🆕 v2.1.7)
+### Balance Sensors (🆕 v2.1.7, Updated v2.16.0)
 
 These sensors are created when `balance_sms_enabled: true`:
 
-| Entity                                  | Type   | Description                                   |
-| --------------------------------------- | ------ | --------------------------------------------- |
-| `sensor.sms_gateway_account_balance`    | Sensor | Account balance (e.g., "$3.00")               |
-| `sensor.sms_gateway_data_remaining`     | Sensor | High-speed data remaining (e.g., "200.00 MB") |
-| `sensor.sms_gateway_minutes_remaining`  | Sensor | Voice minutes remaining                       |
-| `sensor.sms_gateway_messages_remaining` | Sensor | SMS messages remaining                        |
-| `sensor.sms_gateway_plan_expiry`        | Sensor | Plan expiration date (e.g., "2025-12-20")     |
+| Entity                                  | Type   | Description                                     | Device Class |
+| --------------------------------------- | ------ | ----------------------------------------------- | ------------ |
+| `sensor.sms_gateway_account_balance`    | Sensor | Account balance (numeric, e.g., `3.0`)          | `monetary`   |
+| `sensor.sms_gateway_data_remaining`     | Sensor | High-speed data remaining in MB (e.g., `200.0`) | `data_size`  |
+| `sensor.sms_gateway_minutes_remaining`  | Sensor | Voice minutes remaining                         | `duration`   |
+| `sensor.sms_gateway_messages_remaining` | Sensor | SMS messages remaining                          | -            |
+| `sensor.sms_gateway_plan_expiry`        | Sensor | Plan expiration date (e.g., "2025-12-20")       | `date`       |
+
+> **Note (v2.16.0):** Balance sensors now use numeric values for proper Home Assistant integration. The unit is displayed separately via `unit_of_measurement`. Configure your currency code using the `balance_currency` option.
 
 **Usage:**
 
@@ -609,7 +612,7 @@ automation:
           target: "XXXX" # Your provider's balance query number (e.g., 7039)
           message: "Getinfo" # Gets account balance and plan expiry
 
-  # Alert when data is low
+  # Alert when data is low (value is now numeric in MB)
   - alias: "Alert on Low Data"
     trigger:
       platform: numeric_state
@@ -619,7 +622,7 @@ automation:
       - service: notify.mobile_app
         data:
           title: "Low Data Warning"
-          message: "Only {{ states('sensor.sms_gateway_data_remaining') }} remaining!"
+          message: "Only {{ states('sensor.sms_gateway_data_remaining') }} MB remaining!"
 
   # Alert when plan expires soon
   - alias: "Plan Expiry Reminder"

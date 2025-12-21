@@ -80,6 +80,9 @@ configuration:
   balance_sms_sender:
     name: Numéro d'expéditeur SMS de solde
     description: Numéro de téléphone qui envoie les informations de solde (l'expéditeur de réponse)
+  balance_currency:
+    name: Code devise
+    description: Code devise ISO 4217 pour l'affichage du solde (ex. USD, EUR, GBP)
   balance_keywords:
     name: Mots-clés de solde
     description: "Mots-clés pour détecter les SMS de solde (ex: Restant, expire, solde de)"

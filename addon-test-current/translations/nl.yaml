@@ -80,6 +80,9 @@ configuration:
   balance_sms_sender:
     name: Saldo SMS-afzendernummer
     description: Telefoonnummer dat saldo-informatie verzendt (de antwoordafzender)
+  balance_currency:
+    name: Valutacode
+    description: ISO 4217 valutacode voor saldoweergave (bijv. USD, EUR, GBP)
   balance_keywords:
     name: Saldo trefwoorden
     description: "Trefwoorden om saldo SMS-berichten te detecteren (bijv: Resterend, verloopt, saldo van)"

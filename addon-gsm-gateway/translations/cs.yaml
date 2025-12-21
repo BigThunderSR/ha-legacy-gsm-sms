@@ -80,6 +80,9 @@ configuration:
   balance_sms_sender:
     name: Číslo odesílatele SMS zůstatku
     description: Telefonní číslo, které posílá informace o zůstatku (odesílatel odpovědi)
+  balance_currency:
+    name: Kód měny
+    description: ISO 4217 kód měny pro zobrazení zůstatku účtu (např. USD, EUR, CZK)
   balance_keywords:
     name: Klíčová slova zůstatku
     description: "Klíčová slova pro detekci SMS zůstatku (např: Zbývající, vyprší, zůstatek)"

@@ -300,7 +300,7 @@ The `status_update_interval` setting controls how often the addon queries and pu
 - **Stationary setups with stable signal**: 300-600 seconds (default or higher)
 - **Battery-powered modems**: 600-1800 seconds to reduce power consumption
 
-### Balance SMS Tracking Settings (🆕 v2.1.7, Updated v2.16.0)
+### Balance SMS Tracking Settings (🆕 v2.1.7, Updated v2.15.5)
 
 | Parameter             | Default                         | Description                                                       |
 | --------------------- | ------------------------------- | ----------------------------------------------------------------- |
@@ -395,7 +395,7 @@ After enabling MQTT, these entities are automatically created:
 | `sensor.sms_gateway_sms_received_count` | Sensor | Total SMS received through addon (🆕 v2.8.0)           |
 | `sensor.sms_gateway_total_cost`         | Sensor | Total cost of sent SMS (if `sms_cost_per_message > 0`) |
 
-### Balance Sensors (🆕 v2.1.7, Updated v2.16.0)
+### Balance Sensors (🆕 v2.1.7, Updated v2.15.5)
 
 These sensors are created when `balance_sms_enabled: true`:
 
@@ -407,7 +407,7 @@ These sensors are created when `balance_sms_enabled: true`:
 | `sensor.sms_gateway_messages_remaining` | Sensor | SMS messages remaining                          | -            |
 | `sensor.sms_gateway_plan_expiry`        | Sensor | Plan expiration date (e.g., "2025-12-20")       | `date`       |
 
-> **Note (v2.16.0):** Balance sensors now use numeric values for proper Home Assistant integration. The unit is displayed separately via `unit_of_measurement`. Configure your currency code using the `balance_currency` option.
+> **Note (v2.15.5):** Balance sensors now use numeric values for proper Home Assistant integration. The unit is displayed separately via `unit_of_measurement`. Configure your currency code using the `balance_currency` option.
 
 **Usage:**
 

@@ -15,8 +15,8 @@ All notable changes to this project will be documented in this file.
 
 - **New `balance_currency` configuration option** - Set your currency code (ISO 4217) for proper monetary display (default: "USD")
 - **Device classes for balance sensors** - Better Home Assistant integration:
-  - `account_balance`: `device_class: monetary`
-  - `data_remaining`: `device_class: data_size`
+  - `account_balance`: `device_class: monetary`, `state_class: total`
+  - `data_remaining`: `device_class: data_size`, `state_class: measurement`
   - `minutes_remaining`: `device_class: duration`
   - `plan_expiry`: `device_class: date`
 

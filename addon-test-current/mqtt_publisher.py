@@ -507,8 +507,13 @@ class BalanceSMSParser:
                 with open(self.balance_file, 'r') as f:
                     data = json.load(f)
                     # Migrate old format if needed
+                    original_data = data.copy()
                     data = self._migrate_old_format(data)
                     self.balance_data.update(data)
+                    # Save migrated data if format changed
+                    if data != original_data:
+                        self._save()
+                        logger.info(f"💰 Migrated and saved balance data to new format")
                     logger.info(f"💰 Loaded balance data from {self.balance_file}")
         except Exception as e:
             logger.error(f"Error loading balance data: {e}")
@@ -2033,7 +2038,7 @@ class MQTTPublisher:
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.account_balance }}",
             "device_class": "monetary",
-            "state_class": "measurement",
+            "state_class": "total",
             "unit_of_measurement": balance_currency,
             "icon": "mdi:cash",
             "device": DEVICE_CONFIG,

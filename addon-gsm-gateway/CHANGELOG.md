@@ -22,7 +22,7 @@ All notable changes to this project will be documented in this file.
   - `sensor.sms_gateway_minutes_remaining`: Added `device_class: duration`
   - `sensor.sms_gateway_plan_expiry`: Added `device_class: date`
   - `sensor.sms_gateway_data_remaining`: Added `device_class: data_size`, `state_class: measurement`, `unit: MB`
-  - `sensor.sms_gateway_account_balance`: Added `device_class: monetary`, `state_class: measurement`
+  - `sensor.sms_gateway_account_balance`: Added `device_class: monetary`, `state_class: total`
 
 - **New configuration option: `balance_currency`** 💰
   - ISO 4217 currency code for account balance display (default: `USD`)

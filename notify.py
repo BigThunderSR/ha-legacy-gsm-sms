@@ -11,7 +11,9 @@ from homeassistant.const import CONF_TARGET
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from .const import CONF_UNICODE, DOMAIN, GATEWAY, SMS_GATEWAY
+from .const import CONF_UNICODE, DOMAIN, GATEWAY, SMS_GATEWAY, SMS_MANAGER
+
+CONF_FLASH = "flash"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +47,7 @@ class LegacyGSMSMSNotificationService(BaseNotificationService):
             return
 
         gateway = self.hass.data[DOMAIN][SMS_GATEWAY][GATEWAY]
+        sms_manager = self.hass.data[DOMAIN][SMS_GATEWAY].get(SMS_MANAGER)
 
         targets = kwargs.get(CONF_TARGET)
         if targets is None:
@@ -56,11 +59,19 @@ class LegacyGSMSMSNotificationService(BaseNotificationService):
 
         if extended_data is None:
             is_unicode = True
+            is_flash = False
         else:
             is_unicode = extended_data.get(CONF_UNICODE, True)
+            is_flash = extended_data.get(CONF_FLASH, False)
+
+        # Flash SMS uses Class 0, normal SMS uses Class -1 (default)
+        sms_class = 0 if is_flash else -1
+
+        if is_flash:
+            _LOGGER.info("Sending Flash SMS (Class 0)")
 
         smsinfo = {
-            "Class": -1,
+            "Class": sms_class,
             "Unicode": is_unicode,
             "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": message}],
         }
@@ -69,6 +80,8 @@ class LegacyGSMSMSNotificationService(BaseNotificationService):
             encoded = gammu.EncodeSMS(smsinfo)
         except gammu.GSMError as exc:
             _LOGGER.error("Encoding message %s failed: %s", message, exc)
+            if sms_manager:
+                sms_manager.record_modem_failure(str(exc))
             return
 
         # Send messages
@@ -81,5 +94,12 @@ class LegacyGSMSMSNotificationService(BaseNotificationService):
                 try:
                     # Actually send the message
                     await gateway.send_sms_async(encoded_message)
+                    # Record successful send
+                    if sms_manager:
+                        sms_manager.record_sms_sent()
+                        sms_manager.record_modem_success()
+                    _LOGGER.info("SMS sent to %s", target)
                 except gammu.GSMError as exc:
                     _LOGGER.error("Sending to %s failed: %s", target, exc)
+                    if sms_manager:
+                        sms_manager.record_modem_failure(str(exc))

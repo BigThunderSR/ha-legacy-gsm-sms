@@ -18,29 +18,114 @@
       "single_instance_allowed": "[%key:common::config_flow::abort::single_instance_allowed%]"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SMS Gateway Options",
+        "data": {
+          "sms_check_interval": "SMS Check Interval (seconds)",
+          "auto_delete_read_sms": "Auto-delete read SMS from SIM",
+          "sms_history_max_messages": "Maximum SMS History Size"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "bit_error_rate": {
-        "name": "Bit error rate"
+        "name": "Bit Error Rate"
       },
       "cid": {
         "name": "Cell ID"
       },
       "lac": {
-        "name": "Local area code"
+        "name": "Local Area Code"
       },
       "network_code": {
-        "name": "GSM network code"
+        "name": "GSM Network Code"
       },
       "network_name": {
-        "name": "Network name"
+        "name": "Network Name"
       },
       "signal_percent": {
-        "name": "Signal percent"
+        "name": "Signal Percent"
       },
       "state": {
-        "name": "Network status"
+        "name": "Network Status"
+      },
+      "sms_sent_count": {
+        "name": "SMS Sent Count"
+      },
+      "sms_received_count": {
+        "name": "SMS Received Count"
+      },
+      "last_sms": {
+        "name": "Last SMS Received"
+      },
+      "modem_status": {
+        "name": "Modem Status"
       }
+    },
+    "button": {
+      "send_sms": {
+        "name": "Send SMS"
+      },
+      "send_flash_sms": {
+        "name": "Send Flash SMS"
+      },
+      "delete_all_sms": {
+        "name": "Delete All SMS"
+      },
+      "reset_sent_counter": {
+        "name": "Reset Sent Counter"
+      },
+      "reset_received_counter": {
+        "name": "Reset Received Counter"
+      }
+    },
+    "text": {
+      "phone_number": {
+        "name": "Phone Number"
+      },
+      "message_text": {
+        "name": "Message Text"
+      }
+    }
+  },
+  "services": {
+    "send_sms": {
+      "name": "Send SMS",
+      "description": "Send an SMS message via the GSM modem. Supports multiple recipients (comma-separated).",
+      "fields": {
+        "number": {
+          "name": "Phone Number",
+          "description": "The phone number(s) to send the SMS to. Use commas to separate multiple numbers."
+        },
+        "message": {
+          "name": "Message",
+          "description": "The text message to send."
+        },
+        "unicode": {
+          "name": "Unicode",
+          "description": "Whether to send the message as Unicode."
+        },
+        "flash": {
+          "name": "Flash SMS",
+          "description": "Send as Flash SMS (Class 0) that displays on screen without saving."
+        }
+      }
+    },
+    "delete_all_sms": {
+      "name": "Delete All SMS",
+      "description": "Delete all SMS messages stored on the SIM card."
+    },
+    "reset_sent_counter": {
+      "name": "Reset Sent Counter",
+      "description": "Reset the SMS sent counter to zero."
+    },
+    "reset_received_counter": {
+      "name": "Reset Received Counter",
+      "description": "Reset the SMS received counter to zero."
     }
   }
 }

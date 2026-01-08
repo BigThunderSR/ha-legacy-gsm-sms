@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.1] - 2026-01-08
+
+### Added
+
+- **Comprehensive test suite** 🧪
+  - Added 21 automated tests for GET endpoint functionality
+  - Tests cover IP whitelisting, URL decoding, deduplication, config defaults, and path parsing
+  - Integrated into CI/CD pipeline for automated validation
+
 ## [2.17.0] - 2026-01-08
 
 ### Added

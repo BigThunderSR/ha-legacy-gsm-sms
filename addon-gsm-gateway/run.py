@@ -176,11 +176,20 @@ device_path = config.get('device_path', '/dev/ttyUSB0')
 # GET endpoint security settings
 get_endpoint_auth_required = config.get('get_endpoint_auth_required', False)
 get_endpoint_allowed_ips = config.get('get_endpoint_allowed_ips', [])
+get_endpoint_deduplication_enabled = config.get('get_endpoint_deduplication_enabled', True)
 logging.info(
     f"🔒 GET endpoint auth: {'REQUIRED' if get_endpoint_auth_required else 'DISABLED'}"
 )
 if get_endpoint_allowed_ips:
     logging.info(f"🌐 GET endpoint IP whitelist: {get_endpoint_allowed_ips}")
+logging.info(
+    f"🔄 GET endpoint deduplication: {'ENABLED' if get_endpoint_deduplication_enabled else 'DISABLED'}"
+)
+
+# SMS deduplication cache for GET endpoint (prevents device retries)
+# Format: {"number|text": timestamp}
+_sms_dedup_cache = {}
+_sms_dedup_window = 15  # seconds
 
 # Configure network type cache duration
 network_type_cache_seconds = config.get('network_type_cache_seconds', 300)
@@ -744,6 +753,29 @@ class SmsGet(Resource):
         
         logging.info(f"📨 GET SMS request - Number: '{sms_number}', Text: '{sms_text}'")
         
+        # Check for duplicate request (device retry) if enabled
+        import time
+        dedup_key = f"{sms_number}|{sms_text}"
+        current_time = time.time()
+        
+        if get_endpoint_deduplication_enabled:
+            # Clean old entries from cache
+            global _sms_dedup_cache
+            _sms_dedup_cache = {k: v for k, v in _sms_dedup_cache.items() 
+                                if current_time - v < _sms_dedup_window}
+            
+            # Check if this SMS was just sent
+            if dedup_key in _sms_dedup_cache:
+                time_since = current_time - _sms_dedup_cache[dedup_key]
+                logging.info(
+                    f"⏭️  Skipping duplicate SMS to {sms_number} "
+                    f"(sent {time_since:.1f}s ago)"
+                )
+                return {
+                    "status": 200,
+                    "message": f"SMS already sent to {sms_number} recently"
+                }, 200
+        
         # Encode and send SMS (same logic as POST)
         try:
             # Auto-detect unicode
@@ -778,6 +810,10 @@ class SmsGet(Resource):
                 message["Number"] = sms_number
                 messages.append(message)
             
+            # Validate we got messages
+            if not messages:
+                raise ValueError("encodeSms returned no messages")
+            
             # Queue SMS first
             smsc = messages[0].get("SMSC", {}).get("Number")
             mqtt_publisher.queue_sms_for_retry(sms_number, sms_text, smsc)
@@ -790,6 +826,10 @@ class SmsGet(Resource):
             mqtt_publisher.sms_queue.remove(sms_number, sms_text)
             mqtt_publisher.sms_counter.increment()
             mqtt_publisher.publish_sms_counter()
+            
+            # Add to deduplication cache if enabled
+            if get_endpoint_deduplication_enabled:
+                _sms_dedup_cache[dedup_key] = current_time
             
             logging.info(f"✅ SMS sent via GET to {sms_number}")
             

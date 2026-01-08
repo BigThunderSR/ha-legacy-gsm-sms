@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: 2.16.1
+version: 2.17.0
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
@@ -88,6 +88,12 @@ options:
     - "Remaining"
     - "expires"
     - "balance of"
+  get_endpoint_auth_required: false
+  get_endpoint_allowed_ips:
+    - "192.168.0.0/16"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "127.0.0.1"
 schema:
   device_path: str
   pin: str?
@@ -119,4 +125,7 @@ schema:
   balance_sms_sender: str
   balance_currency: str
   balance_keywords:
+    - str
+  get_endpoint_auth_required: bool
+  get_endpoint_allowed_ips:
     - str

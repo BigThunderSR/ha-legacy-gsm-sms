@@ -155,6 +155,15 @@ username = config.get('username', 'admin')
 password = config.get('password', 'password')
 device_path = config.get('device_path', '/dev/ttyUSB0')
 
+# GET endpoint security settings
+get_endpoint_auth_required = config.get('get_endpoint_auth_required', False)
+get_endpoint_allowed_ips = config.get('get_endpoint_allowed_ips', [])
+logging.info(
+    f"🔒 GET endpoint auth: {'REQUIRED' if get_endpoint_auth_required else 'DISABLED'}"
+)
+if get_endpoint_allowed_ips:
+    logging.info(f"🌐 GET endpoint IP whitelist: {get_endpoint_allowed_ips}")
+
 # Configure network type cache duration
 network_type_cache_seconds = config.get('network_type_cache_seconds', 300)
 set_network_type_cache_duration(network_type_cache_seconds)
@@ -624,6 +633,148 @@ class SmsCollection(Resource):
             return {"status": 200, "message": msg}, 200
         else:
             return {"status": 200, "message": f"Sent to {sent_count} number(s)"}, 200
+
+@ns_sms.route('/<path:sms_data>')
+@ns_sms.doc('send_sms_get')
+class SmsGet(Resource):
+    @ns_sms.doc('send_sms_via_get')
+    @ns_sms.doc(
+        params={
+            'sms_data': 'Phone and message: {PHONE}&{MESSAGE} (URL-encoded)'
+        },
+        description='''
+        Send SMS via GET request with data in URL path.
+        Format: GET /sms/{PHONE_NUMBER}&{MESSAGE}
+        Example: GET /sms/5555551234&Your+message+here
+        
+        Note: No authentication required (legacy compatibility).
+        Use POST /sms for authenticated requests.
+        '''
+    )
+    def get(self, sms_data):
+        """Send SMS via GET request (legacy compatibility)"""
+        # Check IP whitelist
+        client_ip = request.remote_addr
+        if get_endpoint_allowed_ips:
+            if not is_ip_allowed(client_ip, get_endpoint_allowed_ips):
+                logging.warning(
+                    f"🚫 Access denied from {client_ip} "
+                    f"(not in whitelist)"
+                )
+                return {
+                    'status': 403,
+                    'message': 'Access denied - IP not authorized'
+                }, 403
+        
+        # Check auth if required
+        if get_endpoint_auth_required:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                logging.warning(
+                    f"🔒 Unauthorized GET request from {client_ip}"
+                )
+                return {
+                    'status': 401,
+                    'message': 'Authentication required'
+                }, 401
+            
+            # Verify Basic Auth
+            try:
+                import base64
+                auth_type, credentials = auth_header.split(' ', 1)
+                if auth_type.lower() != 'basic':
+                    return {'status': 401, 'message': 'Invalid auth'}, 401
+                
+                decoded = base64.b64decode(credentials).decode('utf-8')
+                provided_user, provided_pass = decoded.split(':', 1)
+                
+                if provided_user != username or provided_pass != password:
+                    logging.warning(f"🔒 Invalid credentials from {client_ip}")
+                    return {'status': 401, 'message': 'Invalid credentials'}, 401
+            except Exception as e:
+                logging.error(f"Auth error: {e}")
+                return {'status': 401, 'message': 'Auth error'}, 401
+        
+        # Parse path: {PHONE}&{MESSAGE}
+        if '&' not in sms_data:
+            return {
+                "status": 400,
+                "message": "Invalid format. Use: /sms/{PHONE}&{MESSAGE}"
+            }, 400
+        
+        # Split on first &
+        parts = sms_data.split('&', 1)
+        if len(parts) != 2:
+            return {
+                "status": 400,
+                "message": "Invalid format. Use: /sms/{PHONE}&{MESSAGE}"
+            }, 400
+        
+        sms_number = parts[0].strip()
+        sms_text = parts[1].strip()
+        
+        # URL decode (replace + with space, etc.)
+        from urllib.parse import unquote_plus
+        sms_number = unquote_plus(sms_number)
+        sms_text = unquote_plus(sms_text)
+        
+        if not sms_number or not sms_text:
+            return {
+                "status": 400,
+                "message": "Phone number and message cannot be empty"
+            }, 400
+        
+        logging.info(
+            f"📨 GET SMS request - Number: '{sms_number}', "
+            f"Text: '{sms_text}'"
+        )
+        
+        # Encode and send SMS (same logic as POST)
+        try:
+            # Auto-detect unicode
+            try:
+                sms_text.encode('ascii')
+                unicode_mode = False
+            except UnicodeEncodeError:
+                unicode_mode = True
+            
+            # Encode SMS
+            message = encodeSms(
+                sms_number, sms_text, unicode=unicode_mode, flash=False
+            )
+            
+            # Get SMSC for potential queue
+            smsc = None
+            if message.get("SMSC") and message["SMSC"].get("Number"):
+                smsc = message["SMSC"]["Number"]
+            
+            # Queue SMS first
+            mqtt_publisher.queue_sms_for_retry(sms_number, sms_text, smsc)
+            
+            # Send SMS
+            mqtt_publisher.track_gammu_operation(
+                "SendSMS", machine.SendSMS, message
+            )
+            
+            # Success - remove from queue
+            mqtt_publisher.sms_queue.remove(sms_number, sms_text)
+            mqtt_publisher.sms_counter.increment()
+            mqtt_publisher.publish_sms_counter()
+            
+            logging.info(f"✅ SMS sent via GET to {sms_number}")
+            
+            return {
+                "status": 200,
+                "message": f"SMS sent to {sms_number}"
+            }, 200
+            
+        except Exception as e:
+            logging.error(f"❌ GET SMS failed for {sms_number}: {e}")
+            return {
+                "status": 500,
+                "message": f"Failed to send SMS: {str(e)}"
+            }, 500
+
 
 @ns_sms.route('/<int:id>')
 @ns_sms.doc('sms_by_id')

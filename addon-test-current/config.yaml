@@ -1,5 +1,5 @@
 name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.16.1-test
+version: 2.17.0-test
 slug: "gsm_sms_gateway_test_current"
 description: |
   🧪 TEST VERSION - Current development build for experimentation (v2.15.0-test)
@@ -92,6 +92,12 @@ options:
     - "Remaining"
     - "expires"
     - "balance of"
+  get_endpoint_auth_required: false
+  get_endpoint_allowed_ips:
+    - "192.168.0.0/16"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "127.0.0.1"
 schema:
   device_path: str
   pin: str?
@@ -123,4 +129,7 @@ schema:
   balance_sms_sender: str
   balance_currency: str
   balance_keywords:
+    - str
+  get_endpoint_auth_required: bool
+  get_endpoint_allowed_ips:
     - str

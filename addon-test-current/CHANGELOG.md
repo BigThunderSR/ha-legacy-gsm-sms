@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.16.1-test] - 2026-01-08
+## [2.17.0-test] - 2026-01-08
+
+### Added
+
+- **GET endpoint for SMS sending** 🆕
+  - New GET endpoint for legacy system compatibility
+  - Format: `GET /sms/{PHONE_NUMBER}&{MESSAGE}`
+  - Example: `GET /sms/5555551234&Your+message+here`
+  - Automatic URL decoding and Unicode detection
+  - Ideal for devices that only support GET requests
+- **GET endpoint security controls** 🔒
+  - `get_endpoint_auth_required`: Toggle authentication requirement (default: false for legacy compatibility)
+  - `get_endpoint_allowed_ips`: IP whitelist using CIDR notation
+  - Default whitelist: `192.168.0.0/16`, `10.0.0.0/8`, `172.16.0.0/12`, `127.0.0.1`
+  - Blocks requests from unauthorized IPs with 403 error
+  - Optionally require HTTP Basic Auth for GET endpoint
 
 ### Fixed
 

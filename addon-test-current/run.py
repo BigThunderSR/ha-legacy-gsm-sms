@@ -738,23 +738,40 @@ class SmsGet(Resource):
             except UnicodeEncodeError:
                 unicode_mode = True
             
-            # Encode SMS
-            message = encodeSms(
-                sms_number, sms_text, unicode=unicode_mode, flash=False
-            )
+            # Build smsinfo dict (same as POST endpoint)
+            smsinfo = {
+                "Class": -1,  # Normal SMS
+                "Unicode": unicode_mode,
+                "Entries": [
+                    {
+                        "ID": "ConcatenatedTextLong",
+                        "Buffer": sms_text,
+                    }
+                ],
+            }
             
-            # Get SMSC for potential queue
-            smsc = None
-            if message.get("SMSC") and message["SMSC"].get("Number"):
-                smsc = message["SMSC"]["Number"]
+            # Get cached SMSC for reliable sending
+            cached_smsc = mqtt_publisher.get_cached_smsc()
+            
+            # Encode SMS (returns list of message parts)
+            messages = []
+            for message in encodeSms(smsinfo):
+                if cached_smsc:
+                    message["SMSC"] = {'Number': cached_smsc}
+                else:
+                    message["SMSC"] = {'Location': 1}
+                message["Number"] = sms_number
+                messages.append(message)
             
             # Queue SMS first
+            smsc = messages[0].get("SMSC", {}).get("Number")
             mqtt_publisher.queue_sms_for_retry(sms_number, sms_text, smsc)
             
-            # Send SMS
-            mqtt_publisher.track_gammu_operation(
-                "SendSMS", machine.SendSMS, message
-            )
+            # Send all message parts
+            for message in messages:
+                mqtt_publisher.track_gammu_operation(
+                    "SendSMS", machine.SendSMS, message
+                )
             
             # Success - remove from queue
             mqtt_publisher.sms_queue.remove(sms_number, sms_text)

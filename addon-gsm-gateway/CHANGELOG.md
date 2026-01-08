@@ -21,6 +21,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **GET endpoint SMS encoding** 🐛
+  - Fixed incorrect call to `encodeSms()` function that caused "unexpected keyword argument 'unicode'" error
+  - GET endpoint now properly constructs smsinfo dict matching POST endpoint behavior
+  - Resolves issue where GET requests would fail with encoding errors
 - **REST API now accepts form-encoded requests** 📝
   - Added support for `application/x-www-form-urlencoded` Content-Type
   - API now accepts both JSON and form-encoded data for SMS sending

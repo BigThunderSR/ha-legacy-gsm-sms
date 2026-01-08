@@ -438,10 +438,29 @@ class SmsCollection(Resource):
     @auth.login_required
     def post(self):
         """Send SMS message(s)"""
-        # Use request.get_json() to handle JSON arrays properly instead of reqparse
-        data = request.get_json() or {}
+        # Support both JSON and form-encoded data
+        # Check Content-Type to decide how to parse request
+        content_type = request.content_type or ''
         
-        # Also check query parameters and form data as fallback
+        if 'application/json' in content_type:
+            # JSON request - use get_json()
+            data = request.get_json() or {}
+        elif 'application/x-www-form-urlencoded' in content_type or 'multipart/form-data' in content_type:
+            # Form-encoded request - use form data
+            data = dict(request.form)
+            # Convert boolean strings to actual booleans
+            if 'unicode' in data:
+                data['unicode'] = data['unicode'].lower() in ('true', '1', 'yes')
+            if 'flash' in data:
+                data['flash'] = data['flash'].lower() in ('true', '1', 'yes')
+        else:
+            # Try both methods as fallback
+            data = request.get_json(silent=True) or {}
+            if not data:
+                # Fall back to form data
+                data = dict(request.form)
+        
+        # If still no data, try query parameters as last resort
         if not data:
             parser = reqparse.RequestParser()
             parser.add_argument('text', required=False, help='SMS message text')

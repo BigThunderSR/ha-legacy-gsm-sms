@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.3] - 2026-01-08
+
+### Fixed
+
+- **Swagger parameter format** 🔧
+  - Simplified GET endpoint parameter to use Swagger 2.0 compatible single example
+  - Parameter now shows default value: `5555551234&Test+message`
+  - Improved compatibility with Flask-RESTX/Swagger UI
+  - Execute button works correctly for testing endpoint
+
 ## [2.17.2] - 2026-01-08
 
 ### Improved

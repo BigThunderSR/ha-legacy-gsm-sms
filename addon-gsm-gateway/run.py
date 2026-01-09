@@ -668,17 +668,21 @@ class SmsGet(Resource):
     @ns_sms.doc('send_sms_via_get')
     @ns_sms.doc(
         params={
-            'sms_data': 'Phone number and message in format: {PHONE}&{MESSAGE} (URL-encoded)'
+            'sms_data': {
+                'description': 'Phone number and message format: {PHONE}&{MESSAGE}',
+                'type': 'string',
+                'example': '5555551234&Test+message'
+            }
         },
         description='''
         Send SMS via GET request with data in URL path - designed for legacy devices.
         
         📱 **Format:** GET /sms/{PHONE_NUMBER}&{MESSAGE}
         
-        📋 **Examples:**
-        • GET /sms/5555551234&Test+message
-        • GET /sms/%2B15555551234&Hello%20World
-        • GET /sms/5555551234&Message+with+%26+special+chars
+        📋 **Try These Examples:**
+        • Basic: /sms/5555551234&Test+message
+        • International: /sms/%2B15555551234&Hello%20World
+        • Special chars: /sms/5555551234&Message+with+%26+special+chars
         
         🔒 **Security (Configurable):**
         • IP Whitelisting: Only allowed IPs can access (default: private networks only)
@@ -697,6 +701,10 @@ class SmsGet(Resource):
         • Deduplication uses: {phone}|{message} as cache key
         '''
     )
+    @ns_sms.response(200, 'SMS sent successfully', send_response)
+    @ns_sms.response(400, 'Invalid request format')
+    @ns_sms.response(401, 'Authentication required')
+    @ns_sms.response(403, 'IP address not authorized')
     def get(self, sms_data):
         """Send SMS via GET request (legacy compatibility)"""
         # Check IP whitelist

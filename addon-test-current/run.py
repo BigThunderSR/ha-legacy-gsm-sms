@@ -650,17 +650,43 @@ class SmsGet(Resource):
     @ns_sms.doc('send_sms_via_get')
     @ns_sms.doc(
         params={
-            'sms_data': 'Phone and message: {PHONE}&{MESSAGE} (URL-encoded)'
+            'sms_data': {
+                'description': 'Phone number and message format: {PHONE}&{MESSAGE}',
+                'type': 'string',
+                'example': '5555551234&Test+message'
+            }
         },
         description='''
-        Send SMS via GET request with data in URL path.
-        Format: GET /sms/{PHONE_NUMBER}&{MESSAGE}
-        Example: GET /sms/5555551234&Your+message+here
+        Send SMS via GET request with data in URL path - designed for legacy devices.
         
-        Note: No authentication required (legacy compatibility).
-        Use POST /sms for authenticated requests.
+        📱 **Format:** GET /sms/{PHONE_NUMBER}&{MESSAGE}
+        
+        📋 **Try These Examples:**
+        • Basic: /sms/5555551234&Test+message
+        • International: /sms/%2B15555551234&Hello%20World
+        • Special chars: /sms/5555551234&Message+with+%26+special+chars
+        
+        🔒 **Security (Configurable):**
+        • IP Whitelisting: Only allowed IPs can access (default: private networks only)
+        • Optional Authentication: Can require HTTP Basic Auth (disabled by default)
+        • Deduplication: Prevents duplicate SMS within 15-second window (enabled by default)
+        
+        ⚙️ **Configuration Options:**
+        • get_endpoint_auth_required (default: false) - Toggle authentication
+        • get_endpoint_allowed_ips (default: private networks) - CIDR IP whitelist
+        • get_endpoint_deduplication_enabled (default: true) - Duplicate prevention
+        
+        📝 **Notes:**
+        • URL encoding: Use + or %20 for spaces, %2B for + in phone numbers
+        • Authentication disabled by default for legacy device compatibility
+        • Use POST /sms for authenticated requests in modern applications
+        • Deduplication uses: {phone}|{message} as cache key
         '''
     )
+    @ns_sms.response(200, 'SMS sent successfully', send_response)
+    @ns_sms.response(400, 'Invalid request format')
+    @ns_sms.response(401, 'Authentication required')
+    @ns_sms.response(403, 'IP address not authorized')
     def get(self, sms_data):
         """Send SMS via GET request (legacy compatibility)"""
         # Check IP whitelist

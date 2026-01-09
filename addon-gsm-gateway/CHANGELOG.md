@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.5] - 2026-01-09
+
+### Improved
+
+- **Swagger UI GET endpoint positioning** 📋
+  - Added `/sms/add/{sms_data}` route alias for better Swagger UI discoverability
+  - New route appears right after POST /sms and GET /sms in API documentation
+  - Original `/sms/{sms_data}` route preserved for backward compatibility with legacy devices
+  - Both routes point to same endpoint - no functionality changes
+  - Updated Swagger documentation with clearer examples and available paths
+
 ## [2.17.4] - 2026-01-08
 
 ### Improved

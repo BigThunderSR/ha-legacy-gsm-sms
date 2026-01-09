@@ -644,6 +644,7 @@ class SmsCollection(Resource):
         else:
             return {"status": 200, "message": f"Sent to {sent_count} number(s)"}, 200
 
+@ns_sms.route('/add/<path:sms_data>')
 @ns_sms.route('/<path:sms_data>')
 @ns_sms.doc('send_sms_get')
 class SmsGet(Resource):
@@ -657,14 +658,15 @@ class SmsGet(Resource):
             }
         },
         description='''
-        Send SMS via GET request with data in URL path - designed for legacy devices.
+        Add/Send SMS via GET request with data in URL path - designed for legacy devices.
         
-        📱 **Format:** GET /sms/{PHONE_NUMBER}&{MESSAGE}
+        📱 **Format:** GET /sms/add/{PHONE_NUMBER}&{MESSAGE} (or /sms/{PHONE_NUMBER}&{MESSAGE})
         
         📋 **Try These Examples:**
-        • Basic: /sms/5555551234&Test+message
-        • International: /sms/%2B15555551234&Hello%20World
-        • Special chars: /sms/5555551234&Message+with+%26+special+chars
+        • Basic: /sms/add/5555551234&Test+message
+        • International: /sms/add/%2B15555551234&Hello%20World
+        • Special chars: /sms/add/5555551234&Message+with+%26+special+chars
+        • Legacy path: /sms/5555551234&Test+message (backward compatible)
         
         🔒 **Security (Configurable):**
         • IP Whitelisting: Only allowed IPs can access (default: private networks only)
@@ -677,6 +679,7 @@ class SmsGet(Resource):
         • get_endpoint_deduplication_enabled (default: true) - Duplicate prevention
         
         📝 **Notes:**
+        • Available paths: /sms/add/{data} (recommended) or /sms/{data} (legacy)
         • URL encoding: Use + or %20 for spaces, %2B for + in phone numbers
         • Authentication disabled by default for legacy device compatibility
         • Use POST /sms for authenticated requests in modern applications

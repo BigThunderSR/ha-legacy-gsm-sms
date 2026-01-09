@@ -17,6 +17,7 @@ def test_route_definitions_exist():
     
     # Check all routes exist
     assert "@ns_sms.route('')" in content, "POST /sms route not found"
+    assert "@ns_sms.route('/add/<path:sms_data>')" in content, "GET /sms/add/{sms_data} route not found"
     assert "@ns_sms.route('/<path:sms_data>')" in content, "GET /sms/{sms_data} route not found"
     assert "@ns_sms.route('/getsms')" in content, "GET /sms/getsms route not found"
     assert "@ns_sms.route('/deleteall')" in content, "DELETE /sms/deleteall route not found"

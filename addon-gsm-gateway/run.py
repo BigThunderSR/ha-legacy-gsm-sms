@@ -352,6 +352,7 @@ def home():
                 • GET /status/network - Network information<br>
                 • POST /sms - Send SMS (requires authentication)<br>
                 • GET /sms - Get all SMS (requires authentication)<br>
+                • GET /sms/{PHONE}&{MESSAGE} - Send SMS via GET (legacy compatibility, optional auth)<br>
                 <br>
                 <strong>Authentication in Swagger UI:</strong><br>
                 1. Click the "Authorize" button 🔒 in the top right corner<br>
@@ -670,12 +671,30 @@ class SmsGet(Resource):
             'sms_data': 'Phone number and message in format: {PHONE}&{MESSAGE} (URL-encoded)'
         },
         description='''
-        Send SMS via GET request with data in URL path.
-        Format: GET /sms/{PHONE_NUMBER}&{MESSAGE}
-        Example: GET /sms/5555551234&Your+message+here
+        Send SMS via GET request with data in URL path - designed for legacy devices.
         
-        Note: This endpoint does not require authentication for compatibility with legacy systems.
-        Use POST /sms for authenticated requests.
+        📱 **Format:** GET /sms/{PHONE_NUMBER}&{MESSAGE}
+        
+        📋 **Examples:**
+        • GET /sms/5555551234&Test+message
+        • GET /sms/%2B15555551234&Hello%20World
+        • GET /sms/5555551234&Message+with+%26+special+chars
+        
+        🔒 **Security (Configurable):**
+        • IP Whitelisting: Only allowed IPs can access (default: private networks only)
+        • Optional Authentication: Can require HTTP Basic Auth (disabled by default)
+        • Deduplication: Prevents duplicate SMS within 15-second window (enabled by default)
+        
+        ⚙️ **Configuration Options:**
+        • get_endpoint_auth_required (default: false) - Toggle authentication
+        • get_endpoint_allowed_ips (default: private networks) - CIDR IP whitelist
+        • get_endpoint_deduplication_enabled (default: true) - Duplicate prevention
+        
+        📝 **Notes:**
+        • URL encoding: Use + or %20 for spaces, %2B for + in phone numbers
+        • Authentication disabled by default for legacy device compatibility
+        • Use POST /sms for authenticated requests in modern applications
+        • Deduplication uses: {phone}|{message} as cache key
         '''
     )
     def get(self, sms_data):

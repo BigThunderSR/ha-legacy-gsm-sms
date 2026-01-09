@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.2] - 2026-01-08
+
+### Improved
+
+- **Enhanced Swagger API documentation** 📖
+  - Added comprehensive GET endpoint documentation with emoji sections
+  - Documented all security features (IP whitelisting, optional auth, deduplication)
+  - Added practical examples with different URL encoding scenarios
+  - Documented configuration options with default values
+  - Added usage notes and best practices
+  - Updated home page endpoint list to include new GET endpoint
+
 ## [2.17.1] - 2026-01-08
 
 ### Added

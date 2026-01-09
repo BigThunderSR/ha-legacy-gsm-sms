@@ -334,6 +334,7 @@ def home():
                 • GET /status/network - Network information<br>
                 • POST /sms - Send SMS (requires authentication)<br>
                 • GET /sms - Get all SMS (requires authentication)<br>
+                • GET /sms/{PHONE}&{MESSAGE} - Send SMS via GET (legacy compatibility, optional auth)<br>
                 <br>
                 <strong>Authentication in Swagger UI:</strong><br>
                 1. Click the "Authorize" button 🔒 in the top right corner<br>

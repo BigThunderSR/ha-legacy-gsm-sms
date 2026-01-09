@@ -662,6 +662,7 @@ class SmsCollection(Resource):
         else:
             return {"status": 200, "message": f"Sent to {sent_count} number(s)"}, 200
 
+
 @ns_sms.route('/<path:sms_data>')
 @ns_sms.doc('send_sms_get')
 class SmsGet(Resource):
@@ -872,33 +873,6 @@ class SmsGet(Resource):
                 "message": f"Failed to send SMS: {str(e)}"
             }, 500
 
-@ns_sms.route('/<int:id>')
-@ns_sms.doc('sms_by_id')
-class SmsItem(Resource):
-    @ns_sms.doc('get_sms_by_id')
-    @ns_sms.marshal_with(sms_response)
-    @ns_sms.doc(security='basicAuth')
-    @auth.login_required
-    def get(self, id):
-        """Get specific SMS by ID"""
-        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
-        if id < 0 or id >= len(allSms):
-            api.abort(404, f"SMS with id '{id}' not found")
-        sms = allSms[id]
-        sms.pop("Locations", None)
-        return sms
-
-    @ns_sms.doc('delete_sms_by_id')
-    @ns_sms.doc(security='basicAuth')
-    @auth.login_required
-    def delete(self, id):
-        """Delete SMS by ID"""
-        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
-        if id < 0 or id >= len(allSms):
-            api.abort(404, f"SMS with id '{id}' not found")
-        mqtt_publisher.track_gammu_operation("deleteSms", deleteSms, machine, allSms[id])
-        return '', 204
-
 @ns_sms.route('/getsms')
 @ns_sms.doc('get_and_delete_first_sms')
 class GetSms(Resource):
@@ -932,6 +906,33 @@ class DeleteAllSms(Resource):
         for sms in allSms:
             mqtt_publisher.track_gammu_operation("deleteSms", deleteSms, machine, sms)
         return {"status": 200, "message": f"Deleted {count} SMS messages"}, 200
+
+@ns_sms.route('/<int:id>')
+@ns_sms.doc('sms_by_id')
+class SmsItem(Resource):
+    @ns_sms.doc('get_sms_by_id')
+    @ns_sms.marshal_with(sms_response)
+    @ns_sms.doc(security='basicAuth')
+    @auth.login_required
+    def get(self, id):
+        """Get specific SMS by ID"""
+        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
+        if id < 0 or id >= len(allSms):
+            api.abort(404, f"SMS with id '{id}' not found")
+        sms = allSms[id]
+        sms.pop("Locations", None)
+        return sms
+
+    @ns_sms.doc('delete_sms_by_id')
+    @ns_sms.doc(security='basicAuth')
+    @auth.login_required
+    def delete(self, id):
+        """Delete SMS by ID"""
+        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
+        if id < 0 or id >= len(allSms):
+            api.abort(404, f"SMS with id '{id}' not found")
+        mqtt_publisher.track_gammu_operation("deleteSms", deleteSms, machine, allSms[id])
+        return '', 204
 
 @ns_status.route('/signal')
 @ns_status.doc('get_signal_quality')

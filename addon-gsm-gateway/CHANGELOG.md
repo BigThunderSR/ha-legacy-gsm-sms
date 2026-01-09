@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.4] - 2026-01-08
+
+### Improved
+
+- **Swagger UI endpoint organization** 📋
+  - Reorganized endpoint order for better UX and discoverability
+  - GET /sms/{sms_data} (send via GET) now appears immediately after POST /sms
+  - Both SMS sending endpoints are now grouped together logically
+  - Individual SMS operations (GET/DELETE by ID) moved to end of SMS section
+  - New order: Send (POST) → Send (GET) → List → Delete All → Operations by ID
+
 ## [2.17.3] - 2026-01-08
 
 ### Fixed

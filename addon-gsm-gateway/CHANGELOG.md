@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.6] - 2026-01-12
+
+### Fixed
+
+- **Critical: MMS notification crash protection** 🛡️
+
+  - Added robust SMS decoding with fallback for binary/corrupted messages
+  - Prevents addon crash when receiving MMS notifications
+  - DELETE ALL endpoint now works even with MMS on SIM card
+  - Safely handles UnicodeDecodeError with error replacement
+  - Based on upstream PavelVe v1.5.7 fix
+
+- **Flask-RESTX authentication error handling** 🔐
+  - Fixed marshalling errors on unauthenticated requests
+  - Proper 401 responses instead of MarshallingError
+  - Added `code=200` parameter to all `@marshal_with` decorators
+  - Based on upstream PavelVe v1.5.7 fix
+
 ## [2.17.5] - 2026-01-09
 
 ### Improved

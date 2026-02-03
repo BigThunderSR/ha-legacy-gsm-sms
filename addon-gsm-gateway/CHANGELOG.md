@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.1] - 2026-02-02
+
+### Fixed
+
+- **Missed Call Detection via Ring Timeout** 📞
+  - Added 30-second ring timeout mechanism for missed call detection
+  - Fixes issue where calls going to voicemail weren't detected as missed
+  - Some modems don't send CallRemoteEnd when caller hangs up or goes to voicemail
+  - Ring timeout now properly triggers missed call sensor update
+  - New attribute `detected_by: ring_timeout` indicates timeout-based detection
+
+- **Fixed setupCallbacks return keys**
+  - Corrected key mismatch between `setupCallbacks()` and `start_callback_monitoring()`
+  - Was returning `{'calls', 'sms'}`, now returns `{'incoming_call', 'incoming_sms'}`
+
 ## [2.18.0] - 2026-02-02
 
 ### Added

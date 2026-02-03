@@ -837,6 +837,8 @@ class MQTTPublisher:
         self.call_monitoring_enabled = False
         self.current_call = None  # {'number': str, 'ring_start': datetime, 'ring_count': int}
         self._read_device_thread = None
+        self._call_ring_timer = None  # Timer to detect missed calls via timeout
+        self.RING_TIMEOUT_SECONDS = 30  # If no ring event for this long, call is missed
 
         # SMS callback (faster delivery, polling as fallback)
         self.sms_callback_enabled = False
@@ -2871,6 +2873,11 @@ class MQTTPublisher:
         logger.debug(f"📞 Call event: status={status}, number={number}")
 
         if status == 'IncomingCall':
+            # Cancel any existing ring timeout timer
+            if self._call_ring_timer:
+                self._call_ring_timer.cancel()
+                self._call_ring_timer = None
+
             if self.current_call is None:
                 # New call - ringing started
                 self.current_call = {
@@ -2885,8 +2892,23 @@ class MQTTPublisher:
 
             self.publish_incoming_call_state(True)
 
+            # Start/reset ring timeout timer
+            # If no more ring events come within RING_TIMEOUT_SECONDS, call is considered missed
+            # This handles cases where modem doesn't send CallRemoteEnd (e.g., voicemail)
+            self._call_ring_timer = threading.Timer(
+                self.RING_TIMEOUT_SECONDS,
+                self._handle_ring_timeout
+            )
+            self._call_ring_timer.daemon = True
+            self._call_ring_timer.start()
+
         elif status in ['CallRemoteEnd', 'CallLocalEnd']:
             # Call ended (caller hung up or we did)
+            # Cancel ring timeout timer
+            if self._call_ring_timer:
+                self._call_ring_timer.cancel()
+                self._call_ring_timer = None
+
             if self.current_call:
                 from datetime import datetime
                 ring_end = datetime.now()
@@ -2907,9 +2929,44 @@ class MQTTPublisher:
 
         elif status == 'CallStart':
             # Call was answered - not missed, just reset state
+            # Cancel ring timeout timer
+            if self._call_ring_timer:
+                self._call_ring_timer.cancel()
+                self._call_ring_timer = None
+
             logger.info("📞 Call answered (not missed)")
             self.current_call = None
             self.publish_incoming_call_state(False)
+
+    def _handle_ring_timeout(self):
+        """
+        Handle ring timeout - call is considered missed if no events for RING_TIMEOUT_SECONDS.
+        This handles cases where the modem doesn't send CallRemoteEnd (e.g., voicemail pickup).
+        """
+        from datetime import datetime
+        if self.current_call:
+            ring_end = datetime.now()
+            duration = (ring_end - self.current_call['ring_start']).total_seconds()
+
+            logger.info(
+                f"📞 Ring timeout after {self.RING_TIMEOUT_SECONDS}s - "
+                f"marking as missed call from {self.current_call['number']}"
+            )
+
+            # Publish missed call
+            self.publish_missed_call({
+                'Number': self.current_call['number'],
+                'ring_start': self.current_call['ring_start'].isoformat(),
+                'ring_end': ring_end.isoformat(),
+                'ring_duration_seconds': int(duration),
+                'ring_count': self.current_call['ring_count'],
+                'detected_by': 'ring_timeout'
+            })
+
+            self.current_call = None
+            self.publish_incoming_call_state(False)
+
+        self._call_ring_timer = None
 
     def _handle_sms_event(self, sms_data):
         """Handle SMS event - trigger for faster processing."""

@@ -833,6 +833,16 @@ class MQTTPublisher:
         self.modem_operation_delay = config.get('modem_operation_delay', 0.3)
         logger.info(f"⏱️ Modem operation delay: {self.modem_operation_delay}s")
 
+        # Call monitoring (real-time via Gammu callbacks)
+        self.call_monitoring_enabled = False
+        self.current_call = None  # {'number': str, 'ring_start': datetime, 'ring_count': int}
+        self._read_device_thread = None
+
+        # SMS callback (faster delivery, polling as fallback)
+        self.sms_callback_enabled = False
+        self._sms_callback_pending = False  # Flag that SMS arrived
+        self._sms_callback_timer = None     # Debounce timer
+
         if config.get('mqtt_enabled', False):
             self._setup_client()
     
@@ -2165,7 +2175,44 @@ class MQTTPublisher:
                 **AVAILABILITY_CONFIG
             }
             discoveries.append(("homeassistant/sensor/sms_gateway/total_cost/config", sms_cost_config))
-        
+
+        # Add call monitoring sensors if enabled
+        if self.config.get('missed_calls_monitoring_enabled', False):
+            # Binary sensor - Incoming Call (real-time ringing detection)
+            incoming_call_config = {
+                "name": "Incoming Call",
+                "unique_id": "sms_gateway_incoming_call",
+                "state_topic": f"{self.topic_prefix}/incoming_call/state",
+                "payload_on": "ON",
+                "payload_off": "OFF",
+                "value_template": "{{ value_json.state }}",
+                "json_attributes_topic": f"{self.topic_prefix}/incoming_call/state",
+                "icon": "mdi:phone-ring",
+                "device_class": "sound",
+                "device": DEVICE_CONFIG,
+                **AVAILABILITY_CONFIG
+            }
+
+            # Sensor - Last Missed Call (with extended attributes)
+            missed_call_config = {
+                "name": "Last Missed Call",
+                "unique_id": "sms_gateway_last_missed_call",
+                "state_topic": f"{self.topic_prefix}/missed_call/state",
+                "value_template": "{{ value_json.Number }}",
+                "json_attributes_topic": f"{self.topic_prefix}/missed_call/state",
+                "icon": "mdi:phone-missed",
+                "device": DEVICE_CONFIG,
+                **AVAILABILITY_CONFIG
+            }
+
+            discoveries.extend([
+                ("homeassistant/binary_sensor/sms_gateway/incoming_call/config",
+                 incoming_call_config),
+                ("homeassistant/sensor/sms_gateway/last_missed_call/config",
+                 missed_call_config),
+            ])
+            logger.info("📞 Added call monitoring sensors to Home Assistant discovery")
+
         for topic, config in discoveries:
             self.client.publish(topic, json.dumps(config), retain=True, qos=1)
         
@@ -3419,3 +3466,176 @@ class MQTTPublisher:
                 logger.error(f"Error during MQTT disconnect: {e}")
         else:
             logger.debug("MQTT client not connected, nothing to disconnect")
+
+    # ==================== CALL MONITORING METHODS ====================
+
+    def publish_missed_call(self, call_data: dict):
+        """Publish missed call to MQTT (real-time callback version)."""
+        if not self.connected:
+            return
+
+        from datetime import datetime
+        # Add processed_at if missing
+        if 'processed_at' not in call_data:
+            call_data['processed_at'] = datetime.now().isoformat()
+
+        topic = f"{self.topic_prefix}/missed_call/state"
+        self.client.publish(topic, json.dumps(call_data), retain=True)
+
+        logger.info(
+            f"📞 Missed call from {call_data.get('Number', 'Unknown')} "
+            f"(rang {call_data.get('ring_duration_seconds', '?')}s, "
+            f"{call_data.get('ring_count', '?')} rings)"
+        )
+
+    def publish_incoming_call_state(self, is_ringing: bool):
+        """Publish incoming call state (real-time binary sensor)."""
+        if not self.connected:
+            return
+
+        if is_ringing and self.current_call:
+            payload = {
+                "state": "ON",
+                "Number": self.current_call['number'],
+                "ring_start": self.current_call['ring_start'].isoformat(),
+                "ring_count": self.current_call['ring_count']
+            }
+        else:
+            payload = {"state": "OFF"}
+
+        topic = f"{self.topic_prefix}/incoming_call/state"
+        self.client.publish(topic, json.dumps(payload), retain=False)
+
+        if is_ringing and self.current_call:
+            logger.info(
+                f"📞 RING #{self.current_call['ring_count']} "
+                f"from {self.current_call['number']}"
+            )
+
+    def _handle_gammu_event(self, sm, event_type, data):
+        """
+        Unified Gammu callback for all events (calls and SMS).
+        Called by Gammu when IncomingCall or IncomingSMS event occurs.
+        """
+        from datetime import datetime
+
+        if event_type == "Call":
+            # Incoming call event
+            phone_number = data.get('Number', 'Unknown')
+            status = data.get('Status', '')
+
+            logger.debug(f"📞 Call event: {status} from {phone_number}")
+
+            if status in ['IncomingCall', 'Ringing']:
+                # New call or continuation of ringing
+                if self.current_call is None:
+                    # New call starting
+                    self.current_call = {
+                        'number': phone_number,
+                        'ring_start': datetime.now(),
+                        'ring_count': 1
+                    }
+                    logger.info(f"📞 Incoming call from {phone_number}")
+                else:
+                    # Still ringing - increment counter
+                    self.current_call['ring_count'] += 1
+
+                # Publish ringing state
+                self.publish_incoming_call_state(True)
+
+            elif status in ['CallEnd', 'Rejected', 'Busy', 'NoAnswer']:
+                # Call ended
+                if self.current_call:
+                    ring_end = datetime.now()
+                    ring_duration = (
+                        ring_end - self.current_call['ring_start']
+                    ).total_seconds()
+
+                    missed_call_data = {
+                        'Number': self.current_call['number'],
+                        'ring_start': self.current_call['ring_start'].isoformat(),
+                        'ring_end': ring_end.isoformat(),
+                        'ring_duration_seconds': round(ring_duration, 1),
+                        'ring_count': self.current_call['ring_count'],
+                        'status': status
+                    }
+
+                    # Publish missed call
+                    self.publish_missed_call(missed_call_data)
+
+                    # Clear current call and publish OFF state
+                    self.current_call = None
+                    self.publish_incoming_call_state(False)
+
+                    logger.info(
+                        f"📞 Call ended: {status} "
+                        f"(duration: {ring_duration:.1f}s)"
+                    )
+
+        elif event_type == "SMS":
+            # SMS callback - flag for processing
+            logger.debug("📨 SMS callback received, flagging for processing")
+            self._sms_callback_pending = True
+
+    def _read_device_loop(self, machine):
+        """
+        Background loop that calls ReadDevice() to process Gammu callbacks.
+        This is required for callbacks to work on most modems.
+        """
+        logger.info("📞 Starting ReadDevice loop for call monitoring")
+
+        while self.call_monitoring_enabled:
+            try:
+                # ReadDevice processes any pending modem events
+                machine.ReadDevice()
+            except Exception as e:
+                # Ignore timeout errors - they're normal when no events
+                if 'timeout' not in str(e).lower():
+                    logger.debug(f"ReadDevice error (usually harmless): {e}")
+
+            time.sleep(1)  # Check every second
+
+        logger.info("📞 ReadDevice loop stopped")
+
+    def start_callback_monitoring(self, machine):
+        """
+        Start call monitoring via Gammu callbacks.
+        Returns True if callbacks are supported, False otherwise.
+        """
+        try:
+            # Try to set up incoming call callback
+            machine.SetIncomingCall(True)
+            logger.info("📞 Incoming call callback enabled")
+
+            # Define callback handler
+            def call_callback(sm, call_type, data):
+                self._handle_gammu_event(sm, "Call", {
+                    'Number': data.get('Number', 'Unknown'),
+                    'Status': call_type
+                })
+
+            machine.SetIncomingCallback(call_callback)
+            logger.info("📞 Call callback handler registered")
+
+            # Start ReadDevice loop in background
+            self.call_monitoring_enabled = True
+            self._read_device_thread = threading.Thread(
+                target=self._read_device_loop,
+                args=(machine,),
+                daemon=True
+            )
+            self._read_device_thread.start()
+
+            return True
+
+        except Exception as e:
+            logger.warning(f"📞 Call callback: NOT SUPPORTED ({e})")
+            return False
+
+    def stop_callback_monitoring(self):
+        """Stop call monitoring and ReadDevice loop."""
+        self.call_monitoring_enabled = False
+        if self._read_device_thread:
+            self._read_device_thread.join(timeout=3)
+            self._read_device_thread = None
+        logger.info("📞 Call monitoring stopped")

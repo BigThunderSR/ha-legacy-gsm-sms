@@ -1,5 +1,5 @@
 name: "TEST - GSM SMS Gateway (Current Development)"
-version: 2.17.6-test
+version: 2.18.0-test
 slug: "gsm_sms_gateway_test_current"
 description: |
   🧪 TEST VERSION - Current development build for experimentation (v2.15.0-test)
@@ -99,6 +99,7 @@ options:
     - "172.16.0.0/12"
     - "127.0.0.1"
   get_endpoint_deduplication_enabled: true
+  missed_calls_monitoring_enabled: false
 schema:
   device_path: str
   pin: str?
@@ -135,3 +136,4 @@ schema:
   get_endpoint_allowed_ips:
     - str
   get_endpoint_deduplication_enabled: bool
+  missed_calls_monitoring_enabled: bool

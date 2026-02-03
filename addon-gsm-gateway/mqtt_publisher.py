@@ -838,7 +838,9 @@ class MQTTPublisher:
         self.current_call = None  # {'number': str, 'ring_start': datetime, 'ring_count': int}
         self._read_device_thread = None
         self._call_ring_timer = None  # Timer to detect missed calls via timeout
-        self.RING_TIMEOUT_SECONDS = 30  # If no ring event for this long, call is missed
+        self.RING_TIMEOUT_SECONDS = 10  # If no ring event for this long, call is missed
+        self._call_ended_at = None  # Timestamp when call ended (for cooldown)
+        self.CALL_COOLDOWN_SECONDS = 10  # Wait this long after call before resuming polls
 
         # SMS callback (faster delivery, polling as fallback)
         self.sms_callback_enabled = False
@@ -2924,6 +2926,7 @@ class MQTTPublisher:
                 })
 
                 self.current_call = None
+                self._call_ended_at = datetime.now()  # Start cooldown
 
             self.publish_incoming_call_state(False)
 
@@ -2936,6 +2939,7 @@ class MQTTPublisher:
 
             logger.info("📞 Call answered (not missed)")
             self.current_call = None
+            self._call_ended_at = datetime.now()  # Start cooldown
             self.publish_incoming_call_state(False)
 
     def _handle_ring_timeout(self):
@@ -2964,6 +2968,7 @@ class MQTTPublisher:
             })
 
             self.current_call = None
+            self._call_ended_at = datetime.now()  # Start cooldown
             self.publish_incoming_call_state(False)
 
         self._call_ring_timer = None
@@ -3451,6 +3456,21 @@ class MQTTPublisher:
                     time.sleep(check_interval)
                     continue
 
+                # Skip SMS polling during post-call cooldown
+                # Modem needs recovery time after handling an incoming call
+                if self._call_ended_at is not None:
+                    from datetime import datetime
+                    elapsed = (datetime.now() - self._call_ended_at).total_seconds()
+                    if elapsed < self.CALL_COOLDOWN_SECONDS:
+                        remaining = self.CALL_COOLDOWN_SECONDS - elapsed
+                        logger.debug(f"📱 Skipping SMS poll - post-call cooldown ({remaining:.0f}s remaining)")
+                        time.sleep(check_interval)
+                        continue
+                    else:
+                        # Cooldown expired, clear the timestamp
+                        self._call_ended_at = None
+                        logger.info("📱 Post-call cooldown complete, resuming SMS monitoring")
+
                 # When in hard_offline, skip ALL modem operations to avoid blocking
                 # Just check restart timeout, publish status (to update seconds_since_last_success), and wait
                 if self.device_tracker.hard_offline:
@@ -3653,6 +3673,16 @@ class MQTTPublisher:
                     logger.debug("📡 Skipping status poll - active incoming call")
                     time.sleep(interval)
                     continue
+
+                # Skip status polling during post-call cooldown
+                # Modem needs recovery time after handling an incoming call
+                if self._call_ended_at is not None:
+                    from datetime import datetime
+                    elapsed = (datetime.now() - self._call_ended_at).total_seconds()
+                    if elapsed < self.CALL_COOLDOWN_SECONDS:
+                        logger.debug(f"📡 Skipping status poll - post-call cooldown")
+                        time.sleep(interval)
+                        continue
 
                 # When in hard_offline, skip modem operations to avoid blocking
                 # The SMS monitoring loop handles restart timeout checking

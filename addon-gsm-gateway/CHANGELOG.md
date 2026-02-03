@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.3] - 2026-02-02
+
+### Fixed
+
+- **Post-Call Cooldown Period** ⏱️
+  - Added 10-second cooldown after call ends before resuming modem operations
+  - Modem needs recovery time after handling incoming calls
+  - Prevents timeout errors when SMS poll runs immediately after ring timeout
+  - Logs "Post-call cooldown complete, resuming SMS monitoring" when ready
+
+### Changed
+
+- **Faster Missed Call Detection** 📞
+  - Reduced ring timeout from 30s to 10s for faster missed call detection
+  - Rings typically come every 5-6 seconds, so 10s gap = call ended
+  - Missed call sensor now updates ~20 seconds sooner
+
 ## [2.18.2] - 2026-02-02
 
 ### Fixed

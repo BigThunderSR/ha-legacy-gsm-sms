@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.4] - 2026-02-02
+
+### Fixed
+
+- **Pause ReadDevice Loop During Cooldown** 🔄
+  - ReadDevice loop (1s interval) was continuing during post-call cooldown
+  - This kept the modem busy and prevented proper recovery
+  - Now ALL modem operations pause during cooldown (ReadDevice, SMS poll, status poll)
+  - Modem gets full 10 seconds of silence to stabilize after a call
+
 ## [2.18.3] - 2026-02-02
 
 ### Fixed

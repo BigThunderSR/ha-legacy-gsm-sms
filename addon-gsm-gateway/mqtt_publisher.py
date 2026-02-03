@@ -3067,6 +3067,11 @@ class MQTTPublisher:
             def _read_device_loop():
                 logger.info("🔄 ReadDevice loop started (1s interval)")
                 while self.connected and not self.disconnecting:
+                    # Pause ReadDevice during post-call cooldown to let modem recover
+                    if self._call_ended_at is not None:
+                        time.sleep(1)
+                        continue
+
                     try:
                         with self.gammu_lock:
                             gammu_machine.ReadDevice()

@@ -3515,127 +3515,210 @@ class MQTTPublisher:
     def _handle_gammu_event(self, sm, event_type, data):
         """
         Unified Gammu callback for all events (calls and SMS).
-        Called by Gammu when IncomingCall or IncomingSMS event occurs.
-        """
-        from datetime import datetime
-
-        if event_type == "Call":
-            # Incoming call event
-            phone_number = data.get('Number', 'Unknown')
-            status = data.get('Status', '')
-
-            logger.debug(f"📞 Call event: {status} from {phone_number}")
-
-            if status in ['IncomingCall', 'Ringing']:
-                # New call or continuation of ringing
-                if self.current_call is None:
-                    # New call starting
-                    self.current_call = {
-                        'number': phone_number,
-                        'ring_start': datetime.now(),
-                        'ring_count': 1
-                    }
-                    logger.info(f"📞 Incoming call from {phone_number}")
-                else:
-                    # Still ringing - increment counter
-                    self.current_call['ring_count'] += 1
-
-                # Publish ringing state
-                self.publish_incoming_call_state(True)
-
-            elif status in ['CallEnd', 'Rejected', 'Busy', 'NoAnswer']:
-                # Call ended
-                if self.current_call:
-                    ring_end = datetime.now()
-                    ring_duration = (
-                        ring_end - self.current_call['ring_start']
-                    ).total_seconds()
-
-                    missed_call_data = {
-                        'Number': self.current_call['number'],
-                        'ring_start': self.current_call['ring_start'].isoformat(),
-                        'ring_end': ring_end.isoformat(),
-                        'ring_duration_seconds': round(ring_duration, 1),
-                        'ring_count': self.current_call['ring_count'],
-                        'status': status
-                    }
-
-                    # Publish missed call
-                    self.publish_missed_call(missed_call_data)
-
-                    # Clear current call and publish OFF state
-                    self.current_call = None
-                    self.publish_incoming_call_state(False)
-
-                    logger.info(
-                        f"📞 Call ended: {status} "
-                        f"(duration: {ring_duration:.1f}s)"
-                    )
-
-        elif event_type == "SMS":
-            # SMS callback - flag for processing
-            logger.debug("📨 SMS callback received, flagging for processing")
-            self._sms_callback_pending = True
-
-    def _read_device_loop(self, machine):
-        """
-        Background loop that calls ReadDevice() to process Gammu callbacks.
-        This is required for callbacks to work on most modems.
-        """
-        logger.info("📞 Starting ReadDevice loop for call monitoring")
-
-        while self.call_monitoring_enabled:
-            try:
-                # ReadDevice processes any pending modem events
-                machine.ReadDevice()
-            except Exception as e:
-                # Ignore timeout errors - they're normal when no events
-                if 'timeout' not in str(e).lower():
-                    logger.debug(f"ReadDevice error (usually harmless): {e}")
-
-            time.sleep(1)  # Check every second
-
-        logger.info("📞 ReadDevice loop stopped")
-
-    def start_callback_monitoring(self, machine):
-        """
-        Start call monitoring via Gammu callbacks.
-        Returns True if callbacks are supported, False otherwise.
+        Called from ReadDevice() loop when events are detected.
         """
         try:
-            # Try to set up incoming call callback
-            machine.SetIncomingCall(True)
-            logger.info("📞 Incoming call callback enabled")
+            logger.debug(f"📱 Gammu event: type={event_type}, data={data}")
 
-            # Define callback handler
-            def call_callback(sm, call_type, data):
-                self._handle_gammu_event(sm, "Call", {
-                    'Number': data.get('Number', 'Unknown'),
-                    'Status': call_type
-                })
-
-            machine.SetIncomingCallback(call_callback)
-            logger.info("📞 Call callback handler registered")
-
-            # Start ReadDevice loop in background
-            self.call_monitoring_enabled = True
-            self._read_device_thread = threading.Thread(
-                target=self._read_device_loop,
-                args=(machine,),
-                daemon=True
-            )
-            self._read_device_thread.start()
-
-            return True
+            if event_type == 'Call':
+                self._handle_call_event(data)
+            elif event_type == 'SMS':
+                self._handle_sms_event(data)
+            else:
+                logger.debug(f"📱 Unknown event type: {event_type}")
 
         except Exception as e:
-            logger.warning(f"📞 Call callback: NOT SUPPORTED ({e})")
-            return False
+            logger.error(f"Error in Gammu callback: {e}")
+
+    def _handle_call_event(self, call_data):
+        """Process incoming call event."""
+        from datetime import datetime
+
+        status = call_data.get('Status', '')
+        number = call_data.get('Number', '')
+
+        logger.debug(f"📞 Call event: status={status}, number={number}")
+
+        if status == 'IncomingCall':
+            if self.current_call is None:
+                # New call - start ringing
+                self.current_call = {
+                    'number': number if number else 'Unknown',
+                    'ring_start': datetime.now(),
+                    'ring_count': 1
+                }
+                logger.info(f"📞 Incoming call from {self.current_call['number']}")
+            else:
+                # Continued ringing (RING)
+                self.current_call['ring_count'] += 1
+
+            self.publish_incoming_call_state(True)
+
+        elif status in ['CallRemoteEnd', 'CallLocalEnd']:
+            # Call ended (caller hung up or we did)
+            if self.current_call:
+                ring_end = datetime.now()
+                duration = (ring_end - self.current_call['ring_start']).total_seconds()
+
+                # Publish missed call
+                self.publish_missed_call({
+                    'Number': self.current_call['number'],
+                    'ring_start': self.current_call['ring_start'].isoformat(),
+                    'ring_end': ring_end.isoformat(),
+                    'ring_duration_seconds': int(duration),
+                    'ring_count': self.current_call['ring_count']
+                })
+
+                self.current_call = None
+
+            self.publish_incoming_call_state(False)
+
+        elif status == 'CallStart':
+            # Call was answered - not missed, just reset state
+            logger.info("📞 Call answered (not missed)")
+            self.current_call = None
+            self.publish_incoming_call_state(False)
+
+    def _handle_sms_event(self, sms_data):
+        """Process SMS event - trigger for faster processing via callback."""
+        # Respect sms_monitoring_enabled setting
+        if not self.config.get('sms_monitoring_enabled', True):
+            logger.debug("📨 SMS event ignored (sms_monitoring_enabled=false)")
+            return
+
+        logger.info(f"📨 SMS event triggered - scheduling processing in 3s")
+
+        # Cancel previous timer if exists (debounce for multi-part SMS)
+        if self._sms_callback_timer:
+            self._sms_callback_timer.cancel()
+
+        # Set flag and start timer (3s debounce for multi-part SMS)
+        self._sms_callback_pending = True
+        self._sms_callback_timer = threading.Timer(
+            3.0,
+            self._process_sms_from_callback
+        )
+        self._sms_callback_timer.start()
+
+    def _process_sms_from_callback(self):
+        """Process SMS after debounce - directly process new SMS from callback."""
+        if not self._sms_callback_pending:
+            return
+
+        self._sms_callback_pending = False
+        logger.info("📨 Processing SMS from callback (after 3s debounce)")
+
+        if not self.gammu_machine:
+            logger.warning("Gammu machine not available for SMS processing")
+            return
+
+        try:
+            from support import retrieveAllSms, deleteSms
+
+            # Get all SMS
+            all_sms = self.track_gammu_operation("retrieveAllSms", retrieveAllSms, self.gammu_machine)
+
+            if not all_sms:
+                logger.debug("No SMS to process")
+                return
+
+            auto_delete = self.config.get('auto_delete_read_sms', False)
+            processed_count = 0
+
+            # Process all unread SMS
+            for sms in all_sms:
+                if sms.get('State') == 'UnRead':
+                    sms_copy = sms.copy()
+                    sms_copy.pop("Locations", None)
+
+                    # Publish to MQTT
+                    self.publish_sms_received(sms_copy)
+                    processed_count += 1
+
+                    # Auto-delete if enabled
+                    if auto_delete:
+                        try:
+                            self.track_gammu_operation("deleteSms", deleteSms, self.gammu_machine, sms)
+                            logger.info(f"🗑️ Auto-deleted SMS from {sms.get('Number', 'Unknown')}")
+                        except Exception as e:
+                            logger.error(f"Error auto-deleting SMS: {e}")
+
+            if processed_count > 0:
+                logger.info(f"📨 Callback processed {processed_count} new SMS")
+
+                # Update capacity
+                try:
+                    capacity = self.track_gammu_operation("GetSMSStatus", self.gammu_machine.GetSMSStatus)
+                    self.publish_sms_capacity(capacity)
+                except Exception as e:
+                    logger.warning(f"Could not update SMS capacity: {e}")
+
+        except Exception as e:
+            logger.error(f"Error processing SMS from callback: {e}")
+
+    def start_callback_monitoring(self, gammu_machine):
+        """
+        Start real-time monitoring of calls and SMS via Gammu callbacks.
+
+        Args:
+            gammu_machine: Gammu state machine
+
+        Returns:
+            True if at least one callback works, False otherwise
+        """
+        from support import setupCallbacks
+
+        # Setup unified callback for calls and SMS
+        result = setupCallbacks(
+            gammu_machine,
+            self._handle_gammu_event
+        )
+
+        self.call_monitoring_enabled = result['calls']
+        self.sms_callback_enabled = result['sms']
+
+        if result['calls']:
+            logger.info("📞 Call callback: ENABLED (real-time detection)")
+            # Publish initial OFF state for incoming_call
+            self.publish_incoming_call_state(False)
+        else:
+            logger.warning("📞 Call callback: NOT SUPPORTED by modem")
+
+        if result['sms']:
+            logger.info("📨 SMS callback: ENABLED (faster delivery)")
+        else:
+            logger.info("📨 SMS callback: NOT SUPPORTED (using polling only)")
+
+        # Start ReadDevice loop only if at least one callback works
+        if result['calls'] or result['sms']:
+            def _read_device_loop():
+                logger.info("🔄 ReadDevice loop started (1s interval)")
+                while self.connected and not self.disconnecting:
+                    try:
+                        with self.gammu_lock:  # Use shared lock for thread safety
+                            gammu_machine.ReadDevice()
+                    except Exception as e:
+                        # Normal error when another operation is running
+                        logger.debug(f"ReadDevice: {e}")
+                    time.sleep(1)
+                logger.info("🔄 ReadDevice loop stopped")
+
+            self._read_device_thread = threading.Thread(
+                target=_read_device_loop,
+                daemon=True,
+                name="ReadDeviceLoop"
+            )
+            self._read_device_thread.start()
+            return True
+
+        return False
 
     def stop_callback_monitoring(self):
         """Stop call monitoring and ReadDevice loop."""
         self.call_monitoring_enabled = False
+        self.sms_callback_enabled = False
         if self._read_device_thread:
             self._read_device_thread.join(timeout=3)
             self._read_device_thread = None
+
         logger.info("📞 Call monitoring stopped")

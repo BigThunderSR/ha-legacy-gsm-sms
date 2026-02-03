@@ -3674,23 +3674,24 @@ class MQTTPublisher:
             self._handle_gammu_event
         )
 
-        self.call_monitoring_enabled = result['calls']
-        self.sms_callback_enabled = result['sms']
+        # Our setupCallbacks returns 'incoming_call' and 'incoming_sms' keys
+        self.call_monitoring_enabled = result.get('incoming_call', False)
+        self.sms_callback_enabled = result.get('incoming_sms', False)
 
-        if result['calls']:
+        if self.call_monitoring_enabled:
             logger.info("📞 Call callback: ENABLED (real-time detection)")
             # Publish initial OFF state for incoming_call
             self.publish_incoming_call_state(False)
         else:
             logger.warning("📞 Call callback: NOT SUPPORTED by modem")
 
-        if result['sms']:
+        if self.sms_callback_enabled:
             logger.info("📨 SMS callback: ENABLED (faster delivery)")
         else:
             logger.info("📨 SMS callback: NOT SUPPORTED (using polling only)")
 
         # Start ReadDevice loop only if at least one callback works
-        if result['calls'] or result['sms']:
+        if self.call_monitoring_enabled or self.sms_callback_enabled:
             def _read_device_loop():
                 logger.info("🔄 ReadDevice loop started (1s interval)")
                 while self.connected and not self.disconnecting:

@@ -349,3 +349,46 @@ def map_act_to_network_type(act):
         13: "4G+5G (EN-DC)"
     }
     return act_map.get(act, f"Unknown (AcT={act})")
+
+
+def setupCallbacks(machine, unified_callback):
+    """
+    Setup Gammu callbacks for real-time call and SMS detection.
+    Uses Gammu SetIncomingCall, SetIncomingSMS and SetIncomingCallback.
+    Returns dict with status of each callback setup.
+    """
+    results = {
+        'callback': False,
+        'incoming_call': False,
+        'incoming_sms': False
+    }
+
+    # Set unified callback handler
+    try:
+        machine.SetIncomingCallback(unified_callback)
+        print("📱 Unified callback: SetIncomingCallback registered")
+        results['callback'] = True
+    except Exception as e:
+        print(f"📱 SetIncomingCallback failed: {type(e).__name__}: {e}")
+
+    # Enable incoming call notifications
+    try:
+        machine.SetIncomingCall()
+        print("📞 SetIncomingCall: Enabled")
+        results['incoming_call'] = True
+    except gammu.ERR_NOTSUPPORTED:
+        print("📞 SetIncomingCall: Not supported by this modem")
+    except Exception as e:
+        print(f"📞 SetIncomingCall failed: {type(e).__name__}: {e}")
+
+    # Enable incoming SMS notifications
+    try:
+        machine.SetIncomingSMS()
+        print("📨 SetIncomingSMS: Enabled")
+        results['incoming_sms'] = True
+    except gammu.ERR_NOTSUPPORTED:
+        print("📨 SetIncomingSMS: Not supported by this modem")
+    except Exception as e:
+        print(f"📨 SetIncomingSMS failed: {type(e).__name__}: {e}")
+
+    return results

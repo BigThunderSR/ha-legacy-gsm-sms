@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.6-test] - 2026-02-02
+
+### Fixed
+
+- **Terminate Existing Connection Before Reinit** 🔌
+  - Reinit was failing with "Error opening device. Unknown, busy or no permissions"
+  - Now calls `gammu_machine.Terminate()` before creating new connection
+  - Properly releases the serial port for the new connection
+
 ## [2.18.5-test] - 2026-02-02
 
 ### Fixed

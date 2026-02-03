@@ -2681,6 +2681,15 @@ class MQTTPublisher:
             pin = self.config.get('pin', '')
             device_path = self.config.get('device_path', '/dev/ttyUSB0')
             
+            # CRITICAL: Close existing connection first to release the serial port
+            if self.gammu_machine:
+                try:
+                    logger.info("🔌 Terminating existing Gammu connection...")
+                    self.gammu_machine.Terminate()
+                    logger.info("✅ Existing connection terminated")
+                except Exception as e:
+                    logger.warning(f"⚠️ Terminate failed (may already be closed): {e}")
+            
             logger.info(f"🔌 Re-initializing Gammu with device: {device_path}")
             new_machine = init_state_machine(pin, device_path)
             

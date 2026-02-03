@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.2-test] - 2026-02-02
+
+### Fixed
+
+- **Prevent Modem Timeouts During Incoming Calls** 📶
+  - Pause SMS polling and periodic status updates while phone is ringing
+  - Prevents `retrieveAllSms` timeout errors during active incoming calls
+  - Eliminates unnecessary modem restarts caused by concurrent operations
+
 ## [2.18.1-test] - 2026-02-02
 
 ### Fixed

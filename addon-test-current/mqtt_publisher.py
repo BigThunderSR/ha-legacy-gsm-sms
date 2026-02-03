@@ -3160,6 +3160,13 @@ class MQTTPublisher:
             while self.connected and not self.disconnecting:
                 from support import retrieveAllSms, deleteSms
 
+                # Skip SMS polling during active incoming call to avoid modem conflicts
+                # The ReadDevice loop handles the call, and SMS operations can cause timeouts
+                if self.current_call is not None:
+                    logger.debug("📱 Skipping SMS poll - active incoming call")
+                    time.sleep(check_interval)
+                    continue
+
                 # When in hard_offline, skip ALL modem operations to avoid blocking
                 # Just check restart timeout, publish status (to update seconds_since_last_success), and wait
                 if self.device_tracker.hard_offline:
@@ -3356,6 +3363,13 @@ class MQTTPublisher:
             
         def _publish_loop():
             while self.connected and not self.disconnecting:
+                # Skip periodic status polling during active incoming call
+                # The ReadDevice loop handles the call, other modem ops can cause timeouts
+                if self.current_call is not None:
+                    logger.debug("📡 Skipping status poll - active incoming call")
+                    time.sleep(interval)
+                    continue
+
                 # When in hard_offline, skip modem operations to avoid blocking
                 # The SMS monitoring loop handles restart timeout checking
                 # Still publish status to update seconds_since_last_success sensor

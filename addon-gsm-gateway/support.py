@@ -179,47 +179,45 @@ def encodeSms(smsinfo):
 
 def setupCallbacks(machine, unified_callback):
     """
-    Setup callbacks for incoming calls and SMS.
+    Setup Gammu callbacks for real-time call and SMS detection.
     Uses Gammu SetIncomingCall, SetIncomingSMS and SetIncomingCallback.
-
-    Args:
-        machine: Gammu state machine
-        unified_callback: Callback function for all events (sm, event_type, data)
-                         event_type can be 'Call' or 'SMS'
-
-    Returns: {'calls': bool, 'sms': bool} - what was successfully set up
+    Returns dict with status of each callback setup.
     """
-    result = {'calls': False, 'sms': False}
+    results = {
+        'callback': False,
+        'incoming_call': False,
+        'incoming_sms': False
+    }
 
-    # Set unified callback for all events
+    # Set unified callback handler
     try:
         machine.SetIncomingCallback(unified_callback)
         print("📱 Unified callback: SetIncomingCallback registered")
+        results['callback'] = True
     except Exception as e:
         print(f"📱 SetIncomingCallback failed: {type(e).__name__}: {e}")
-        return result
 
-    # Enable Call notifications
+    # Enable incoming call notifications
     try:
         machine.SetIncomingCall()
-        result['calls'] = True
-        print("📞 Call notifications: ENABLED")
+        print("📞 SetIncomingCall: Enabled")
+        results['incoming_call'] = True
     except gammu.ERR_NOTSUPPORTED:
         print("📞 SetIncomingCall: Not supported by this modem")
     except Exception as e:
         print(f"📞 SetIncomingCall failed: {type(e).__name__}: {e}")
 
-    # Enable SMS notifications
+    # Enable incoming SMS notifications
     try:
         machine.SetIncomingSMS()
-        result['sms'] = True
-        print("📨 SMS notifications: ENABLED")
+        print("📨 SetIncomingSMS: Enabled")
+        results['incoming_sms'] = True
     except gammu.ERR_NOTSUPPORTED:
         print("📨 SetIncomingSMS: Not supported by this modem")
     except Exception as e:
         print(f"📨 SetIncomingSMS failed: {type(e).__name__}: {e}")
 
-    return result
+    return results
 
 
 def get_network_type(machine):

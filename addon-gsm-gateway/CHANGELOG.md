@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.5] - 2026-02-02
+
+### Fixed
+
+- **Modem Reinit After Call Ends** 🔄
+  - SIM7600G-H modem gets into a hung state after handling incoming calls
+  - Even with 10+ seconds of cooldown (all operations paused), modem still times out
+  - Now performs a full Gammu reconnect (close + reopen) AFTER cooldown completes
+  - Uses existing `_reconnect_gammu()` which properly reinitializes and tests the connection
+  - Safer than immediate soft reset: waits for cooldown, has proper locking, validates connection
+
 ## [2.18.4] - 2026-02-02
 
 ### Fixed

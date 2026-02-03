@@ -841,6 +841,7 @@ class MQTTPublisher:
         self.RING_TIMEOUT_SECONDS = 10  # If no ring event for this long, call is missed
         self._call_ended_at = None  # Timestamp when call ended (for cooldown)
         self.CALL_COOLDOWN_SECONDS = 10  # Wait this long after call before resuming polls
+        self._post_call_reinit_needed = False  # Request modem reinit after cooldown
 
         # SMS callback (faster delivery, polling as fallback)
         self.sms_callback_enabled = False
@@ -2927,6 +2928,8 @@ class MQTTPublisher:
 
                 self.current_call = None
                 self._call_ended_at = datetime.now()  # Start cooldown
+                self._post_call_reinit_needed = True  # Request modem reinit after cooldown
+                logger.info("🔄 Modem reinit requested after cooldown")
 
             self.publish_incoming_call_state(False)
 
@@ -2940,6 +2943,9 @@ class MQTTPublisher:
             logger.info("📞 Call answered (not missed)")
             self.current_call = None
             self._call_ended_at = datetime.now()  # Start cooldown
+            self._post_call_reinit_needed = True  # Request modem reinit after cooldown
+            logger.info("🔄 Modem reinit requested after cooldown")
+
             self.publish_incoming_call_state(False)
 
     def _handle_ring_timeout(self):
@@ -2969,6 +2975,8 @@ class MQTTPublisher:
 
             self.current_call = None
             self._call_ended_at = datetime.now()  # Start cooldown
+            self._post_call_reinit_needed = True  # Request modem reinit after cooldown
+            logger.info("🔄 Modem reinit requested after cooldown")
             self.publish_incoming_call_state(False)
 
         self._call_ring_timer = None
@@ -3475,6 +3483,15 @@ class MQTTPublisher:
                         # Cooldown expired, clear the timestamp
                         self._call_ended_at = None
                         logger.info("📱 Post-call cooldown complete, resuming SMS monitoring")
+
+                        # Reinitialize modem if requested (SIM7600G-H gets stuck after calls)
+                        if self._post_call_reinit_needed:
+                            self._post_call_reinit_needed = False
+                            logger.info("🔄 Post-call modem reinit starting...")
+                            if self._reconnect_gammu():
+                                logger.info("✅ Post-call modem reinit successful")
+                            else:
+                                logger.warning("⚠️ Post-call modem reinit failed - will retry on next failure")
 
                 # When in hard_offline, skip ALL modem operations to avoid blocking
                 # Just check restart timeout, publish status (to update seconds_since_last_success), and wait

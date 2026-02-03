@@ -1089,16 +1089,7 @@ if __name__ == '__main__':
         status_interval = config.get('status_update_interval', 300)
         mqtt_publisher.publish_status_periodic(machine, interval=status_interval)
         print(f"📊 Status Updates: Every {status_interval}s (signal, network)")
-
-        # Start call monitoring via Gammu callbacks (real-time detection)
-        if config.get('missed_calls_monitoring_enabled', False):
-            if mqtt_publisher.start_callback_monitoring(machine):
-                print(f"📞 Call Monitoring: Enabled (real-time via callbacks)")
-            else:
-                print(f"📞 Call Monitoring: Callbacks not supported by modem")
-        else:
-            print(f"📞 Call Monitoring: Disabled in configuration")
-
+        
         # Start SMS monitoring if enabled
         if config.get('sms_monitoring_enabled', True):
             check_interval = config.get('sms_check_interval', 60)

@@ -177,6 +177,51 @@ def encodeSms(smsinfo):
     return gammu.EncodeSMS(smsinfo)
 
 
+def setupCallbacks(machine, unified_callback):
+    """
+    Setup callbacks for incoming calls and SMS.
+    Uses Gammu SetIncomingCall, SetIncomingSMS and SetIncomingCallback.
+
+    Args:
+        machine: Gammu state machine
+        unified_callback: Callback function for all events (sm, event_type, data)
+                         event_type can be 'Call' or 'SMS'
+
+    Returns: {'calls': bool, 'sms': bool} - what was successfully set up
+    """
+    result = {'calls': False, 'sms': False}
+
+    # Set unified callback for all events
+    try:
+        machine.SetIncomingCallback(unified_callback)
+        print("📱 Unified callback: SetIncomingCallback registered")
+    except Exception as e:
+        print(f"📱 SetIncomingCallback failed: {type(e).__name__}: {e}")
+        return result
+
+    # Enable Call notifications
+    try:
+        machine.SetIncomingCall()
+        result['calls'] = True
+        print("📞 Call notifications: ENABLED")
+    except gammu.ERR_NOTSUPPORTED:
+        print("📞 SetIncomingCall: Not supported by this modem")
+    except Exception as e:
+        print(f"📞 SetIncomingCall failed: {type(e).__name__}: {e}")
+
+    # Enable SMS notifications
+    try:
+        machine.SetIncomingSMS()
+        result['sms'] = True
+        print("📨 SMS notifications: ENABLED")
+    except gammu.ERR_NOTSUPPORTED:
+        print("📨 SetIncomingSMS: Not supported by this modem")
+    except Exception as e:
+        print(f"📨 SetIncomingSMS failed: {type(e).__name__}: {e}")
+
+    return result
+
+
 def get_network_type(machine):
     """Get network type (2G/3G/4G/LTE) via AT commands
     

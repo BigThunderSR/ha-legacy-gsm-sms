@@ -835,10 +835,10 @@ class MQTTPublisher:
 
         # Call monitoring (real-time via Gammu callbacks)
         self.call_monitoring_enabled = False
-        self.current_call = None  # {'number': str, 'ring_start': datetime, 'ring_count': int}
+        self.call_queue = []  # [{'number': str, 'ring_start': datetime, 'ring_count': int}, ...]
+        self.MAX_CALL_QUEUE_SIZE = 5  # Maximum number of concurrent calls in queue
         self._read_device_thread = None
-        self._call_ring_timer = None  # Timer to detect missed calls via timeout
-        self.RING_TIMEOUT_SECONDS = 10  # If no ring event for this long, call is missed
+        self._call_auto_reset_timer = None  # Timer for auto-resetting stuck incoming call state
         self._call_ended_at = None  # Timestamp when call ended (for cooldown)
         self.CALL_COOLDOWN_SECONDS = 10  # Wait this long after call before resuming polls
         self._post_call_reinit_needed = False  # Request modem reinit after cooldown
@@ -2835,28 +2835,25 @@ class MQTTPublisher:
         )
 
     def publish_incoming_call_state(self, is_ringing: bool):
-        """Publish incoming call state (real-time binary sensor)."""
+        """Publish incoming call state (real-time binary sensor with queue support)."""
         if not self.connected:
             return
 
-        if is_ringing and self.current_call:
+        if is_ringing and self.call_queue:
+            # Use last call in queue for display
+            last_call = self.call_queue[-1]
             payload = {
                 "state": "ON",
-                "Number": self.current_call['number'],
-                "ring_start": self.current_call['ring_start'].isoformat(),
-                "ring_count": self.current_call['ring_count']
+                "Number": last_call['number'],
+                "ring_start": last_call['ring_start'].isoformat(),
+                "ring_count": last_call['ring_count'],
+                "queue_size": len(self.call_queue)
             }
         else:
             payload = {"state": "OFF"}
 
         topic = f"{self.topic_prefix}/incoming_call/state"
         self.client.publish(topic, json.dumps(payload), retain=False)
-
-        if is_ringing and self.current_call:
-            logger.info(
-                f"📞 RING #{self.current_call['ring_count']} "
-                f"from {self.current_call['number']}"
-            )
 
     def _handle_gammu_event(self, sm, event_type, data):
         """
@@ -2877,118 +2874,157 @@ class MQTTPublisher:
             logger.error(f"Error in Gammu callback: {e}")
 
     def _handle_call_event(self, call_data):
-        """Handle call event."""
+        """Handle call event with queue support (up to 5 simultaneous calls)."""
         from datetime import datetime
         status = call_data.get('Status', '')
-        number = call_data.get('Number', '')
+        number = call_data.get('Number', '') or 'Unknown'
 
         logger.debug(f"📞 Call event: status={status}, number={number}")
 
         if status == 'IncomingCall':
-            # Cancel any existing ring timeout timer
-            if self._call_ring_timer:
-                self._call_ring_timer.cancel()
-                self._call_ring_timer = None
+            # Find existing call by number
+            existing = next((c for c in self.call_queue if c['number'] == number), None)
 
-            if self.current_call is None:
-                # New call - ringing started
-                self.current_call = {
-                    'number': number if number else 'Unknown',
+            if existing:
+                # Continued ringing (RING) - increment ring_count
+                existing['ring_count'] += 1
+                logger.info(f"📞 RING #{existing['ring_count']} from {number}")
+            else:
+                # New call
+                if len(self.call_queue) >= self.MAX_CALL_QUEUE_SIZE:
+                    # Queue full - publish oldest as missed
+                    oldest = self.call_queue.pop(0)
+                    self._publish_missed_call_from_queue(oldest, queue_full=True)
+                    logger.info(f"📞 Queue full, evicting oldest call from {oldest['number']}")
+
+                new_call = {
+                    'number': number,
                     'ring_start': datetime.now(),
                     'ring_count': 1
                 }
-                logger.info(f"📞 Incoming call from {self.current_call['number']}")
-            else:
-                # Continued ringing (RING)
-                self.current_call['ring_count'] += 1
+                self.call_queue.append(new_call)
+                logger.info(f"📞 Incoming call from {number}")
+                logger.info(f"📞 RING #1 from {number}")
 
+            # Restart timer on EVERY RING event (extends timeout)
+            self._start_call_auto_reset_timer()
             self.publish_incoming_call_state(True)
 
-            # Start/reset ring timeout timer
-            # If no more ring events come within RING_TIMEOUT_SECONDS, call is considered missed
-            # This handles cases where modem doesn't send CallRemoteEnd (e.g., voicemail)
-            self._call_ring_timer = threading.Timer(
-                self.RING_TIMEOUT_SECONDS,
-                self._handle_ring_timeout
-            )
-            self._call_ring_timer.daemon = True
-            self._call_ring_timer.start()
-
         elif status in ['CallRemoteEnd', 'CallLocalEnd']:
-            # Call ended (caller hung up or we did)
-            # Cancel ring timeout timer
-            if self._call_ring_timer:
-                self._call_ring_timer.cancel()
-                self._call_ring_timer = None
+            # Call ended - find call by number
+            call = None
 
-            if self.current_call:
-                from datetime import datetime
-                ring_end = datetime.now()
-                duration = (ring_end - self.current_call['ring_start']).total_seconds()
+            if number and number != 'Unknown':
+                # Have number - search by it
+                call = next((c for c in self.call_queue if c['number'] == number), None)
 
-                # Publish missed call
-                self.publish_missed_call({
-                    'Number': self.current_call['number'],
-                    'ring_start': self.current_call['ring_start'].isoformat(),
-                    'ring_end': ring_end.isoformat(),
-                    'ring_duration_seconds': int(duration),
-                    'ring_count': self.current_call['ring_count']
-                })
+            if not call and len(self.call_queue) == 1:
+                # No number (or not found), but only 1 call - remove it
+                call = self.call_queue[0]
+                logger.info(f"📞 CallEnd without number, removing only queued call from {call['number']}")
 
-                self.current_call = None
+            elif not call and len(self.call_queue) > 1:
+                # Multiple calls and don't know which - log warning
+                logger.warning(f"📞 CallEnd without number, but {len(self.call_queue)} calls in queue - cannot determine which to remove")
+
+            if call:
+                self.call_queue.remove(call)
+                self._publish_missed_call_from_queue(call)
+                logger.info(f"📞 Call ended from {call['number']} (rang {call['ring_count']} times)")
+
+            # If queue is empty, reset state
+            if not self.call_queue:
+                self._cancel_call_auto_reset_timer()
                 self._call_ended_at = datetime.now()  # Start cooldown
                 self._post_call_reinit_needed = True  # Request modem reinit after cooldown
                 logger.info("🔄 Modem reinit requested after cooldown")
-
-            self.publish_incoming_call_state(False)
+                self.publish_incoming_call_state(False)
+            else:
+                # Update binary sensor to show last number in queue
+                self.publish_incoming_call_state(True)
 
         elif status == 'CallStart':
-            # Call was answered - not missed, just reset state
-            # Cancel ring timeout timer
-            if self._call_ring_timer:
-                self._call_ring_timer.cancel()
-                self._call_ring_timer = None
+            # Call was answered - not missed, remove from queue
+            call = None
 
-            logger.info("📞 Call answered (not missed)")
-            self.current_call = None
-            self._call_ended_at = datetime.now()  # Start cooldown
-            self._post_call_reinit_needed = True  # Request modem reinit after cooldown
-            logger.info("🔄 Modem reinit requested after cooldown")
+            if number and number != 'Unknown':
+                call = next((c for c in self.call_queue if c['number'] == number), None)
 
-            self.publish_incoming_call_state(False)
+            if not call and len(self.call_queue) == 1:
+                # No number, but only 1 call - remove it
+                call = self.call_queue[0]
+                logger.info(f"📞 CallStart without number, removing only queued call from {call['number']}")
 
-    def _handle_ring_timeout(self):
-        """
-        Handle ring timeout - call is considered missed if no events for RING_TIMEOUT_SECONDS.
-        This handles cases where the modem doesn't send CallRemoteEnd (e.g., voicemail pickup).
-        """
+            if call:
+                self.call_queue.remove(call)
+                logger.info(f"📞 Call answered from {call['number']} (not missed)")
+
+            if not self.call_queue:
+                self._cancel_call_auto_reset_timer()
+                self._call_ended_at = datetime.now()  # Start cooldown
+                self._post_call_reinit_needed = True  # Request modem reinit after cooldown
+                logger.info("🔄 Modem reinit requested after cooldown")
+                self.publish_incoming_call_state(False)
+            else:
+                self.publish_incoming_call_state(True)
+
+    def _publish_missed_call_from_queue(self, call: dict, queue_full: bool = False, auto_reset: bool = False):
+        """Publish missed call from queue with additional attributes."""
         from datetime import datetime
-        if self.current_call:
-            ring_end = datetime.now()
-            duration = (ring_end - self.current_call['ring_start']).total_seconds()
+        ring_end = datetime.now()
+        duration = (ring_end - call['ring_start']).total_seconds()
 
-            logger.info(
-                f"📞 Ring timeout after {self.RING_TIMEOUT_SECONDS}s - "
-                f"marking as missed call from {self.current_call['number']}"
-            )
+        missed_data = {
+            'Number': call['number'],
+            'ring_start': call['ring_start'].isoformat(),
+            'ring_end': ring_end.isoformat(),
+            'ring_duration_seconds': int(duration),
+            'ring_count': call['ring_count']
+        }
 
-            # Publish missed call
-            self.publish_missed_call({
-                'Number': self.current_call['number'],
-                'ring_start': self.current_call['ring_start'].isoformat(),
-                'ring_end': ring_end.isoformat(),
-                'ring_duration_seconds': int(duration),
-                'ring_count': self.current_call['ring_count'],
-                'detected_by': 'ring_timeout'
-            })
+        if queue_full:
+            missed_data['queue_full'] = True
+        if auto_reset:
+            missed_data['auto_reset'] = True
 
-            self.current_call = None
+        self.publish_missed_call(missed_data)
+
+    def _start_call_auto_reset_timer(self):
+        """Start timer to auto-reset incoming call state (fallback for modems that don't send CallEnd events)."""
+        self._cancel_call_auto_reset_timer()
+
+        timeout = self.config.get('incoming_call_auto_reset_seconds', 60)
+        logger.debug(f"📞 Starting call auto-reset timer: {timeout}s")
+
+        self._call_auto_reset_timer = threading.Timer(
+            timeout,
+            self._auto_reset_incoming_call
+        )
+        self._call_auto_reset_timer.daemon = True
+        self._call_auto_reset_timer.start()
+
+    def _cancel_call_auto_reset_timer(self):
+        """Cancel the auto-reset timer if running."""
+        if self._call_auto_reset_timer:
+            self._call_auto_reset_timer.cancel()
+            self._call_auto_reset_timer = None
+
+    def _auto_reset_incoming_call(self):
+        """Auto-reset: publish all calls in queue as missed."""
+        from datetime import datetime
+        if self.call_queue:
+            logger.info(f"📞 Auto-reset timeout - publishing {len(self.call_queue)} missed call(s)")
+
+            for call in self.call_queue:
+                self._publish_missed_call_from_queue(call, auto_reset=True)
+
+            self.call_queue = []
             self._call_ended_at = datetime.now()  # Start cooldown
             self._post_call_reinit_needed = True  # Request modem reinit after cooldown
             logger.info("🔄 Modem reinit requested after cooldown")
-            self.publish_incoming_call_state(False)
 
-        self._call_ring_timer = None
+        self.publish_incoming_call_state(False)
+        self._call_auto_reset_timer = None
 
     def _handle_sms_event(self, sms_data):
         """Handle SMS event - trigger for faster processing."""
@@ -3473,7 +3509,7 @@ class MQTTPublisher:
 
                 # Skip SMS polling during active incoming call to avoid modem conflicts
                 # The ReadDevice loop handles the call, and SMS operations can cause timeouts
-                if self.current_call is not None:
+                if self.call_queue:
                     logger.debug("📱 Skipping SMS poll - active incoming call")
                     time.sleep(check_interval)
                     continue
@@ -3700,7 +3736,7 @@ class MQTTPublisher:
             while self.connected and not self.disconnecting:
                 # Skip periodic status polling during active incoming call
                 # The ReadDevice loop handles the call, other modem ops can cause timeouts
-                if self.current_call is not None:
+                if self.call_queue:
                     logger.debug("📡 Skipping status poll - active incoming call")
                     time.sleep(interval)
                     continue

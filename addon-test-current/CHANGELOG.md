@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.7-test] - 2026-02-03
+
+### Added
+
+- **Call Queue Support (v1.6.2 upstream)** 📞
+  - Support for up to 5 simultaneous incoming calls in queue
+  - Each call tracked independently with its own ring count and timer
+  - When queue is full, oldest call is evicted and published as missed with `queue_full: true`
+  - New `queue_size` attribute in incoming_call state payload
+  - Handles `CallEnd` without number by removing only queued call
+
+- **Auto-Reset Timer for Stuck Calls (v1.6.2 upstream)** ⏱️
+  - New `incoming_call_auto_reset_seconds` config option (default: 60s, range: 10-300s)
+  - Timer restarts on every RING event (extends timeout while actively ringing)
+  - If no RING/CallEnd for configured timeout, all queued calls published as missed with `auto_reset: true`
+  - Prevents stuck "ringing" state when modem doesn't send CallEnd events
+
+### Changed
+
+- Replaced single `current_call` tracking with `call_queue` list (v1.6.2 upstream sync)
+- Replaced fixed 10s ring timeout with configurable auto-reset timer
+
 ## [2.18.6-test] - 2026-02-02
 
 ### Fixed

@@ -842,6 +842,7 @@ class MQTTPublisher:
         self._call_ended_at = None  # Timestamp when call ended (for cooldown)
         self.CALL_COOLDOWN_SECONDS = 10  # Wait this long after call before resuming polls
         self._post_call_reinit_needed = False  # Request modem reinit after cooldown
+        self._reinit_in_progress = False  # Lock to prevent concurrent modem access during reinit
 
         # SMS callback (faster delivery, polling as fallback)
         self.sms_callback_enabled = False
@@ -2679,27 +2680,29 @@ class MQTTPublisher:
             pin = self.config.get('pin', '')
             device_path = self.config.get('device_path', '/dev/ttyUSB0')
             
-            # CRITICAL: Close existing connection first to release the serial port
-            if self.gammu_machine:
+            # Acquire lock to prevent other threads from using modem during reinit
+            with self.gammu_lock:
+                # CRITICAL: Close existing connection first to release the serial port
+                if self.gammu_machine:
+                    try:
+                        logger.info("🔌 Terminating existing Gammu connection...")
+                        self.gammu_machine.Terminate()
+                        logger.info("✅ Existing connection terminated")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Terminate failed (may already be closed): {e}")
+                
+                logger.info(f"🔌 Re-initializing Gammu with device: {device_path}")
+                new_machine = init_state_machine(pin, device_path)
+                
+                # Test the new connection with a simple operation
                 try:
-                    logger.info("🔌 Terminating existing Gammu connection...")
-                    self.gammu_machine.Terminate()
-                    logger.info("✅ Existing connection terminated")
+                    new_machine.GetManufacturer()
+                    # Success! Update the machine
+                    self.gammu_machine = new_machine
+                    return True
                 except Exception as e:
-                    logger.warning(f"⚠️ Terminate failed (may already be closed): {e}")
-            
-            logger.info(f"🔌 Re-initializing Gammu with device: {device_path}")
-            new_machine = init_state_machine(pin, device_path)
-            
-            # Test the new connection with a simple operation
-            try:
-                new_machine.GetManufacturer()
-                # Success! Update the machine
-                self.gammu_machine = new_machine
-                return True
-            except Exception as e:
-                logger.error(f"❌ Reconnected machine failed test: {e}")
-                return False
+                    logger.error(f"❌ Reconnected machine failed test: {e}")
+                    return False
                 
         except Exception as e:
             logger.error(f"❌ Failed to re-initialize Gammu: {e}")
@@ -3190,18 +3193,23 @@ class MQTTPublisher:
                         time.sleep(check_interval)
                         continue
                     else:
-                        # Cooldown expired, clear the timestamp
-                        self._call_ended_at = None
-                        logger.info("📱 Post-call cooldown complete, resuming SMS monitoring")
-
-                        # Reinitialize modem if requested (SIM7600G-H gets stuck after calls)
+                        # Cooldown expired - check if reinit needed BEFORE clearing cooldown
+                        # This prevents race condition with status poll
                         if self._post_call_reinit_needed:
                             self._post_call_reinit_needed = False
-                            logger.info("🔄 Post-call modem reinit starting...")
-                            if self._reconnect_gammu():
-                                logger.info("✅ Post-call modem reinit successful")
-                            else:
-                                logger.warning("⚠️ Post-call modem reinit failed - will retry on next failure")
+                            self._reinit_in_progress = True  # Block other threads BEFORE clearing cooldown
+                            self._call_ended_at = None  # Now safe to clear
+                            logger.info("📱 Post-call cooldown complete, starting modem reinit...")
+                            try:
+                                if self._reconnect_gammu():
+                                    logger.info("✅ Post-call modem reinit successful")
+                                else:
+                                    logger.warning("⚠️ Post-call modem reinit failed - will retry on next failure")
+                            finally:
+                                self._reinit_in_progress = False  # Release lock
+                        else:
+                            self._call_ended_at = None
+                            logger.info("📱 Post-call cooldown complete, resuming SMS monitoring")
 
                 # When in hard_offline, skip ALL modem operations to avoid blocking
                 # Just check restart timeout, publish status (to update seconds_since_last_success), and wait
@@ -3415,6 +3423,12 @@ class MQTTPublisher:
                         logger.debug(f"📡 Skipping status poll - post-call cooldown")
                         time.sleep(interval)
                         continue
+
+                # Skip status polling during modem reinit (prevents race condition)
+                if self._reinit_in_progress:
+                    logger.debug("📡 Skipping status poll - modem reinit in progress")
+                    time.sleep(interval)
+                    continue
 
                 # When in hard_offline, skip modem operations to avoid blocking
                 # The SMS monitoring loop handles restart timeout checking
@@ -3860,6 +3874,11 @@ class MQTTPublisher:
                 while self.connected and not self.disconnecting:
                     # Pause ReadDevice during post-call cooldown to let modem recover
                     if self._call_ended_at is not None:
+                        time.sleep(1)
+                        continue
+
+                    # Pause ReadDevice during modem reinit
+                    if self._reinit_in_progress:
                         time.sleep(1)
                         continue
 

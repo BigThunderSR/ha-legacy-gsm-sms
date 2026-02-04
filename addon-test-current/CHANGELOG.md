@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.8-test] - 2026-02-03
+
+### Fixed
+
+- **Race Condition During Post-Call Modem Reinit** 🔧
+  - Added `_reinit_in_progress` flag to prevent concurrent modem access during reinit
+  - **CRITICAL**: Set reinit flag BEFORE clearing `_call_ended_at` (not after) to close race window
+  - Status polling loop now checks for reinit flag and skips
+  - ReadDevice loop now checks for reinit flag and skips (was missing!)
+  - `_reconnect_gammu()` now acquires `gammu_lock` before Terminate/Init (was missing!)
+  - Prevents ERR_NOTCONNECTED cascade when cooldown ends and multiple loops resume
+  - Reinit operation wrapped in try/finally to ensure flag is always cleared
+
 ## [2.18.7-test] - 2026-02-03
 
 ### Added

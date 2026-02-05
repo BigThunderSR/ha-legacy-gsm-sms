@@ -1,5 +1,5 @@
 name: "GSM SMS Gateway Enhanced"
-version: 2.18.8
+version: 2.18.9
 slug: "gsm_sms_gateway_enhanced"
 description: |
   Enhanced SMS Gammu Gateway with network provider lookup, comprehensive diagnostics, and SMS-based balance tracking. 
@@ -96,6 +96,7 @@ options:
     - "127.0.0.1"
   get_endpoint_deduplication_enabled: true
   missed_calls_monitoring_enabled: false
+  missed_calls_max_history: 10
   incoming_call_auto_reset_seconds: 60
 schema:
   device_path: str
@@ -134,4 +135,5 @@ schema:
     - str
   get_endpoint_deduplication_enabled: bool
   missed_calls_monitoring_enabled: bool
+  missed_calls_max_history: int(1,100)
   incoming_call_auto_reset_seconds: int(10,300)

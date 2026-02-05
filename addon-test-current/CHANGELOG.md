@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.9-test] - 2026-02-04
+
+### Added
+
+- **Missed Call Persistent Storage** 📞
+  - New `MissedCallTracker` class saves missed calls to `/data/missed_calls.json`
+  - Stores up to 10 missed calls (configurable via `missed_calls_max_history`)
+  - Missed calls now survive MQTT broker restarts and retained topic loss
+  - Last missed call restored to MQTT on addon startup
+
+- **Balance Data Restore on Startup** 💰
+  - Balance data was persisted but never restored to MQTT on restart
+  - Now republishes last known balance to MQTT after discovery
+  - Survives MQTT broker restarts and retained topic loss
+
+### Changed
+
+- `publish_missed_call()` now saves to persistent storage before publishing to MQTT
+- Added `_restore_missed_call_history()` method called after MQTT discovery
+- Added `_restore_balance_data()` method called after MQTT discovery
+
 ## [2.18.8-test] - 2026-02-03
 
 ### Fixed

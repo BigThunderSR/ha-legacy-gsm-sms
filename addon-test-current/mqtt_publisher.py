@@ -447,6 +447,89 @@ class SMSDeliveryTracker:
             
             return count
 
+
+class MissedCallTracker:
+    """Tracks missed call history with persistent storage (thread-safe)"""
+
+    def __init__(self, calls_file='/data/missed_calls.json', max_calls=10):
+        self.calls_file = calls_file
+        self.max_calls = max_calls
+        self.calls = []
+        self.last_call = None  # Most recent missed call for quick access
+        self._lock = threading.Lock()
+        self._load()
+
+    def _load(self):
+        """Load missed calls from JSON file"""
+        try:
+            if os.path.exists(self.calls_file):
+                with open(self.calls_file, 'r') as f:
+                    data = json.load(f)
+                    self.calls = data.get('calls', [])
+                    self.last_call = data.get('last_call', None)
+                    # Keep only max_calls
+                    self.calls = self.calls[-self.max_calls:]
+                    logger.info(
+                        f"📞 Loaded missed call history: {len(self.calls)} calls"
+                    )
+            else:
+                logger.info("📞 Missed call history file not found, starting fresh")
+        except Exception as e:
+            logger.error(f"Error loading missed call history: {e}")
+            self.calls = []
+            self.last_call = None
+
+    def _save(self):
+        """Save missed calls to JSON file"""
+        try:
+            # Ensure /data directory exists
+            os.makedirs(os.path.dirname(self.calls_file), exist_ok=True)
+
+            data = {
+                'calls': self.calls,
+                'last_call': self.last_call
+            }
+            with open(self.calls_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            logger.debug(f"📞 Saved missed call history: {len(self.calls)} calls")
+        except Exception as e:
+            logger.error(f"Error saving missed call history: {e}")
+
+    def add_call(self, call_data: dict):
+        """Add a missed call to history (thread-safe)"""
+        with self._lock:
+            # Store the call
+            self.calls.append(call_data)
+            self.last_call = call_data
+            
+            # Keep only last max_calls
+            if len(self.calls) > self.max_calls:
+                self.calls = self.calls[-self.max_calls:]
+            
+            self._save()
+            number = call_data.get('Number', 'Unknown')
+            logger.debug(f"📞 Added missed call to history from {number}")
+            return call_data
+
+    def get_last_call(self):
+        """Get the most recent missed call (thread-safe)"""
+        with self._lock:
+            return self.last_call.copy() if self.last_call else None
+
+    def get_history(self):
+        """Get all missed calls in history (thread-safe)"""
+        with self._lock:
+            return self.calls.copy()
+
+    def clear(self):
+        """Clear all history (thread-safe)"""
+        with self._lock:
+            self.calls = []
+            self.last_call = None
+            self._save()
+            logger.info("📞 Missed call history cleared")
+
+
 class BalanceSMSParser:
     """Parses SMS messages from network providers to extract account balance information"""
     
@@ -803,6 +886,10 @@ class MQTTPublisher:
         
         # Initialize delivery tracking
         self.delivery_tracker = SMSDeliveryTracker()  # SMS delivery report tracking
+        
+        # Initialize missed call tracking
+        max_missed_calls = config.get('missed_calls_max_history', 10)
+        self.missed_call_tracker = MissedCallTracker(max_calls=max_missed_calls)
         
         # Initialize balance SMS parser if enabled
         self.balance_parser = None
@@ -2233,6 +2320,12 @@ class MQTTPublisher:
         
         # Now restore SMS history after HA has processed discovery
         self._restore_sms_history()
+        
+        # Restore missed call history if call monitoring is enabled
+        self._restore_missed_call_history()
+        
+        # Restore balance data if balance parsing is enabled
+        self._restore_balance_data()
     
     def publish_signal_strength(self, signal_data: Dict[str, Any], silent: bool = False):
         """Publish signal strength data"""
@@ -3047,6 +3140,51 @@ class MQTTPublisher:
             )
         else:
             logger.info("📡 No SMS history to restore")
+
+    def _restore_missed_call_history(self):
+        """Restore last missed call from history after discovery is complete"""
+        if not self.connected:
+            return
+        
+        if not self.config.get('missed_calls_monitoring_enabled', False):
+            return
+        
+        last_call = self.missed_call_tracker.get_last_call()
+        if last_call:
+            # Publish to missed call state topic with retain
+            topic = f"{self.topic_prefix}/missed_call/state"
+            self.client.publish(
+                topic, json.dumps(last_call), qos=1, retain=True
+            )
+            
+            number = last_call.get('Number', 'Unknown')
+            timestamp = last_call.get('processed_at', '')
+            logger.info(
+                f"📡 Restored last missed call from history: "
+                f"{number} at {timestamp}"
+            )
+        else:
+            logger.info("📡 No missed call history to restore")
+
+    def _restore_balance_data(self):
+        """Restore balance data from persistent storage after discovery"""
+        if not self.connected:
+            return
+        
+        if not self.balance_parser:
+            return
+        
+        balance_data = self.balance_parser.get_balance_data()
+        # Only restore if we have actual data (not all None)
+        if balance_data.get('last_updated'):
+            self.publish_balance_info(balance_data)
+            logger.info(
+                f"📡 Restored balance from storage: "
+                f"${balance_data.get('account_balance', 'N/A')} "
+                f"(updated: {balance_data.get('last_updated', 'N/A')})"
+            )
+        else:
+            logger.info("📡 No balance data to restore")
     
     def publish_initial_states_with_machine(self, gammu_machine):
         """Publish initial states with gammu machine access"""
@@ -3547,13 +3685,20 @@ class MQTTPublisher:
 
     def publish_missed_call(self, call_data: dict):
         """Publish missed call to MQTT (real-time callback version)."""
-        if not self.connected:
-            return
-
         from datetime import datetime
         # Add processed_at if missing
         if 'processed_at' not in call_data:
             call_data['processed_at'] = datetime.now().isoformat()
+
+        # Save to persistent storage (backup for MQTT retained message loss)
+        self.missed_call_tracker.add_call(call_data)
+
+        if not self.connected:
+            logger.info(
+                f"📞 Missed call from {call_data.get('Number', 'Unknown')} "
+                f"saved to history (MQTT offline)"
+            )
+            return
 
         topic = f"{self.topic_prefix}/missed_call/state"
         self.client.publish(topic, json.dumps(call_data), retain=True)

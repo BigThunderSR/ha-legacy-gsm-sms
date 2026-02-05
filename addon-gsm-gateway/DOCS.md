@@ -857,6 +857,21 @@ The addon automatically preserves SMS history across restarts:
 
 The `sensor.sms_gateway_last_sms` and `sensor.sms_gateway_last_sms_sender` will show your most recent message immediately on startup, without waiting for a new SMS to arrive. This works correctly after both addon restarts and Home Assistant restarts.
 
+### Persistent Data Storage (🆕 v2.18.9)
+
+The addon persists critical data to `/data/` folder (survives addon restarts, MQTT broker restarts, and retained topic loss):
+
+| File | Description |
+|------|-------------|
+| `/data/sms_counter.json` | SMS sent/received counts |
+| `/data/sms_history.json` | Last 10 received SMS messages |
+| `/data/pending_sms.json` | Queued SMS awaiting modem recovery |
+| `/data/sms_delivery.json` | Delivery report tracking |
+| `/data/missed_calls.json` | Last 10 missed calls (🆕 v2.18.9) |
+| `/data/balance_data.json` | Account balance parsed from SMS |
+
+All persistent data is automatically restored to MQTT on startup.
+
 ### Monitor Modem Health
 
 New sensors provide detailed diagnostics:

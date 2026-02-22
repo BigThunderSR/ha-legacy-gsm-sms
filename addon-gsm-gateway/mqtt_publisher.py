@@ -3557,7 +3557,7 @@ class MQTTPublisher:
             network_code = network.get("NetworkCode", "")
             network_name = network.get("NetworkName")
             
-            # Try multiple lookup methods if name is empty (Gammu bug: https://github.com/gammu/python-gammu/issues/31)
+            # Try multiple lookup methods if name is empty (fixed in python-gammu 3.2.5, kept as defense-in-depth)
             if not network_name and network_code:
                 # First try our comprehensive database
                 network_name = get_network_name(network_code)
@@ -3946,7 +3946,7 @@ class MQTTPublisher:
                     network_code = network.get("NetworkCode", "")
                     network_name = network.get("NetworkName")
                     
-                    # Try multiple lookup methods if name is empty (Gammu bug: https://github.com/gammu/python-gammu/issues/31)
+                    # Try multiple lookup methods if name is empty (fixed in python-gammu 3.2.5, kept as defense-in-depth)
                     if not network_name and network_code:
                         # First try our comprehensive database
                         network_name = get_network_name(network_code)

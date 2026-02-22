@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.10-test] - 2026-02-22
+
+### Changed
+
+- **Updated `python-gammu` dependency from 3.2.4 to 3.2.6**
+  - SMSD no longer terminates the Python interpreter on errors
+  - Reentrancy protection for callback execution
+  - Safer Unicode string decoding
+  - Corrected `NetworkName` return value
+- Updated NetworkName fallback comments to reflect upstream fix in python-gammu 3.2.5
+
 ## [2.18.9-test] - 2026-02-04
 
 ### Added

@@ -399,13 +399,15 @@ If you see duplicate sensors after upgrading:
 
 The **Modem Status** sensor tracks device connectivity. When SMS operations (like retrieving messages) time out, the modem is marked as "offline" with a `hard_offline` state. This prevents false "online" readings when only signal polling succeeds but SMS functionality is broken.
 
-**Status Attributes:**
+**Status Attributes (in Home Assistant):**
 
-- `status`: "online" or "offline"
-- `hard_offline`: `true` if a timeout caused the offline state (won't clear from signal polling alone)
-- `hard_offline_operation`: Which operation timed out (e.g., "retrieveAllSms")
 - `consecutive_failures`: Number of failed operations
 - `last_error`: Description of the last error
+- `hard_offline`: `true` if a timeout caused the offline state (won't clear from signal polling alone)
+- `hard_offline_operation`: Which operation timed out (e.g., "retrieveAllSms")
+- `last_seen`: Timestamp of last successful modem communication
+
+> **Note (v2.18.11):** Volatile diagnostic fields (`seconds_since_last_success`, `total_operations`, `successful_operations`) are excluded from HA entity attributes to prevent database bloat. They are still available in the raw MQTT payload on `<topic_prefix>/device_status/state` for advanced use.
 
 **Recovery:**
 

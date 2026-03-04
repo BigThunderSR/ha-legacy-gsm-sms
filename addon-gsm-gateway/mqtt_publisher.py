@@ -1985,12 +1985,19 @@ class MQTTPublisher:
         }
 
         # Modem Status sensor
+        # NOTE: json_attributes_template deliberately excludes volatile fields:
+        # - seconds_since_last_success: changes every second
+        # - total_operations / successful_operations: increment every poll cycle
+        # Including these would cause a new HA database row on every poll,
+        # leading to massive database bloat (~8,640 rows/day).
+        # Only event-driven fields that change on status transitions are included.
         device_status_config = {
             "name": "Modem Status",
             "unique_id": "sms_gateway_modem_status",
             "state_topic": f"{self.topic_prefix}/device_status/state",
             "value_template": "{{ value_json.status }}",
             "json_attributes_topic": f"{self.topic_prefix}/device_status/state",
+            "json_attributes_template": "{{ {'consecutive_failures': value_json.consecutive_failures, 'last_error': value_json.last_error, 'hard_offline': value_json.hard_offline, 'hard_offline_operation': value_json.hard_offline_operation | default(None), 'last_seen': value_json.last_seen} | tojson }}",
             "icon": "mdi:connection",
             "device": DEVICE_CONFIG,
             **AVAILABILITY_CONFIG
@@ -2498,16 +2505,23 @@ class MQTTPublisher:
 
         self._last_device_status = status
 
-        # Skip MQTT publish if status data hasn't changed (optimization)
-        if hasattr(self, '_last_published_status_data') and self._last_published_status_data == status_data:
-            logger.debug("Device status data unchanged, skipping redundant MQTT publish")
+        # Skip MQTT publish if meaningful status data hasn't changed (optimization)
+        # Exclude volatile fields from comparison that change every poll cycle:
+        # - seconds_since_last_success: changes every second
+        # - total_operations / successful_operations: increment every successful operation
+        # - last_seen: updates every successful operation
+        # Only publish when event-driven fields change (status, failures, errors, hard_offline)
+        _volatile_fields = {'seconds_since_last_success', 'total_operations', 'successful_operations', 'last_seen'}
+        stable_data = {k: v for k, v in status_data.items() if k not in _volatile_fields}
+        if hasattr(self, '_last_published_stable_data') and self._last_published_stable_data == stable_data:
+            logger.debug("Device status data unchanged (excluding volatile fields), skipping redundant MQTT publish")
             return
 
         # Publish to MQTT if connected
         if self.connected:
             topic = f"{self.topic_prefix}/device_status/state"
             self.client.publish(topic, json.dumps(status_data), retain=True, qos=1)
-            self._last_published_status_data = status_data.copy()  # Cache published data
+            self._last_published_stable_data = stable_data.copy()  # Cache stable fields for dedup
             logger.debug(f"📡 Published device status to MQTT: {status}")
         else:
             logger.debug("Device status changed but MQTT not connected, skipping publish")

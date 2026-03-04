@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.11-test] - 2026-03-03
+
+### Fixed
+
+- **Modem Status sensor database bloat** 🗄️
+  - The Modem Status sensor was writing a new row to the Home Assistant database on every poll cycle (~8,640 rows/day) because its attributes contained volatile fields that changed constantly
+  - Added `json_attributes_template` to the MQTT discovery config to exclude volatile fields from HA entity attributes:
+    - `seconds_since_last_success` (changed every second)
+    - `total_operations` / `successful_operations` (incremented every poll cycle)
+  - Added `hard_offline_operation` diagnostic field to attributes (with `| default(None)` for when not in hard offline state)
+  - Fixed the publish dedup cache to compare only stable fields (`status`, `consecutive_failures`, `last_error`, `hard_offline`, `hard_offline_operation`), so redundant MQTT publishes are properly suppressed during normal operation
+  - **Net effect**: During steady-state operation, zero unnecessary MQTT publishes and zero unnecessary HA database writes for this sensor
+
 ## [2.18.10-test] - 2026-02-22
 
 ### Changed

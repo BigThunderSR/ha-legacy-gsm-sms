@@ -3,15 +3,15 @@
 [![GitHub Release](https://img.shields.io/github/v/release/BigThunderSR/ha-legacy-gsm-sms?label=GitHub%20Release&cacheSeconds=0)](https://github.com/BigThunderSR/ha-legacy-gsm-sms/releases)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg?label=HACS)](https://github.com/hacs/integration)
 [![HACS Version](https://img.shields.io/github/manifest-json/v/BigThunderSR/ha-legacy-gsm-sms?filename=custom_components%2Flegacy_gsm_sms%2Fmanifest.json&label=HACS%20Version&color=blue&cacheSeconds=0)](https://github.com/BigThunderSR/ha-legacy-gsm-sms)
-[![Home Assistant Add-on Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FBigThunderSR%2Fha-legacy-gsm-sms%2Fmain%2Faddon-standalone%2Fconfig.yaml&query=%24.version&label=Home%20Assistant%20Add-on%20Version&color=blue&cacheSeconds=0)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
 [![GSM Gateway Enhanced Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FBigThunderSR%2Fha-legacy-gsm-sms%2Fmain%2Faddon-gsm-gateway%2Fconfig.yaml&query=%24.version&label=GSM%20Gateway%20Enhanced&color=green&cacheSeconds=0)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
+[![Home Assistant Add-on Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FBigThunderSR%2Fha-legacy-gsm-sms%2Fmain%2Faddon-standalone%2Fconfig.yaml&query=%24.version&label=Home%20Assistant%20Add-on%20Version&color=blue&cacheSeconds=0)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
 
 Send and receive SMS messages using a GSM modem connected to your Home Assistant instance, with sensors for monitoring signal strength and network status.
 
-> **ℹ️ HACS Integration Status:**  
-> The official Home Assistant SMS integration was removed in 2025.12. However, this custom HACS integration **currently works** because Home Assistant's wheel index (`wheels.home-assistant.io`) provides pre-built `python-gammu` packages with all Gammu libraries bundled.
+> **🚨 HACS Integration - DEPRECATED (Broken since HA 2026.3.0):**  
+> The HACS integration **no longer works** starting with Home Assistant 2026.3.0 / OS 17.1. The pre-built `python-gammu` wheels that Home Assistant previously hosted at `wheels.home-assistant.io` are no longer available. Since the official SMS integration was removed in HA 2025.12, these wheels stopped being maintained, and `pip` can no longer install `python-gammu` without the Gammu C library and build tools — which HACS cannot provide.
 >
-> **⚠️ Note:** Since this relies on Home Assistant continuing to host these wheels (which are no longer used by any official integration), this could change in the future. If you want a guaranteed long-term solution, consider using one of the [add-on options](#home-assistant-add-ons) instead.
+> **➡️ Please switch to one of the [add-on options](#home-assistant-add-ons) below.** The add-ons bundle all required system dependencies in their Docker images and are the supported path forward.
 
 ## Features
 
@@ -19,7 +19,7 @@ Send and receive SMS messages using a GSM modem connected to your Home Assistant
 - Monitor GSM modem signal strength
 - Monitor GSM network status
 - GSM network information sensors
-- Available as HACS integration or Home Assistant add-on
+- Available as Home Assistant add-on (two options)
 
 ## Requirements
 
@@ -30,41 +30,24 @@ Send and receive SMS messages using a GSM modem connected to your Home Assistant
 
 Multiple installation methods are available:
 
-- **[HACS Integration](#hacs-integration)** - Currently working, but not officially supported by HA
-- **[Home Assistant Add-ons](#home-assistant-add-ons)** (two options available - guaranteed long-term support):
+- **[Home Assistant Add-ons](#home-assistant-add-ons)** (two options available - **recommended**):
+  - **[GSM SMS Gateway Enhanced](#gsm-sms-gateway-enhanced-add-on--recommended)** ⭐ - Enhanced add-on with MQTT discovery, USSD, network diagnostics, and more
   - **[Legacy GSM SMS](#legacy-gsm-sms-add-on)** - Standard add-on with HTTP API
-  - **[GSM SMS Gateway Enhanced](#gsm-sms-gateway-enhanced-add-on)** - Enhanced add-on with network diagnostics and MQTT support
+- ~~**[HACS Integration](#hacs-integration-deprecated)**~~ - **Deprecated** — broken since HA 2026.3.0
 
 ## Home Assistant Add-ons
 
-Two add-on options are available, each with different features and capabilities. Choose the one that best fits your needs.
+Two add-on options are available. **The Enhanced add-on is recommended** for most users.
 
-### Legacy GSM SMS Add-on
+### GSM SMS Gateway Enhanced Add-on ⭐ (Recommended)
 
 [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FBigThunderSR%2Fha-legacy-gsm-sms)
-
-The standard add-on provides an HTTP API-based solution for SMS messaging:
-
-**Features:**
-
-- HTTP API for sending SMS messages
-- Basic sensor entities for signal strength
-- Event-based SMS reception
-- Simple configuration and setup
-
-**Installation:**
-
-1. Click the button above to add this repository to your Home Assistant instance
-2. Install the "Legacy GSM SMS" add-on from the Add-on Store
-3. Configure and start the add-on (refer to the Documentation tab)
-
-### GSM SMS Gateway Enhanced Add-on
 
 **Version 2.1.0** - Enhanced add-on with advanced features and diagnostics.
 
 **Credits:** Based on [PavelVe's SMS Gammu Gateway](https://github.com/PavelVe/hassio-addons) and [pajikos's gammu-sms-gateway](https://github.com/pajikos/gammu-sms-gateway), enhanced with additional diagnostic capabilities.
 
-**Enhanced Features:**
+**Features:**
 
 - **MQTT Discovery** - Automatic sensor creation in Home Assistant
 - **USSD Support** - Send USSD codes (\*#100# for balance, \*#111# for data usage, etc.)
@@ -81,24 +64,44 @@ The standard add-on provides an HTTP API-based solution for SMS messaging:
   - Last SMS sender phone number
 - **Organized Entity Grouping** - All sensors grouped under single device in HA
 - **HTTP API** - Compatible with existing SMS gateway integrations
-- **Event-based SMS Reception** - Same as standard add-on
+- **Event-based SMS Reception** - Real-time SMS notifications
 
 **Installation:**
 
-1. Add this repository to Home Assistant (use button above)
+1. Click the button above to add this repository to your Home Assistant instance
 2. Install "GSM SMS Gateway Enhanced" from the Add-on Store
 3. Configure your modem device and MQTT settings
 4. Start the add-on
 
 Refer to [addon-gsm-gateway/README.md](addon-gsm-gateway/README.md) for detailed documentation, configuration options, and troubleshooting.
 
+### Legacy GSM SMS Add-on
+
+The standard add-on provides a simpler HTTP API-based solution for SMS messaging:
+
+**Features:**
+
+- HTTP API for sending SMS messages
+- Basic sensor entities for signal strength
+- Event-based SMS reception
+- Simple configuration and setup
+
+**Installation:**
+
+1. Add this repository to Home Assistant (use button above)
+2. Install the "Legacy GSM SMS" add-on from the Add-on Store
+3. Configure and start the add-on (refer to the Documentation tab)
+
 **⚠️ Important:** Do not run multiple add-ons or the HACS integration simultaneously - they will conflict when accessing the GSM modem's serial device. Choose only one installation method.
 
-### HACS Integration
+### HACS Integration (DEPRECATED)
 
-[![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=BigThunderSR&repository=ha-legacy-gsm-sms&category=integration)
+> **🚨 Deprecated:** The HACS integration is **broken since Home Assistant 2026.3.0 / OS 17.1** and will no longer be maintained. The `python-gammu` Python package requires the Gammu C library and build tools to compile, which HACS cannot install. Home Assistant previously provided pre-built wheels, but these are no longer available since the official SMS integration was removed in HA 2025.12.
+>
+> **Please switch to one of the [add-on options](#home-assistant-add-ons) above.**
 
-> **Note:** This integration works because Home Assistant's wheel index provides pre-built `python-gammu` packages with bundled libraries. Since the official SMS integration was removed, these wheels may not be maintained indefinitely. If you experience issues after a Home Assistant update, switch to one of the [add-on options](#home-assistant-add-ons).
+<details>
+<summary>Legacy HACS installation instructions (for reference only)</summary>
 
 1. Make sure [HACS](https://hacs.xyz/) is installed in your Home Assistant instance.
 2. Add this repository as a custom repository in HACS:
@@ -116,7 +119,12 @@ Alternatively, you can manually install the integration:
 2. Restart Home Assistant.
 3. Configure the integration through the UI (see Configuration section below)
 
-## Configuration (HACS Integration)
+</details>
+
+## Configuration (HACS Integration - DEPRECATED)
+
+<details>
+<summary>HACS configuration details (for reference only)</summary>
 
 ### Through the UI
 
@@ -133,7 +141,12 @@ legacy_gsm_sms:
   device: /dev/ttyUSB0
 ```
 
-## Usage (HACS Integration)
+</details>
+
+## Usage (HACS Integration - DEPRECATED)
+
+<details>
+<summary>HACS usage details (for reference only)</summary>
 
 ### Sending SMS
 
@@ -253,7 +266,12 @@ After installation, you can configure the integration via Settings > Devices & S
 - **Auto-delete read SMS** - Automatically delete SMS after reading (default: enabled)
 - **Maximum SMS History** - Number of SMS to keep in history (1-100, default: 10)
 
-## Troubleshooting (HACS Integration)
+</details>
+
+## Troubleshooting (HACS Integration - DEPRECATED)
+
+<details>
+<summary>HACS troubleshooting (for reference only)</summary>
 
 ### "Cannot find device" Error
 
@@ -285,6 +303,8 @@ This occurs when the GSM modem stops responding after initial connection:
 - Add your user to the `dialout` group: `sudo usermod -a -G dialout $USER`
 - Log out and back in for group changes to take effect
 - For Home Assistant OS/Supervised, permissions are handled automatically
+
+</details>
 
 ## Credits
 

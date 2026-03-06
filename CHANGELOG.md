@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-03-06
+
+### Deprecated
+
+- **HACS Integration** - Marked as deprecated/broken since Home Assistant 2026.3.0 / OS 17.1. The pre-built `python-gammu` wheels are no longer available on `wheels.home-assistant.io`. Users should migrate to one of the Home Assistant add-on options (Legacy GSM SMS or GSM SMS Gateway Enhanced).
+
+### Changed
+
+- Bumped `python-gammu` dependency from 3.2.4 to 3.2.6 in manifest.json
+- Prioritized GSM SMS Gateway Enhanced add-on as the recommended installation option
+- Updated README with deprecation notice for HACS integration
+- Updated info.md with deprecation notice and migration guidance
+- Collapsed HACS-specific documentation sections (Configuration, Usage, Troubleshooting) into expandable details blocks
+
 ## [2.1.1] - 2025-12-21
 
 ### Improved

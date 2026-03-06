@@ -1,21 +1,19 @@
 # ![brand_icon](png/logo-64x64.png) Legacy GSM SMS
 
+> **🚨 HACS Integration — DEPRECATED (Broken since HA 2026.3.0)**
+>
+> The HACS integration **no longer works** starting with Home Assistant 2026.3.0 / OS 17.1. The pre-built `python-gammu` wheels that Home Assistant previously hosted are no longer available. Please use one of the **Home Assistant add-on** options instead.
+
 This integration allows you to send and receive SMS messages using a GSM modem connected to your Home Assistant instance.
 
-## Features
+## Recommended: Use the GSM SMS Gateway Enhanced Add-on
 
-- Send SMS messages via notify service
-- Receive SMS messages and fire events
-- Monitor modem signal strength and network status
-- GSM network information sensors
+Add this repository to Home Assistant as an add-on repository and install one of:
 
-## Installation
+- **GSM SMS Gateway Enhanced** ⭐ — **Recommended.** Enhanced add-on with MQTT discovery, USSD, network diagnostics, and more
+- **Legacy GSM SMS** — Simpler add-on with HTTP API
 
-1. Install via HACS
-2. Restart Home Assistant
-3. Go to Configuration > Integrations
-4. Add "Legacy GSM SMS" integration
-5. Configure the device path to your GSM modem
+See the [full README](https://github.com/BigThunderSR/ha-legacy-gsm-sms) for details.
 
 ## Requirements
 

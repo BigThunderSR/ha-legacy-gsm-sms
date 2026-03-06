@@ -4,20 +4,17 @@ Send and receive SMS messages using a GSM modem with Home Assistant.
 
 ## ⚠️ Important: HACS Integration Compatibility
 
-**Do NOT run this add-on and the HACS integration at the same time!**
+**The HACS integration is deprecated and broken since Home Assistant 2026.3.0 / OS 17.1.**
 
-Both the add-on and the HACS integration will try to access the same serial device (GSM modem), causing conflicts and preventing either from working properly.
+The pre-built `python-gammu` wheels are no longer available, so the HACS integration can no longer be installed. **This add-on is the recommended replacement.**
 
-**Before using this add-on:**
+If you previously had the HACS integration installed:
 
-1. Disable or uninstall the Legacy GSM SMS HACS integration if you have it installed
+1. Disable or uninstall the Legacy GSM SMS HACS integration
 2. Restart Home Assistant
 3. Then start this add-on
 
-**Which should you use?**
-
-- **HACS Integration**: Best for simple SMS sending/receiving if you don't need add-on features
-- **This Add-on**: Provides more sensors (8 total), device info, and additional features
+**Do NOT run this add-on and the HACS integration at the same time** — both try to access the same serial device, causing conflicts.
 
 ## Features
 

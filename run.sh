@@ -24,8 +24,8 @@ cat > /config/custom_components/legacy_gsm_sms/manifest.json << EOL
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/BigThunderSR/ha-legacy-gsm-sms/issues",
   "loggers": ["gammu"],
-  "requirements": ["python-gammu==3.2.4"],
-  "version": "1.0.0"
+  "requirements": ["python-gammu==3.2.6"],
+  "version": "2.1.2"
 }
 EOL
 

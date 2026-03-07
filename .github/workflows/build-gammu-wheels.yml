@@ -1,0 +1,183 @@
+name: Build python-gammu wheels
+
+# Manually triggered — builds musllinux wheels for python-gammu
+# and publishes them to a GitHub Release for use as HACS requirements.
+#
+# Why not cibuildwheel?
+#   - Alpine's gammu-dev (1.42.0) is too old; python-gammu requires >= 1.43.0
+#   - python-gammu 3.2.6 hits -Wreturn-mismatch error on GCC 15 / Python 3.14
+#   - Direct Docker build gives us full control over both issues
+on:
+  workflow_dispatch:
+    inputs:
+      python_gammu_version:
+        description: "python-gammu version (from PyPI sdist)"
+        default: "3.2.6"
+        required: true
+      gammu_c_version:
+        description: "Gammu C-library version (>= 1.43.0)"
+        default: "1.43.2"
+        required: true
+      python_docker_tag:
+        description: "Python Docker image tag (e.g. 3.14-alpine)"
+        default: "3.14-alpine"
+        required: true
+      cpython_abi:
+        description: "CPython ABI tag for wheel filename (e.g. cp314)"
+        default: "cp314"
+        required: true
+
+jobs:
+  build-wheel:
+    name: Build ${{ matrix.arch }} wheel
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runs-on: ubuntu-latest
+            plat: musllinux_1_2_x86_64
+          - arch: aarch64
+            runs-on: ubuntu-24.04-arm
+            plat: musllinux_1_2_aarch64
+
+    steps:
+      - name: Fetch python-gammu sdist URL from PyPI
+        id: sdist
+        run: |
+          url=$(curl -sfL "https://pypi.org/pypi/python-gammu/${{ inputs.python_gammu_version }}/json" \
+            | python3 -c "import sys,json; print([u['url'] for u in json.load(sys.stdin)['urls'] if u['packagetype']=='sdist'][0])")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Build wheel in Docker
+        run: |
+          docker run --rm \
+            -v "$PWD/wheelhouse:/out" \
+            python:${{ inputs.python_docker_tag }} sh -c '
+              set -ex
+
+              apk add --no-cache cmake make gcc g++ musl-dev pkgconf \
+                curl-dev libusb-dev gettext-dev glib-dev
+
+              # ── Build gammu C library from source ──────────────────────
+              cd /tmp
+              wget -q "https://github.com/gammu/gammu/releases/download/${{ inputs.gammu_c_version }}/Gammu-${{ inputs.gammu_c_version }}.tar.gz"
+              tar xzf Gammu-${{ inputs.gammu_c_version }}.tar.gz
+              cd Gammu-${{ inputs.gammu_c_version }}
+              mkdir build && cd build
+              cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release \
+                -DWITH_BLUETOOTH=OFF -DBUILD_TESTING=OFF -DBUILD_GAMMU=OFF -DBUILD_DOC=OFF
+              make -j$(nproc) libGammu gsmsd
+              cmake --install . 2>&1 || true
+              pkg-config --modversion gammu
+
+              # ── Download & patch python-gammu source ───────────────────
+              cd /tmp
+              wget -q "${{ steps.sdist.outputs.url }}" -O python-gammu.tar.gz
+              mkdir pysrc && tar xzf python-gammu.tar.gz -C pysrc --strip-components=1
+              cd pysrc
+
+              # GCC 15 / Python 3.14: -Wreturn-mismatch is now an error.
+              # BEGIN_PHONE_COMM macro uses "return NULL" inside void functions.
+              sed -i "/extra_compile_args.append(flags)/a\\    module.extra_compile_args.append(\"-Wno-error=return-mismatch\")" setup.py
+
+              # ── Build wheel ────────────────────────────────────────────
+              pip wheel --no-deps --wheel-dir /tmp/wheels .
+              ls -la /tmp/wheels/
+
+              # ── auditwheel repair to bundle libgammu.so ────────────────
+              pip install auditwheel patchelf
+              auditwheel repair /tmp/wheels/*.whl --plat ${{ matrix.plat }} -w /out/
+              ls -la /out/
+            '
+
+      - name: List output
+        run: ls -la ./wheelhouse/
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.arch }}
+          path: ./wheelhouse/*.whl
+          retention-days: 90
+
+  validate-wheel:
+    name: Validate ${{ matrix.arch }} (clean container)
+    needs: build-wheel
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runs-on: ubuntu-latest
+          - arch: aarch64
+            runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel-${{ matrix.arch }}
+          path: ./wheels
+
+      - name: Test in clean container (NO gammu-dev)
+        run: |
+          docker run --rm \
+            -v "$PWD/wheels:/wheels:ro" \
+            python:${{ inputs.python_docker_tag }} sh -c '
+              echo "=== Installing wheel (no gammu-dev on system) ==="
+              pip install --no-cache-dir /wheels/*.whl
+
+              echo "=== Smoke test ==="
+              python -c "
+          import gammu
+          print(\"Module imported OK\")
+          print(\"Gammu version:\", gammu.Version())
+          from gammu import StateMachine, GSMNetworks, EncodeSMS
+          print(\"StateMachine:\", StateMachine)
+          print(\"GSMNetworks count:\", len(GSMNetworks))
+          print(\"EncodeSMS callable:\", callable(EncodeSMS))
+          print()
+          print(\"SELF-CONTAINED WHEEL VALIDATION PASSED\")
+          "
+            '
+
+  create-release:
+    name: Publish to GitHub Release
+    needs: validate-wheel
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./wheels
+          merge-multiple: true
+
+      - name: List release artifacts
+        run: ls -la ./wheels/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "gammu-wheels-${{ inputs.python_gammu_version }}-${{ inputs.cpython_abi }}"
+          name: "python-gammu ${{ inputs.python_gammu_version }} (${{ inputs.cpython_abi }}-musllinux)"
+          body: |
+            Pre-built **musllinux** wheels for `python-gammu ${{ inputs.python_gammu_version }}`
+
+            | Property | Value |
+            |----------|-------|
+            | Python | ${{ inputs.cpython_abi }} |
+            | Gammu C lib | ${{ inputs.gammu_c_version }} |
+            | Platforms | x86_64, aarch64 |
+            | Base | musllinux_1_2 (Alpine Linux) |
+            | Bundled | libgammu.so via auditwheel |
+
+            Validated in clean Alpine containers without gammu-dev installed.
+          files: ./wheels/*.whl
+          draft: false
+          prerelease: true

@@ -49,7 +49,7 @@ make -j$(nproc) libGammu gsmsd
 
 `python-gammu` 3.2.6 fails to compile on GCC 15 with:
 
-```
+```bash
 gammu.c:5458: error: 'return' with a value, in function returning void [-Wreturn-mismatch]
 ```
 
@@ -121,13 +121,13 @@ The `manifest.json` change would be: `"requirements": ["python-gammu-ha==3.2.6"]
 
 ### Ongoing maintenance burden
 
-| Trigger | Frequency | Risk |
-|---|---|---|
-| HA bumps CPython (e.g., 3.14 → 3.15) | ~Annually | Low effort if build succeeds; high effort if new compiler/ABI issues arise |
-| GCC introduces new warnings-as-errors | Unpredictable | Requires patching C code you don't own |
-| python-gammu upstream breaks or goes unmaintained | Could happen | You become de-facto maintainer of a C extension |
-| gammu C library becomes incompatible | Low probability | Source is on GitHub but project has minimal activity |
-| Bad wheel published to PyPI | Your responsibility | Breaks every HACS user's HA instance on next restart |
+| Trigger                                           | Frequency           | Risk                                                                       |
+| ------------------------------------------------- | ------------------- | -------------------------------------------------------------------------- |
+| HA bumps CPython (e.g., 3.14 → 3.15)              | ~Annually           | Low effort if build succeeds; high effort if new compiler/ABI issues arise |
+| GCC introduces new warnings-as-errors             | Unpredictable       | Requires patching C code you don't own                                     |
+| python-gammu upstream breaks or goes unmaintained | Could happen        | You become de-facto maintainer of a C extension                            |
+| gammu C library becomes incompatible              | Low probability     | Source is on GitHub but project has minimal activity                       |
+| Bad wheel published to PyPI                       | Your responsibility | Breaks every HACS user's HA instance on next restart                       |
 
 ### The HA core team reached the same conclusion
 
@@ -135,7 +135,7 @@ They removed the integration specifically because they didn't want to maintain t
 
 ### Add-ons already work
 
-The GSM SMS Gateway Enhanced add-on bundles everything in Docker, has zero dependency on HA's Python packaging, and works today. The audience that *needs* HACS (HA Container / HA Core users without Supervisor) is small and shrinking.
+The GSM SMS Gateway Enhanced add-on bundles everything in Docker, has zero dependency on HA's Python packaging, and works today. The audience that _needs_ HACS (HA Container / HA Core users without Supervisor) is small and shrinking.
 
 ## How to Revive This
 

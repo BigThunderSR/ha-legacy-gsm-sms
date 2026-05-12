@@ -31,7 +31,7 @@ jobs:
         run: isort --check --skip .venv-ci-test --skip temp-pavelve --skip z-addon-old-test --profile black .
 
   flake8:
-    name: Flake8 (informational)
+    name: Flake8
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -44,6 +44,4 @@ jobs:
         run: pip install flake8
 
       - name: Run flake8
-        run: |
-          # --exit-zero so the job passes; issues show as warnings in the log
-          flake8 --count --statistics --exit-zero --format='%(path)s:%(row)d:%(col)d: %(code)s %(text)s'
+        run: flake8 --count --statistics

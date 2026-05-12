@@ -16,7 +16,8 @@
   "pip_requirements": {
     "managerFilePatterns": [
       "/(^|/)requirements[\\w-]*\\.txt$/"
-    ]
+    ],
+    "rangeStrategy": "bump"
   },
   "packageRules": [
     {

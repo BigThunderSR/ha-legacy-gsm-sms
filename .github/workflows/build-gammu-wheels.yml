@@ -30,6 +30,7 @@ on:
 jobs:
   build-wheel:
     name: Build ${{ matrix.arch }} wheel
+    permissions: {}
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -104,6 +105,7 @@ jobs:
 
   validate-wheel:
     name: Validate ${{ matrix.arch }} (clean container)
+    permissions: {}
     needs: build-wheel
     runs-on: ${{ matrix.runs-on }}
     strategy:

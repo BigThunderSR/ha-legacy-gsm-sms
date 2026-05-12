@@ -151,6 +151,26 @@ def load_ha_config():
         }
 
 
+# Helper function for IP whitelist checking
+def is_ip_allowed(client_ip, allowed_networks):
+    """Check if client IP is in allowed network ranges"""
+    import ipaddress
+
+    try:
+        client = ipaddress.ip_address(client_ip)
+        for network_str in allowed_networks:
+            try:
+                network = ipaddress.ip_network(network_str, strict=False)
+                if client in network:
+                    return True
+            except ValueError:
+                logging.warning(f"Invalid network in whitelist: {network_str}")
+        return False
+    except ValueError:
+        logging.error(f"Invalid client IP: {client_ip}")
+        return False
+
+
 # Load version and configuration
 VERSION = load_version()
 config = load_ha_config()

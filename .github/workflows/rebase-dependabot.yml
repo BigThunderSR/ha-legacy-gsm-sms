@@ -1,0 +1,39 @@
+name: Rebase Dependabot PRs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rebase all open Dependabot PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pulls } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+            });
+
+            const dependabotPRs = pulls.filter(
+              (pr) => pr.user.login === 'dependabot[bot]'
+            );
+
+            core.info(`Found ${dependabotPRs.length} open Dependabot PRs`);
+
+            for (const pr of dependabotPRs) {
+              core.info(`Commenting @dependabot rebase on PR #${pr.number}: ${pr.title}`);
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: '@dependabot rebase',
+              });
+            }

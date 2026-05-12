@@ -162,7 +162,7 @@ jobs:
         run: ls -la ./wheels/
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "gammu-wheels-${{ inputs.python_gammu_version }}-${{ inputs.cpython_abi }}"
           name: "python-gammu ${{ inputs.python_gammu_version }} (${{ inputs.cpython_abi }}-musllinux)"

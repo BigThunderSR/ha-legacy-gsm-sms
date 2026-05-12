@@ -1,0 +1,3 @@
+[submodule "temp-pavelve"]
+	path = temp-pavelve
+	url = https://github.com/PavelVe/home-assistant-addons.git

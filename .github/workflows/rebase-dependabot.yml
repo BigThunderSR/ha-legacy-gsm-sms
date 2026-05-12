@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+  pull-requests: read
 
 jobs:
   rebase:
@@ -14,6 +14,7 @@ jobs:
       - name: Rebase all open Dependabot PRs
         uses: actions/github-script@v9
         with:
+          github-token: ${{ secrets.DEPENDABOT_PAT }}
           script: |
             const { data: pulls } = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -28,15 +29,16 @@ jobs:
             core.info(`Found ${dependabotPRs.length} open Dependabot PRs`);
 
             for (const pr of dependabotPRs) {
-              core.info(`Updating branch for PR #${pr.number}: ${pr.title}`);
+              core.info(`Commenting @dependabot rebase on PR #${pr.number}: ${pr.title}`);
               try {
-                await github.rest.pulls.updateBranch({
+                await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  pull_number: pr.number,
+                  issue_number: pr.number,
+                  body: '@dependabot rebase',
                 });
-                core.info(`Successfully updated PR #${pr.number}`);
+                core.info(`Successfully triggered rebase for PR #${pr.number}`);
               } catch (error) {
-                core.warning(`Failed to update PR #${pr.number}: ${error.message}`);
+                core.warning(`Failed to comment on PR #${pr.number}: ${error.message}`);
               }
             }

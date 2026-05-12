@@ -125,9 +125,7 @@ async def async_setup_entry(
 
     # Add SMS counter sensors
     for description in SMS_SENSORS:
-        entities.append(
-            SMSCounterSensor(description, unique_id, gateway, sms_manager)
-        )
+        entities.append(SMSCounterSensor(description, unique_id, gateway, sms_manager))
 
     # Add Last SMS sensor
     entities.append(LastSMSSensor(unique_id, gateway, sms_manager))

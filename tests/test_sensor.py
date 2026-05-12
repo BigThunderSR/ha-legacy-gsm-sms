@@ -1,12 +1,12 @@
 """Tests for the legacy_gsm_sms sensors."""
-from unittest.mock import patch
 
-import pytest
+from unittest.mock import patch
 
 from homeassistant.components.legacy_gsm_sms.const import DOMAIN
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import PERCENTAGE, SIGNAL_STRENGTH_DECIBELS
 from homeassistant.setup import async_setup_component
+import pytest
 
 from tests.common import mock_gateway
 

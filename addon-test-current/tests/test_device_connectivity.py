@@ -7,9 +7,11 @@ These tests verify the modem offline detection and auto-restart functionality:
 - Restart timer persists through status polls when in hard_offline state
 - Configurable hard_offline_restart_timeout works correctly
 """
+
 import json
 import threading
 import time
+
 import pytest
 
 
@@ -30,7 +32,7 @@ class MockDeviceTracker:
             self.last_success_time = time.time()
 
             if self.hard_offline:
-                is_sms_operation = operation_name and 'sms' in operation_name.lower()
+                is_sms_operation = operation_name and "sms" in operation_name.lower()
                 is_same_operation = operation_name == self.hard_offline_operation
 
                 if is_sms_operation or is_same_operation:
@@ -88,7 +90,8 @@ class MockMQTTPublisher:
         failure_duration = current_time - self.failure_start_time
         is_hard_offline = self.device_tracker.hard_offline
         effective_timeout = (
-            self.hard_offline_restart_timeout if is_hard_offline 
+            self.hard_offline_restart_timeout
+            if is_hard_offline
             else self.restart_timeout
         )
 
@@ -112,7 +115,7 @@ class MockMQTTPublisher:
         self.device_tracker.record_failure(
             f"{operation_name}: Python timeout (15s)",
             is_timeout=True,
-            operation_name=operation_name
+            operation_name=operation_name,
         )
         self._check_restart_timeout()
 
@@ -321,47 +324,49 @@ class TestIntegrationScenario:
     def test_repeated_sms_failures_trigger_restart(self):
         """
         THIS IS THE EXACT BUG SCENARIO from 2025-12-16:
-        
+
         Log showed:
         [15:58:01] WARNING: 🔴 Hard offline: retrieveAllSms timed out
         [15:58:01] INFO: ⏱️ Failure tracking started at 15:58:01
         [15:58:01] INFO: ⏱️ Modem failing for 0s (restart after 30s, hard offline)
-        
+
         Then 5+ minutes passed with NO restart because _check_restart_timeout()
         was only called once at the initial timeout, not on subsequent cycles.
-        
+
         This test verifies that repeated calls to _check_restart_timeout()
         (as would happen on each failed SMS monitoring cycle) will eventually
         trigger the restart.
         """
         pub = MockMQTTPublisher(hard_offline_restart_timeout=30)
-        
+
         # Initial timeout - sets failure_start_time
         pub.track_timeout("retrieveAllSms")
         assert pub.device_tracker.hard_offline is True
         assert pub.failure_start_time is not None
         initial_start_time = pub.failure_start_time
-        
+
         # Verify restart NOT triggered yet (0s elapsed)
         assert pub._would_restart is False
-        
+
         # Simulate SMS monitoring loop calling _check_restart_timeout
         # on each 10s cycle. This is what the fix adds.
         # After 4 cycles (40s total), restart should have triggered.
-        
+
         restart_triggered = False
         for cycle in range(1, 5):  # Cycles at 10s, 20s, 30s, 40s
             # Simulate time passing (10s per cycle)
             pub.failure_start_time = initial_start_time - (cycle * 10)
-            
+
             # This is what the SMS monitoring loop now does on each failure
             pub._check_restart_timeout()
-            
+
             if pub._would_restart:
                 restart_triggered = True
-                assert cycle == 3, f"Restart should trigger at cycle 3 (30s), not {cycle}"
+                assert (
+                    cycle == 3
+                ), f"Restart should trigger at cycle 3 (30s), not {cycle}"
                 break
-        
+
         assert restart_triggered, (
             "CRITICAL BUG: Restart never triggered after 40s of failures! "
             "The _check_restart_timeout() must be called on each failed cycle."
@@ -370,11 +375,11 @@ class TestIntegrationScenario:
 
 class TestLockRaceCondition:
     """Tests for the lock race condition fix (v2.15.3).
-    
+
     The bug: Thread A checks hard_offline=False, then waits at gammu_lock.
     Thread B times out, sets hard_offline=True, releases lock.
     Thread A acquires lock and proceeds even though hard_offline is now True.
-    
+
     The fix: Check hard_offline AFTER acquiring the lock, inside track_gammu_operation.
     """
 
@@ -388,7 +393,7 @@ class TestLockRaceCondition:
         pub = MockMQTTPublisher()
         lock = threading.Lock()
         operation_executed = threading.Event()
-        
+
         def simulate_track_gammu_operation():
             """Simulates the fixed track_gammu_operation logic."""
             with lock:
@@ -400,26 +405,26 @@ class TestLockRaceCondition:
                 else:
                     operation_executed.set()
                     return "executed"
-        
+
         # Initially hard_offline is False
         assert pub.device_tracker.hard_offline is False
-        
+
         # Thread A: Check hard_offline (False), then wait at lock
         # Simulate this by having Thread A acquire lock first
         lock.acquire()
-        
+
         # Now simulate Thread B setting hard_offline while Thread A holds lock
         # (In reality, Thread A would be waiting, but we're testing the check)
         pub.device_tracker.hard_offline = True
         pub.device_tracker.hard_offline_operation = "retrieveAllSms"
         pub.failure_start_time = time.time()
-        
+
         # Release lock - now the "next thread" should check hard_offline
         lock.release()
-        
+
         # Thread C comes in after hard_offline is set
         result = simulate_track_gammu_operation()
-        
+
         # The operation should be SKIPPED because hard_offline is True
         assert result == "skipped"
         assert not operation_executed.is_set()
@@ -433,7 +438,7 @@ class TestLockRaceCondition:
         lock = threading.Lock()
         skipped_count = 0
         executed_count = 0
-        
+
         def simulate_operation():
             nonlocal skipped_count, executed_count
             with lock:
@@ -444,22 +449,19 @@ class TestLockRaceCondition:
                 # Simulate operation
                 time.sleep(0.01)
                 executed_count += 1
-        
+
         # Set hard_offline
         pub.device_tracker.hard_offline = True
         pub.failure_start_time = time.time() - 10  # 10s ago
-        
+
         # Simulate multiple operations trying to run
-        threads = [
-            threading.Thread(target=simulate_operation)
-            for _ in range(5)
-        ]
-        
+        threads = [threading.Thread(target=simulate_operation) for _ in range(5)]
+
         for t in threads:
             t.start()
         for t in threads:
             t.join()
-        
+
         # All operations should have been skipped
         assert skipped_count == 5
         assert executed_count == 0

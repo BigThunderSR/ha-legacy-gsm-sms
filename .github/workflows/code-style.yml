@@ -1,0 +1,48 @@
+name: Code Style
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format-check:
+    name: Black + isort
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install formatters
+        run: pip install black isort
+
+      - name: Check black formatting
+        run: black --check --exclude '.venv*|temp-pavelve|z-addon-old-test' .
+
+      - name: Check import order
+        run: isort --check --skip .venv-ci-test --skip temp-pavelve --skip z-addon-old-test --profile black .
+
+  flake8:
+    name: Flake8 (informational)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Run flake8
+        run: flake8 --count --statistics

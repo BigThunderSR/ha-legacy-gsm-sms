@@ -6,12 +6,13 @@ Based on: https://github.com/pajikos/sms-gammu-gateway
 Licensed under Apache License 2.0
 """
 
-import sys
 import os
+import sys
+
 import gammu
 
 
-def init_state_machine(pin, device_path='/dev/ttyUSB0'):
+def init_state_machine(pin, device_path="/dev/ttyUSB0"):
     """Initialize gammu state machine with HA add-on config"""
     sm = gammu.StateMachine()
 
@@ -23,46 +24,47 @@ commtimeout = 10
 """
 
     # Write config to temporary file
-    config_file = '/tmp/gammu.config'
-    with open(config_file, 'w') as f:
+    config_file = "/tmp/gammu.config"
+    with open(config_file, "w") as f:
         f.write(config_content)
 
     sm.ReadConfig(Filename=config_file)
-    
+
     try:
         sm.Init()
         print(f"Successfully initialized gammu with device: {device_path}")
-        
+
         # Try to check security status
         try:
             security_status = sm.GetSecurityStatus()
             print(f"SIM security status: {security_status}")
-            
-            if security_status == 'PIN':
-                if pin is None or pin == '':
+
+            if security_status == "PIN":
+                if pin is None or pin == "":
                     print("PIN is required but not provided.")
                     sys.exit(1)
                 else:
-                    sm.EnterSecurityCode('PIN', pin)
+                    sm.EnterSecurityCode("PIN", pin)
                     print("PIN entered successfully")
-                    
+
         except Exception as e:
             print(f"Warning: Could not check SIM security status: {e}")
-            
+
     except gammu.ERR_NOSIM:
         print("Warning: SIM card not accessible, but device is connected")
     except Exception as e:
         print(f"Error initializing device: {e}")
         print("Available devices:")
         import os
+
         try:
-            devices = [d for d in os.listdir('/dev/') if d.startswith('tty')]
+            devices = [d for d in os.listdir("/dev/") if d.startswith("tty")]
             for device in sorted(devices):
                 print(f"  /dev/{device}")
         except:
             pass
         raise
-        
+
     return sm
 
 
@@ -70,7 +72,9 @@ def retrieveAllSms(machine):
     """Retrieve all SMS messages from SIM/device memory"""
     try:
         status = machine.GetSMSStatus()
-        allMultiPartSmsCount = status['SIMUsed'] + status['PhoneUsed'] + status['TemplatesUsed']
+        allMultiPartSmsCount = (
+            status["SIMUsed"] + status["PhoneUsed"] + status["TemplatesUsed"]
+        )
 
         allMultiPartSms = []
         start = True
@@ -80,7 +84,9 @@ def retrieveAllSms(machine):
                 currentMultiPartSms = machine.GetNextSMS(Start=True, Folder=0)
                 start = False
             else:
-                currentMultiPartSms = machine.GetNextSMS(Location=currentMultiPartSms[0]['Location'], Folder=0)
+                currentMultiPartSms = machine.GetNextSMS(
+                    Location=currentMultiPartSms[0]["Location"], Folder=0
+                )
             allMultiPartSms.append(currentMultiPartSms)
 
         allSms = gammu.LinkSMS(allMultiPartSms)
@@ -90,10 +96,10 @@ def retrieveAllSms(machine):
             smsPart = sms[0]
 
             result = {
-                "Date": str(smsPart['DateTime']),
-                "Number": smsPart['Number'],
-                "State": smsPart['State'],
-                "Locations": [smsPart['Location'] for smsPart in sms],
+                "Date": str(smsPart["DateTime"]),
+                "Number": smsPart["Number"],
+                "State": smsPart["State"],
+                "Locations": [smsPart["Location"] for smsPart in sms],
             }
 
             # Try to decode SMS - this may fail for MMS notifications or corrupted messages
@@ -101,41 +107,47 @@ def retrieveAllSms(machine):
                 decodedSms = gammu.DecodeSMS(sms)
                 if decodedSms == None:
                     # DecodeSMS returned None - use raw text from SMS part
-                    result["Text"] = smsPart.get('Text', '')
+                    result["Text"] = smsPart.get("Text", "")
                 else:
                     # Successfully decoded - concatenate all text entries
                     text = ""
-                    for entry in decodedSms['Entries']:
-                        if entry.get('Buffer') is not None:
-                            text += entry['Buffer']
-                    result["Text"] = text if text else smsPart.get('Text', '')
+                    for entry in decodedSms["Entries"]:
+                        if entry.get("Buffer") is not None:
+                            text += entry["Buffer"]
+                    result["Text"] = text if text else smsPart.get("Text", "")
 
             except UnicodeDecodeError as e:
                 # MMS notification or binary message that can't be decoded as UTF-8
-                print(f"Warning: Cannot decode SMS as UTF-8 (probably MMS notification): {e}")
+                print(
+                    f"Warning: Cannot decode SMS as UTF-8 (probably MMS notification): {e}"
+                )
                 # Try to get raw text, but handle potential binary data safely
                 try:
-                    raw_text = smsPart.get('Text', '')
+                    raw_text = smsPart.get("Text", "")
                     # If Text is bytes, try to decode with error handling
                     if isinstance(raw_text, bytes):
-                        result["Text"] = raw_text.decode('utf-8', errors='replace')
+                        result["Text"] = raw_text.decode("utf-8", errors="replace")
                     else:
-                        result["Text"] = str(raw_text) if raw_text else '[MMS or binary message]'
+                        result["Text"] = (
+                            str(raw_text) if raw_text else "[MMS or binary message]"
+                        )
                 except Exception:
-                    result["Text"] = '[MMS or binary message - cannot display]'
+                    result["Text"] = "[MMS or binary message - cannot display]"
 
             except Exception as e:
                 # Any other decoding error (corrupted SMS, unknown format, etc.)
                 print(f"Warning: Error decoding SMS: {e}")
                 # Fallback to raw text with safe handling
                 try:
-                    raw_text = smsPart.get('Text', '')
+                    raw_text = smsPart.get("Text", "")
                     if isinstance(raw_text, bytes):
-                        result["Text"] = raw_text.decode('utf-8', errors='replace')
+                        result["Text"] = raw_text.decode("utf-8", errors="replace")
                     else:
-                        result["Text"] = str(raw_text) if raw_text else '[Decoding error]'
+                        result["Text"] = (
+                            str(raw_text) if raw_text else "[Decoding error]"
+                        )
                 except Exception:
-                    result["Text"] = '[Message decoding failed]'
+                    result["Text"] = "[Message decoding failed]"
 
             results.append(result)
 
@@ -149,7 +161,12 @@ def retrieveAllSms(machine):
 def deleteSms(machine, sms):
     """Delete SMS by location"""
     try:
-        list(map(lambda location: machine.DeleteSMS(Folder=0, Location=location), sms["Locations"]))
+        list(
+            map(
+                lambda location: machine.DeleteSMS(Folder=0, Location=location),
+                sms["Locations"],
+            )
+        )
     except Exception as e:
         print(f"Error deleting SMS: {e}")
 

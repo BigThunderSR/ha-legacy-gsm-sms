@@ -9,6 +9,10 @@
   ],
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
+  "ignorePaths": [
+    "z-addon-old-test/",
+    "temp-pavelve/"
+  ],
   "pip_requirements": {
     "managerFilePatterns": [
       "/(^|/)requirements[\\w-]*\\.txt$/"
@@ -54,6 +58,11 @@
       "matchManagers": [
         "dockerfile"
       ],
+      "addLabels": [
+        "dockerfile"
+      ]
+    },
+    {
       "matchPackageNames": [
         "/dockerfile/"
       ],

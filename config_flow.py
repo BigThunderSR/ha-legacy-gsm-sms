@@ -6,8 +6,6 @@ import logging
 from typing import Any
 
 import gammu
-import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -18,6 +16,7 @@ from homeassistant.const import CONF_DEVICE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
+import voluptuous as vol
 
 from .const import (
     CONF_AUTO_DELETE_READ_SMS,

@@ -1,9 +1,11 @@
 """Conftest for legacy_gsm_sms tests."""
+
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 pytest.register_assert_rewrite("tests.common")
+
 
 # This fixture is used to prevent HomeAssistant from attempting to create and dismiss persistent
 # notifications. These calls would fail without this fixture since the persistent_notification

@@ -4,7 +4,6 @@ import logging
 from typing import Optional
 
 import gammu
-
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -59,9 +58,7 @@ async def async_setup_entry(
 
     entities = []
     for description in BUTTON_DESCRIPTIONS:
-        entities.append(
-            SMSButton(hass, description, unique_id, gateway, sms_manager)
-        )
+        entities.append(SMSButton(hass, description, unique_id, gateway, sms_manager))
 
     async_add_entities(entities, True)
 
@@ -133,15 +130,19 @@ class SMSButton(ButtonEntity):
         message_state = self._hass.states.get(message_entity_id)
 
         # Check phone number is set and valid
-        if not phone_state or not phone_state.state or phone_state.state in (
-            "unknown", "unavailable", ""
+        if (
+            not phone_state
+            or not phone_state.state
+            or phone_state.state in ("unknown", "unavailable", "")
         ):
             _LOGGER.warning("Phone number not set, cannot send SMS")
             return
 
         # Check message is set and valid
-        if not message_state or not message_state.state or message_state.state in (
-            "unknown", "unavailable", ""
+        if (
+            not message_state
+            or not message_state.state
+            or message_state.state in ("unknown", "unavailable", "")
         ):
             _LOGGER.warning("Message text not set, cannot send SMS")
             return

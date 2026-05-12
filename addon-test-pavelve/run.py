@@ -7,71 +7,83 @@ Based on: https://github.com/pajikos/sms-gammu-gateway
 Licensed under Apache License 2.0
 """
 
-import os
 import json
 import logging
+import os
 import signal
 import sys
+
 from flask import Flask, request
 from flask_httpauth import HTTPBasicAuth
 from flask_restx import Api, Resource, fields, reqparse
-
-from support import init_state_machine, retrieveAllSms, deleteSms, encodeSms
-from mqtt_publisher import MQTTPublisher
 from gammu import GSMNetworks
+from mqtt_publisher import MQTTPublisher
+from support import deleteSms, encodeSms, init_state_machine, retrieveAllSms
+
 from network_codes import get_network_name
 
 # Configure logging with timestamp
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%H:%M:%S'
+    format="[%(asctime)s] %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
 )
-mqtt_logger = logging.getLogger('mqtt_publisher')
+mqtt_logger = logging.getLogger("mqtt_publisher")
 mqtt_logger.setLevel(logging.INFO)
 
 # Suppress Flask development server warnings
-log = logging.getLogger('werkzeug')
+log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
 
 # Monkey-patch click.echo to suppress Flask CLI startup messages
 import click
+
 _original_echo = click.echo
+
+
 def _silent_echo(message=None, **kwargs):
     # Only suppress Flask's "Debug mode:" and "Serving Flask app" messages
     if message and isinstance(message, str):
-        if 'Debug mode:' in message or 'Serving Flask app' in message:
+        if "Debug mode:" in message or "Serving Flask app" in message:
             return
     _original_echo(message, **kwargs)
+
+
 click.echo = _silent_echo
+
 
 def load_version():
     """Load version from config.json"""
     try:
         # Try multiple possible locations
         possible_paths = [
-            '/data/options.json',
-            os.path.join(os.path.dirname(__file__), 'config.json'),
-            '/config.json',
+            "/data/options.json",
+            os.path.join(os.path.dirname(__file__), "config.json"),
+            "/config.json",
         ]
 
         # Try to read from addon info API first (most reliable in HA)
         try:
             import requests
-            response = requests.get('http://supervisor/addons/self/info',
-                                   headers={'Authorization': f'Bearer {os.environ.get("SUPERVISOR_TOKEN", "")}'},
-                                   timeout=1)
+
+            response = requests.get(
+                "http://supervisor/addons/self/info",
+                headers={
+                    "Authorization": f'Bearer {os.environ.get("SUPERVISOR_TOKEN", "")}'
+                },
+                timeout=1,
+            )
             if response.status_code == 200:
-                return response.json().get('data', {}).get('version', 'unknown')
+                return response.json().get("data", {}).get("version", "unknown")
         except:
             pass
 
         # Fallback: try to find config.json
         for config_path in possible_paths:
             if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
+                with open(config_path, "r") as f:
                     config_json = json.load(f)
-                    version = config_json.get('version')
+                    version = config_json.get("version")
                     if version:
                         return version
 
@@ -80,63 +92,71 @@ def load_version():
         logging.warning(f"Could not read version: {e}")
         return "unknown"
 
+
 def load_ha_config():
     """Load Home Assistant add-on configuration"""
-    config_path = '/data/options.json'
+    config_path = "/data/options.json"
     if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             return json.load(f)
     else:
         # Default values for testing outside HA
         return {
-            'device_path': '/dev/ttyUSB0',
-            'pin': '',
-            'port': 5000,
-            'ssl': False,
-            'username': 'admin',
-            'password': 'password',
-            'mqtt_enabled': True,
-            'mqtt_host': 'localhost',
-            'mqtt_port': 1883,
-            'mqtt_username': '',
-            'mqtt_password': '',
-            'mqtt_topic_prefix': 'homeassistant/sensor/sms_gateway',
-            'sms_monitoring_enabled': True,
-            'sms_check_interval': 60,
-            'sms_cost_per_message': 0.0,
-            'sms_cost_currency': 'CZK',
-            'auto_delete_read_sms': False
+            "device_path": "/dev/ttyUSB0",
+            "pin": "",
+            "port": 5000,
+            "ssl": False,
+            "username": "admin",
+            "password": "password",
+            "mqtt_enabled": True,
+            "mqtt_host": "localhost",
+            "mqtt_port": 1883,
+            "mqtt_username": "",
+            "mqtt_password": "",
+            "mqtt_topic_prefix": "homeassistant/sensor/sms_gateway",
+            "sms_monitoring_enabled": True,
+            "sms_check_interval": 60,
+            "sms_cost_per_message": 0.0,
+            "sms_cost_currency": "CZK",
+            "auto_delete_read_sms": False,
         }
+
 
 # Load version and configuration
 VERSION = load_version()
 config = load_ha_config()
-pin = config.get('pin') if config.get('pin') else None
-ssl = config.get('ssl', False)
-port = config.get('port', 5000)
-username = config.get('username', 'admin')
-password = config.get('password', 'password')
-device_path = config.get('device_path', '/dev/ttyUSB0')
+pin = config.get("pin") if config.get("pin") else None
+ssl = config.get("ssl", False)
+port = config.get("port", 5000)
+username = config.get("username", "admin")
+password = config.get("password", "password")
+device_path = config.get("device_path", "/dev/ttyUSB0")
 
 # Log device path and check accessibility
 logging.info(f"📱 Configured device path: {device_path}")
 
 # Check if it's a by-id symlink
-if '/dev/serial/by-id/' in device_path:
+if "/dev/serial/by-id/" in device_path:
     if os.path.islink(device_path):
         resolved_path = os.path.realpath(device_path)
         logging.info(f"🔗 By-ID symlink resolves to: {resolved_path}")
-        
+
         # Check if resolved device exists and is accessible
         if os.path.exists(resolved_path):
             logging.info(f"✅ Resolved device {resolved_path} is accessible")
         else:
-            logging.error(f"❌ ERROR: Resolved device {resolved_path} is NOT accessible!")
-            logging.error(f"💡 TIP: Add '{resolved_path}' to the 'devices' list in config.yaml")
+            logging.error(
+                f"❌ ERROR: Resolved device {resolved_path} is NOT accessible!"
+            )
+            logging.error(
+                f"💡 TIP: Add '{resolved_path}' to the 'devices' list in config.yaml"
+            )
     else:
         logging.error(f"❌ ERROR: {device_path} is not a valid symlink!")
         if not os.path.exists(device_path):
-            logging.error(f"💡 TIP: Check if /dev/serial/by-id is mounted (add to 'devices' list)")
+            logging.error(
+                f"💡 TIP: Check if /dev/serial/by-id is mounted (add to 'devices' list)"
+            )
 elif os.path.exists(device_path):
     logging.info(f"✅ Device {device_path} is accessible")
 else:
@@ -159,6 +179,7 @@ machine = init_state_machine(pin, device_path)
 # Set gammu machine for MQTT SMS sending
 mqtt_publisher.set_gammu_machine(machine)
 
+
 # Setup signal handlers for graceful shutdown
 def signal_handler(signum, frame):
     """Handle shutdown signals (SIGTERM, SIGINT)"""
@@ -171,11 +192,14 @@ def signal_handler(signum, frame):
     finally:
         sys.exit(0)
 
+
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 
 # Register atexit handler as backup
 import atexit
+
+
 def cleanup():
     """Cleanup function called on normal exit"""
     logging.info("🧹 Cleanup: Publishing offline status...")
@@ -184,20 +208,25 @@ def cleanup():
     except Exception as e:
         logging.error(f"Error during cleanup: {e}")
 
+
 atexit.register(cleanup)
 
 app = Flask(__name__)
 
 # Check if running under Ingress
 import os
-ingress_path = os.environ.get('INGRESS_PATH', '')
+
+ingress_path = os.environ.get("INGRESS_PATH", "")
+
 
 # Create simple HTML page for Ingress
-@app.route('/')
+@app.route("/")
 def home():
     """Simple status page for Home Assistant Ingress"""
     from flask import Response, request
-    html = '''
+
+    html = (
+        """
     <!DOCTYPE html>
     <html>
     <head>
@@ -264,7 +293,9 @@ def home():
                 Version: {VERSION}
             </div>
             
-            <a href="http://''' + request.host.split(':')[0] + ''':5000/docs/" 
+            <a href="http://"""
+        + request.host.split(":")[0]
+        + """:5000/docs/" 
                class="swagger-link" target="_blank">
                 📋 Open Swagger API Documentation
             </a>
@@ -284,29 +315,28 @@ def home():
         </div>
     </body>
     </html>
-    '''
-    return Response(html.replace('{VERSION}', VERSION), mimetype='text/html')
+    """
+    )
+    return Response(html.replace("{VERSION}", VERSION), mimetype="text/html")
+
 
 # Swagger UI Configuration
 # Put Swagger UI on /docs/ path for direct access via port 5000
 api = Api(
     app,
     version=VERSION,
-    title='SMS Gammu Gateway API',
-    description='REST API for sending and receiving SMS messages via USB GSM modems (SIM800L, Huawei, etc.). Modern replacement for deprecated SMS notifications via GSM-modem integration.',
-    doc='/docs/',  # Swagger UI on /docs/ path
-    prefix='',
+    title="SMS Gammu Gateway API",
+    description="REST API for sending and receiving SMS messages via USB GSM modems (SIM800L, Huawei, etc.). Modern replacement for deprecated SMS notifications via GSM-modem integration.",
+    doc="/docs/",  # Swagger UI on /docs/ path
+    prefix="",
     authorizations={
-        'basicAuth': {
-            'type': 'basic',
-            'in': 'header',
-            'name': 'Authorization'
-        }
+        "basicAuth": {"type": "basic", "in": "header", "name": "Authorization"}
     },
-    security='basicAuth'
+    security="basicAuth",
 )
 
 auth = HTTPBasicAuth()
+
 
 @auth.verify_password
 def verify(user, pwd):
@@ -314,143 +344,230 @@ def verify(user, pwd):
         return False
     return user == username and pwd == password
 
+
 # API Models for Swagger documentation
-sms_model = api.model('SMS', {
-    'text': fields.String(required=True, description='SMS message text', example='Hello, how are you?'),
-    'number': fields.String(required=True, description='Phone number (international format)', example='+420123456789'),
-    'smsc': fields.String(required=False, description='SMS Center number (optional)', example='+420603052000'),
-    'unicode': fields.Boolean(required=False, description='Use Unicode encoding', default=False)
-})
+sms_model = api.model(
+    "SMS",
+    {
+        "text": fields.String(
+            required=True, description="SMS message text", example="Hello, how are you?"
+        ),
+        "number": fields.String(
+            required=True,
+            description="Phone number (international format)",
+            example="+420123456789",
+        ),
+        "smsc": fields.String(
+            required=False,
+            description="SMS Center number (optional)",
+            example="+420603052000",
+        ),
+        "unicode": fields.Boolean(
+            required=False, description="Use Unicode encoding", default=False
+        ),
+    },
+)
 
-sms_response = api.model('SMS Response', {
-    'Date': fields.String(description='Date and time received', example='2025-01-19 14:30:00'),
-    'Number': fields.String(description='Sender phone number', example='+420123456789'),
-    'State': fields.String(description='SMS state', example='UnRead'),
-    'Text': fields.String(description='SMS message text', example='Hello World!')
-})
+sms_response = api.model(
+    "SMS Response",
+    {
+        "Date": fields.String(
+            description="Date and time received", example="2025-01-19 14:30:00"
+        ),
+        "Number": fields.String(
+            description="Sender phone number", example="+420123456789"
+        ),
+        "State": fields.String(description="SMS state", example="UnRead"),
+        "Text": fields.String(description="SMS message text", example="Hello World!"),
+    },
+)
 
-signal_response = api.model('Signal Quality', {
-    'SignalStrength': fields.Integer(description='Signal strength in dBm', example=-75),
-    'SignalPercent': fields.Integer(description='Signal strength percentage', example=65),
-    'BitErrorRate': fields.Integer(description='Bit error rate', example=-1)
-})
+signal_response = api.model(
+    "Signal Quality",
+    {
+        "SignalStrength": fields.Integer(
+            description="Signal strength in dBm", example=-75
+        ),
+        "SignalPercent": fields.Integer(
+            description="Signal strength percentage", example=65
+        ),
+        "BitErrorRate": fields.Integer(description="Bit error rate", example=-1),
+    },
+)
 
-network_response = api.model('Network Info', {
-    'NetworkName': fields.String(description='Network operator name', example='T-Mobile'),
-    'State': fields.String(description='Network registration state', example='HomeNetwork'),
-    'NetworkCode': fields.String(description='Network operator code', example='230 01'),
-    'CID': fields.String(description='Cell ID', example='0A1B2C3D'),
-    'LAC': fields.String(description='Location Area Code', example='1234')
-})
+network_response = api.model(
+    "Network Info",
+    {
+        "NetworkName": fields.String(
+            description="Network operator name", example="T-Mobile"
+        ),
+        "State": fields.String(
+            description="Network registration state", example="HomeNetwork"
+        ),
+        "NetworkCode": fields.String(
+            description="Network operator code", example="230 01"
+        ),
+        "CID": fields.String(description="Cell ID", example="0A1B2C3D"),
+        "LAC": fields.String(description="Location Area Code", example="1234"),
+    },
+)
 
-send_response = api.model('Send Response', {
-    'status': fields.Integer(description='HTTP status code', example=200),
-    'message': fields.String(description='Response message', example='[1]')
-})
+send_response = api.model(
+    "Send Response",
+    {
+        "status": fields.Integer(description="HTTP status code", example=200),
+        "message": fields.String(description="Response message", example="[1]"),
+    },
+)
 
-reset_response = api.model('Reset Response', {
-    'status': fields.Integer(description='HTTP status code', example=200),
-    'message': fields.String(description='Reset message', example='Reset done')
-})
+reset_response = api.model(
+    "Reset Response",
+    {
+        "status": fields.Integer(description="HTTP status code", example=200),
+        "message": fields.String(description="Reset message", example="Reset done"),
+    },
+)
 
-modem_info_response = api.model('Modem Info', {
-    'IMEI': fields.String(description='Modem IMEI number', example='123456789012345'),
-    'Manufacturer': fields.String(description='Modem manufacturer', example='Huawei'),
-    'Model': fields.String(description='Modem model', example='E3372'),
-    'Firmware': fields.String(description='Firmware version', example='22.323.62.00.143')
-})
+modem_info_response = api.model(
+    "Modem Info",
+    {
+        "IMEI": fields.String(
+            description="Modem IMEI number", example="123456789012345"
+        ),
+        "Manufacturer": fields.String(
+            description="Modem manufacturer", example="Huawei"
+        ),
+        "Model": fields.String(description="Modem model", example="E3372"),
+        "Firmware": fields.String(
+            description="Firmware version", example="22.323.62.00.143"
+        ),
+    },
+)
 
-sim_info_response = api.model('SIM Info', {
-    'IMSI': fields.String(description='SIM IMSI number', example='230011234567890')
-})
+sim_info_response = api.model(
+    "SIM Info",
+    {"IMSI": fields.String(description="SIM IMSI number", example="230011234567890")},
+)
 
-sms_capacity_response = api.model('SMS Capacity', {
-    'SIMUsed': fields.Integer(description='SMS count in SIM memory', example=5),
-    'SIMSize': fields.Integer(description='SIM total capacity', example=50),
-    'PhoneUsed': fields.Integer(description='SMS count in phone memory', example=0),
-    'PhoneSize': fields.Integer(description='Phone memory capacity', example=100),
-    'TemplatesUsed': fields.Integer(description='SMS templates used', example=0)
-})
+sms_capacity_response = api.model(
+    "SMS Capacity",
+    {
+        "SIMUsed": fields.Integer(description="SMS count in SIM memory", example=5),
+        "SIMSize": fields.Integer(description="SIM total capacity", example=50),
+        "PhoneUsed": fields.Integer(description="SMS count in phone memory", example=0),
+        "PhoneSize": fields.Integer(description="Phone memory capacity", example=100),
+        "TemplatesUsed": fields.Integer(description="SMS templates used", example=0),
+    },
+)
 
 # API Namespaces
-ns_sms = api.namespace('sms', description='SMS operations (requires authentication)')
-ns_status = api.namespace('status', description='Device status and information (public)')
+ns_sms = api.namespace("sms", description="SMS operations (requires authentication)")
+ns_status = api.namespace(
+    "status", description="Device status and information (public)"
+)
 
-@ns_sms.route('')
-@ns_sms.doc('sms_operations')
+
+@ns_sms.route("")
+@ns_sms.doc("sms_operations")
 class SmsCollection(Resource):
-    @ns_sms.doc('get_all_sms')
+    @ns_sms.doc("get_all_sms")
     @ns_sms.marshal_list_with(sms_response, code=200)
-    @ns_sms.doc(security='basicAuth')
+    @ns_sms.doc(security="basicAuth")
     @auth.login_required
     def get(self):
         """Get all SMS messages from SIM/device memory"""
-        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
+        allSms = mqtt_publisher.track_gammu_operation(
+            "retrieveAllSms", retrieveAllSms, machine
+        )
         list(map(lambda sms: sms.pop("Locations", None), allSms))
         return allSms
 
-    @ns_sms.doc('send_sms')
+    @ns_sms.doc("send_sms")
     @ns_sms.expect(sms_model)
     @ns_sms.marshal_with(send_response, code=200)
-    @ns_sms.doc(security='basicAuth')
+    @ns_sms.doc(security="basicAuth")
     @auth.login_required
     def post(self):
         """Send SMS message(s)"""
         # Use request.get_json() to handle JSON arrays properly instead of reqparse
         data = request.get_json() or {}
-        
+
         # Also check query parameters and form data as fallback
         if not data:
             parser = reqparse.RequestParser()
-            parser.add_argument('text', required=False, help='SMS message text')
-            parser.add_argument('message', required=False, help='SMS message text (alias for text)')
-            parser.add_argument('number', required=False, help='Phone number(s), comma separated')
-            parser.add_argument('target', required=False, help='Phone number (alias for number)')
-            parser.add_argument('smsc', required=False, help='SMS Center number (optional)')
-            parser.add_argument('unicode', type=bool, required=False, default=False, help='Use Unicode encoding')
+            parser.add_argument("text", required=False, help="SMS message text")
+            parser.add_argument(
+                "message", required=False, help="SMS message text (alias for text)"
+            )
+            parser.add_argument(
+                "number", required=False, help="Phone number(s), comma separated"
+            )
+            parser.add_argument(
+                "target", required=False, help="Phone number (alias for number)"
+            )
+            parser.add_argument(
+                "smsc", required=False, help="SMS Center number (optional)"
+            )
+            parser.add_argument(
+                "unicode",
+                type=bool,
+                required=False,
+                default=False,
+                help="Use Unicode encoding",
+            )
             data = parser.parse_args()
         else:
             # Ensure unicode has a default value when using JSON
-            data.setdefault('unicode', False)
-        
+            data.setdefault("unicode", False)
+
         # Support both 'text' and 'message' parameters
-        sms_text = data.get('text') or data.get('message')
+        sms_text = data.get("text") or data.get("message")
         if not sms_text:
-            return {"status": 400, "message": "Missing required field: text or message"}, 400
-        
+            return {
+                "status": 400,
+                "message": "Missing required field: text or message",
+            }, 400
+
         # Support both 'number' and 'target' parameters
-        sms_number = data.get('number') or data.get('target')
+        sms_number = data.get("number") or data.get("target")
         if not sms_number:
-            return {"status": 400, "message": "Missing required field: number or target"}, 400
-        
-        logging.info(f"SMS send request - Text: '{sms_text}', Numbers: '{sms_number}', Type: {type(sms_number)}")
-        
+            return {
+                "status": 400,
+                "message": "Missing required field: number or target",
+            }, 400
+
+        logging.info(
+            f"SMS send request - Text: '{sms_text}', Numbers: '{sms_number}', Type: {type(sms_number)}"
+        )
+
         # Handle both string (comma-separated) and list formats
         if isinstance(sms_number, list):
             numbers = sms_number
         else:
             # Check if it's a string representation of a list (e.g., "['phone1', 'phone2']")
             sms_number_str = str(sms_number).strip()
-            if sms_number_str.startswith('[') and sms_number_str.endswith(']'):
+            if sms_number_str.startswith("[") and sms_number_str.endswith("]"):
                 try:
                     # Try to parse as JSON array first
                     import json
+
                     numbers = json.loads(sms_number_str)
                 except:
                     # If JSON parsing fails, try Python literal eval
                     try:
                         import ast
+
                         numbers = ast.literal_eval(sms_number_str)
                     except:
                         # Fall back to treating as single number
                         numbers = [sms_number_str]
             else:
                 # Comma-separated string
-                numbers = [n.strip() for n in sms_number_str.split(',')]
-        
+                numbers = [n.strip() for n in sms_number_str.split(",")]
+
         smsinfo = {
             "Class": -1,
-            "Unicode": data.get('unicode', False),
+            "Unicode": data.get("unicode", False),
             "Entries": [
                 {
                     "ID": "ConcatenatedTextLong",
@@ -461,10 +578,17 @@ class SmsCollection(Resource):
         messages = []
         for number in numbers:
             for message in encodeSms(smsinfo):
-                message["SMSC"] = {'Number': data.get("smsc")} if data.get("smsc") else {'Location': 1}
+                message["SMSC"] = (
+                    {"Number": data.get("smsc")}
+                    if data.get("smsc")
+                    else {"Location": 1}
+                )
                 message["Number"] = number.strip()
                 messages.append(message)
-        result = [mqtt_publisher.track_gammu_operation("SendSMS", machine.SendSMS, message) for message in messages]
+        result = [
+            mqtt_publisher.track_gammu_operation("SendSMS", machine.SendSMS, message)
+            for message in messages
+        ]
 
         # Increment SMS counter for each sent message
         for _ in messages:
@@ -473,43 +597,53 @@ class SmsCollection(Resource):
 
         return {"status": 200, "message": str(result)}, 200
 
-@ns_sms.route('/<int:id>')
-@ns_sms.doc('sms_by_id')
+
+@ns_sms.route("/<int:id>")
+@ns_sms.doc("sms_by_id")
 class SmsItem(Resource):
-    @ns_sms.doc('get_sms_by_id')
+    @ns_sms.doc("get_sms_by_id")
     @ns_sms.marshal_with(sms_response, code=200)
-    @ns_sms.doc(security='basicAuth')
+    @ns_sms.doc(security="basicAuth")
     @auth.login_required
     def get(self, id):
         """Get specific SMS by ID"""
-        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
+        allSms = mqtt_publisher.track_gammu_operation(
+            "retrieveAllSms", retrieveAllSms, machine
+        )
         if id < 0 or id >= len(allSms):
             api.abort(404, f"SMS with id '{id}' not found")
         sms = allSms[id]
         sms.pop("Locations", None)
         return sms
 
-    @ns_sms.doc('delete_sms_by_id')
-    @ns_sms.doc(security='basicAuth')
+    @ns_sms.doc("delete_sms_by_id")
+    @ns_sms.doc(security="basicAuth")
     @auth.login_required
     def delete(self, id):
         """Delete SMS by ID"""
-        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
+        allSms = mqtt_publisher.track_gammu_operation(
+            "retrieveAllSms", retrieveAllSms, machine
+        )
         if id < 0 or id >= len(allSms):
             api.abort(404, f"SMS with id '{id}' not found")
-        mqtt_publisher.track_gammu_operation("deleteSms", deleteSms, machine, allSms[id])
-        return '', 204
+        mqtt_publisher.track_gammu_operation(
+            "deleteSms", deleteSms, machine, allSms[id]
+        )
+        return "", 204
 
-@ns_sms.route('/getsms')
-@ns_sms.doc('get_and_delete_first_sms')
+
+@ns_sms.route("/getsms")
+@ns_sms.doc("get_and_delete_first_sms")
 class GetSms(Resource):
-    @ns_sms.doc('pop_first_sms')
+    @ns_sms.doc("pop_first_sms")
     @ns_sms.marshal_with(sms_response, code=200)
-    @ns_sms.doc(security='basicAuth')
+    @ns_sms.doc(security="basicAuth")
     @auth.login_required
     def get(self):
         """Get first SMS and delete it from memory"""
-        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
+        allSms = mqtt_publisher.track_gammu_operation(
+            "retrieveAllSms", retrieveAllSms, machine
+        )
         sms = {"Date": "", "Number": "", "State": "", "Text": ""}
         if len(allSms) > 0:
             sms = allSms[0]
@@ -520,53 +654,62 @@ class GetSms(Resource):
                 mqtt_publisher.publish_sms_received(sms)
         return sms
 
-@ns_sms.route('/deleteall')
-@ns_sms.doc('delete_all_sms')
+
+@ns_sms.route("/deleteall")
+@ns_sms.doc("delete_all_sms")
 class DeleteAllSms(Resource):
-    @ns_sms.doc('delete_all_messages')
-    @ns_sms.doc(security='basicAuth')
+    @ns_sms.doc("delete_all_messages")
+    @ns_sms.doc(security="basicAuth")
     @auth.login_required
     def delete(self):
         """Delete all SMS messages from SIM/device memory"""
-        allSms = mqtt_publisher.track_gammu_operation("retrieveAllSms", retrieveAllSms, machine)
+        allSms = mqtt_publisher.track_gammu_operation(
+            "retrieveAllSms", retrieveAllSms, machine
+        )
         count = len(allSms)
         for sms in allSms:
             mqtt_publisher.track_gammu_operation("deleteSms", deleteSms, machine, sms)
         return {"status": 200, "message": f"Deleted {count} SMS messages"}, 200
 
-@ns_status.route('/signal')
-@ns_status.doc('get_signal_quality')
+
+@ns_status.route("/signal")
+@ns_status.doc("get_signal_quality")
 class Signal(Resource):
-    @ns_status.doc('signal_strength')
+    @ns_status.doc("signal_strength")
     @ns_status.marshal_with(signal_response)
     def get(self):
         """Get GSM signal strength and quality"""
-        signal_data = mqtt_publisher.track_gammu_operation("GetSignalQuality", machine.GetSignalQuality)
+        signal_data = mqtt_publisher.track_gammu_operation(
+            "GetSignalQuality", machine.GetSignalQuality
+        )
         # Publish to MQTT if enabled
         mqtt_publisher.publish_signal_strength(signal_data)
         return signal_data
 
-@ns_status.route('/network')
-@ns_status.doc('get_network_info')
+
+@ns_status.route("/network")
+@ns_status.doc("get_network_info")
 class Network(Resource):
-    @ns_status.doc('network_information')
+    @ns_status.doc("network_information")
     @ns_status.marshal_with(network_response)
     def get(self):
         """Get network operator and registration information"""
-        network = mqtt_publisher.track_gammu_operation("GetNetworkInfo", machine.GetNetworkInfo)
+        network = mqtt_publisher.track_gammu_operation(
+            "GetNetworkInfo", machine.GetNetworkInfo
+        )
         network_code = network.get("NetworkCode", "")
         network_name = network.get("NetworkName")
-        
+
         # Try multiple lookup methods if name is empty (Gammu bug: https://github.com/gammu/python-gammu/issues/31)
         if not network_name and network_code:
             # First try our comprehensive database
             network_name = get_network_name(network_code)
             # Fallback to Gammu's database
             if not network_name:
-                network_name = GSMNetworks.get(network_code, 'Unknown')
-        
-        network["NetworkName"] = network_name or 'Unknown'
-        
+                network_name = GSMNetworks.get(network_code, "Unknown")
+
+        network["NetworkName"] = network_name or "Unknown"
+
         # Map Gammu's state to human-readable format
         state = network.get("State", "Unknown")
         state_map = {
@@ -578,27 +721,36 @@ class Network(Resource):
             "Unknown": "Unknown",
         }
         network["State"] = state_map.get(state, state)
-        
+
         # Publish to MQTT if enabled
         mqtt_publisher.publish_network_info(network)
         return network
 
-@ns_status.route('/modem')
-@ns_status.doc('get_modem_info')
+
+@ns_status.route("/modem")
+@ns_status.doc("get_modem_info")
 class ModemInfo(Resource):
-    @ns_status.doc('modem_information')
+    @ns_status.doc("modem_information")
     @ns_status.marshal_with(modem_info_response)
     def get(self):
         """Get modem hardware information (IMEI, manufacturer, model, firmware)"""
         try:
             modem_info = {
-                "IMEI": mqtt_publisher.track_gammu_operation("GetIMEI", machine.GetIMEI),
-                "Manufacturer": mqtt_publisher.track_gammu_operation("GetManufacturer", machine.GetManufacturer),
-                "Model": mqtt_publisher.track_gammu_operation("GetModel", machine.GetModel)
+                "IMEI": mqtt_publisher.track_gammu_operation(
+                    "GetIMEI", machine.GetIMEI
+                ),
+                "Manufacturer": mqtt_publisher.track_gammu_operation(
+                    "GetManufacturer", machine.GetManufacturer
+                ),
+                "Model": mqtt_publisher.track_gammu_operation(
+                    "GetModel", machine.GetModel
+                ),
             }
             try:
                 # Firmware can fail on some modems
-                modem_info["Firmware"] = mqtt_publisher.track_gammu_operation("GetFirmware", machine.GetFirmware)[0]
+                modem_info["Firmware"] = mqtt_publisher.track_gammu_operation(
+                    "GetFirmware", machine.GetFirmware
+                )[0]
             except:
                 modem_info["Firmware"] = "Unknown"
 
@@ -608,16 +760,19 @@ class ModemInfo(Resource):
         except Exception as e:
             api.abort(500, f"Failed to get modem info: {str(e)}")
 
-@ns_status.route('/sim')
-@ns_status.doc('get_sim_info')
+
+@ns_status.route("/sim")
+@ns_status.doc("get_sim_info")
 class SimInfo(Resource):
-    @ns_status.doc('sim_information')
+    @ns_status.doc("sim_information")
     @ns_status.marshal_with(sim_info_response)
     def get(self):
         """Get SIM card information (IMSI)"""
         try:
             sim_info = {
-                "IMSI": mqtt_publisher.track_gammu_operation("GetSIMIMSI", machine.GetSIMIMSI)
+                "IMSI": mqtt_publisher.track_gammu_operation(
+                    "GetSIMIMSI", machine.GetSIMIMSI
+                )
             }
             # Publish to MQTT if enabled
             mqtt_publisher.publish_sim_info(sim_info)
@@ -625,66 +780,79 @@ class SimInfo(Resource):
         except Exception as e:
             api.abort(500, f"Failed to get SIM info: {str(e)}")
 
-@ns_status.route('/sms_capacity')
-@ns_status.doc('get_sms_capacity')
+
+@ns_status.route("/sms_capacity")
+@ns_status.doc("get_sms_capacity")
 class SmsCapacity(Resource):
-    @ns_status.doc('sms_storage_capacity')
+    @ns_status.doc("sms_storage_capacity")
     @ns_status.marshal_with(sms_capacity_response)
     def get(self):
         """Get SMS storage capacity and usage"""
         try:
-            capacity = mqtt_publisher.track_gammu_operation("GetSMSStatus", machine.GetSMSStatus)
+            capacity = mqtt_publisher.track_gammu_operation(
+                "GetSMSStatus", machine.GetSMSStatus
+            )
             # Publish to MQTT if enabled
             mqtt_publisher.publish_sms_capacity(capacity)
             return capacity
         except Exception as e:
             api.abort(500, f"Failed to get SMS capacity: {str(e)}")
 
-@ns_status.route('/reset')
-@ns_status.doc('reset_modem')
+
+@ns_status.route("/reset")
+@ns_status.doc("reset_modem")
 class Reset(Resource):
-    @ns_status.doc('modem_reset')
+    @ns_status.doc("modem_reset")
     @ns_status.marshal_with(reset_response)
     def get(self):
         """Reset GSM modem (useful for stuck connections)"""
         mqtt_publisher.track_gammu_operation("Reset", machine.Reset, False)
         return {"status": 200, "message": "Reset done"}, 200
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     print(f"🚀 SMS Gammu Gateway v{VERSION} started successfully!")
     print(f"📱 Device: {device_path}")
     print(f"🌐 API available on port {port}")
     print(f"🏠 Web UI: http://localhost:{port}/")
     print(f"🔒 SSL: {'Enabled' if ssl else 'Disabled'}")
-    
+
     # MQTT info
-    if config.get('mqtt_enabled', False):
-        print(f"📡 MQTT: Enabled -> {config.get('mqtt_host')}:{config.get('mqtt_port')}")
-        
+    if config.get("mqtt_enabled", False):
+        print(
+            f"📡 MQTT: Enabled -> {config.get('mqtt_host')}:{config.get('mqtt_port')}"
+        )
+
         # Wait a moment for MQTT connection, then publish initial states
         import time
+
         time.sleep(2)
         mqtt_publisher.publish_initial_states_with_machine(machine)
-        
+
         # Start periodic MQTT publishing
         mqtt_publisher.publish_status_periodic(machine, interval=300)  # 5 minutes
-        
+
         # Start SMS monitoring if enabled
-        if config.get('sms_monitoring_enabled', True):
-            check_interval = config.get('sms_check_interval', 60)
+        if config.get("sms_monitoring_enabled", True):
+            check_interval = config.get("sms_check_interval", 60)
             mqtt_publisher.start_sms_monitoring(machine, check_interval=check_interval)
             print(f"📱 SMS Monitoring: Enabled (check every {check_interval}s)")
         else:
             print(f"📱 SMS Monitoring: Disabled")
     else:
         print(f"📡 MQTT: Disabled")
-    
+
     print(f"✅ Ready to send/receive SMS messages")
 
     try:
         if ssl:
-            app.run(port=port, host="0.0.0.0", ssl_context=('/ssl/cert.pem', '/ssl/key.pem'),
-                    debug=False, use_reloader=False)
+            app.run(
+                port=port,
+                host="0.0.0.0",
+                ssl_context=("/ssl/cert.pem", "/ssl/key.pem"),
+                debug=False,
+                use_reloader=False,
+            )
         else:
             app.run(port=port, host="0.0.0.0", debug=False, use_reloader=False)
     finally:

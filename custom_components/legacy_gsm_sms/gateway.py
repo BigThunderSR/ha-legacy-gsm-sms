@@ -4,7 +4,6 @@ import logging
 
 import gammu
 from gammu.asyncworker import GammuAsyncWorker
-
 from homeassistant.core import callback
 
 from .const import DOMAIN, SMS_STATE_UNREAD
@@ -179,16 +178,16 @@ class Gateway:
     async def get_signal_quality_async(self):
         """Get the current signal level of the modem."""
         signal_data = await self._worker.get_signal_quality_async()
-        
+
         # Gammu returns already processed values:
         # - SignalStrength: dBm value (already calculated, -1 = unknown)
         # - SignalPercent: percentage 0-100 (-1 = unknown)
         # - BitErrorRate: RXQUAL value 0-7 (99 = unknown)
-        
+
         signal_strength = signal_data.get("SignalStrength", -1)
         signal_percent = signal_data.get("SignalPercent", -1)
         ber = signal_data.get("BitErrorRate", 99)
-        
+
         # Convert -1 to None for unknown values
         if signal_strength == -1:
             signal_strength = None
@@ -197,7 +196,7 @@ class Gateway:
         # BitErrorRate: 99 or -1 means unknown, 0-7 is RXQUAL index
         if ber == 99 or ber == -1 or ber < 0:
             ber = None
-        
+
         return {
             "SignalStrength": signal_strength,
             "SignalPercent": signal_percent,
@@ -207,17 +206,17 @@ class Gateway:
     async def get_network_info_async(self):
         """Get the current network info of the modem."""
         network_info = await self._worker.get_network_info_async()
-        
+
         # Gammu returns: NetworkName, State, NetworkCode, CID, LAC
         raw_network_name = network_info.get("NetworkName")
         network_code = network_info.get("NetworkCode")
-        
+
         # Determine the best network name and code to display
         # Note: Some modems return the NITZ operator name in NetworkCode field
         # instead of the numeric MCC+MNC code
         network_name = raw_network_name
         resolved_code = None
-        
+
         # Check if NetworkCode is numeric (correct) or contains a name (modem quirk)
         if network_code:
             if network_code.isdigit():
@@ -233,21 +232,22 @@ class Gateway:
                 # This is a modem quirk - use it as the network name
                 if not network_name or not network_name.strip():
                     network_name = network_code
-                
+
                 # Try to find the numeric code by reverse lookup
                 # This works for MVNOs that have their own codes in the database
                 from .network_codes import NETWORK_OPERATORS
+
                 for code, name in NETWORK_OPERATORS.items():
                     if name.lower() == network_code.lower():
                         resolved_code = code
                         break
-                
+
                 # If reverse lookup failed, try to use cached code from gateway
                 # MVNOs often alternate between broadcasting their name and the
                 # host network code, so we cache the last known numeric code
-                if not resolved_code and hasattr(self, '_last_network_code'):
+                if not resolved_code and hasattr(self, "_last_network_code"):
                     resolved_code = self._last_network_code
-        
+
         # Map Gammu's state to match addon format
         state = network_info.get("State", "Unknown")
         # Gammu states: HomeNetwork, RoamingNetwork, RequestingNetwork,
@@ -263,12 +263,12 @@ class Gateway:
             "Unknown": "Unknown",
         }
         mapped_state = state_map.get(state, state)  # Use mapping or keep original
-        
+
         # Cache the resolved code for next time
         # This helps when modem alternates between numeric code and operator name
         if resolved_code:
             self._last_network_code = resolved_code
-        
+
         return {
             "NetworkName": network_name,
             "State": mapped_state,

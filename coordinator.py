@@ -5,7 +5,6 @@ from datetime import timedelta
 import logging
 
 import gammu
-
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL

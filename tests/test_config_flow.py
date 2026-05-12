@@ -1,4 +1,5 @@
 """Tests for the legacy_gsm_sms integration config flow."""
+
 from unittest.mock import patch
 
 from homeassistant import config_entries, setup

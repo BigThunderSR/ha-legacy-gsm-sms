@@ -15,8 +15,6 @@ Auto-update: Monthly via GitHub Actions
 # Comprehensive database of mobile network operators by MCC+MNC
 # Format: "MCCMNC": "Operator Name"
 NETWORK_OPERATORS = {
-
-
     # United States (MCC 310-316)
     "310005": "Verizon",
     "310006": "Verizon",
@@ -352,7 +350,6 @@ NETWORK_OPERATORS = {
     "310970": "Globalstar",
     "310980": "Peoples Telephone",
     "310990": "Evolve Broadband",
-
     # US MVNOs with unique codes
     "310032": "IT&E Wireless",
     "310053": "Virgin Mobile",
@@ -483,7 +480,6 @@ NETWORK_OPERATORS = {
     "313970": "Tycrhron",
     "313980": "Next Generation Application LLC",
     "313990": "Ericsson US",
-
     # Canada (MCC 302)
     "302100": "dotmobile",
     "302130": "Xplore",
@@ -566,7 +562,6 @@ NETWORK_OPERATORS = {
     "302996": "Powertech Labs",
     "302997": "Powertech Labs",
     "302998": "Institut de Recherche d’Hydro-Québec",
-
     # United Kingdom (MCC 234, 235)
     "23400": "BT",
     "23401": "Vectone Mobile",
@@ -631,7 +626,6 @@ NETWORK_OPERATORS = {
     "23479": "UKTL",
     "23486": "EE",
     "23488": "telet",
-
     # Germany (MCC 262)
     "26201": "Telekom",
     "26202": "Vodafone",
@@ -675,7 +669,6 @@ NETWORK_OPERATORS = {
     "26279": "ng4T GmbH",
     "26292": "Nash Technologies",
     "26298": "private networks",
-
     # France (MCC 208)
     "20801": "Orange",
     "20802": "Orange",
@@ -753,7 +746,6 @@ NETWORK_OPERATORS = {
     "20896": "Région Bourgogne-Franche-Comté",
     "20897": "Thales Communications & Security SAS",
     "20898": "Société Air France",
-
     # Spain (MCC 214)
     "21401": "Vodafone",
     "21402": "Fibracat",
@@ -796,7 +788,6 @@ NETWORK_OPERATORS = {
     "21451": "ADIF",
     "214700": "Iberdrola",
     "214701": "Endesa",
-
     # Italy (MCC 222)
     "22201": "TIM",
     "22202": "Elsacom",
@@ -827,7 +818,6 @@ NETWORK_OPERATORS = {
     "22288": "WINDTRE",
     "22298": "BLU",
     "22299": "WINDTRE",
-
     # Netherlands (MCC 204)
     "20400": "Intovoice B.V.",
     "20401": "RadioAccess Network Services",
@@ -873,7 +863,6 @@ NETWORK_OPERATORS = {
     "20468": "Roamware (Netherlands) B.V.",
     "20469": "KPN Mobile The Netherlands B.V.",
     "20491": "Enexis Netbeheer B.V.",
-
     # Australia (MCC 505)
     "50501": "Telstra",
     "50502": "Optus",
@@ -936,7 +925,6 @@ NETWORK_OPERATORS = {
     "50588": "Pivotel Group Pty Ltd",
     "50590": "Optus",
     "50599": "One.Tel",
-
     # China (MCC 460, 461)
     "46000": "China Mobile",
     "46001": "China Unicom",
@@ -951,7 +939,6 @@ NETWORK_OPERATORS = {
     "46011": "China Telecom",
     "46015": "China Broadnet",
     "46020": "China Tietong",
-
     # Japan (MCC 440, 441)
     "44000": "Y!Mobile",
     "44001": "KDDI Corporation",
@@ -990,7 +977,6 @@ NETWORK_OPERATORS = {
     "44075": "au",
     "44076": "au",
     "44078": "au",
-
     # India (MCC 404, 405)
     "40401": "Vi India",
     "40402": "AirTel",
@@ -1080,7 +1066,6 @@ NETWORK_OPERATORS = {
     "40496": "AirTel",
     "40497": "AirTel",
     "40498": "AirTel",
-
     # Brazil (MCC 724)
     "72400": "Nextel",
     "72401": "SISTEER DO BRASIL TELECOMUNICAÇÔES",
@@ -1113,7 +1098,6 @@ NETWORK_OPERATORS = {
     "72439": "Nextel",
     "72454": "Conecta",
     "72499": "Local",
-
     # Mexico (MCC 334)
     "334001": "Comunicaciones Digitales Del Norte, S.A. de C.V.",
     "334010": "AT&T",
@@ -1143,7 +1127,6 @@ NETWORK_OPERATORS = {
     "334200": "Virgin Mobile",
     "334210": "YO Mobile",
     "334220": "Megamóvil",
-
     # Russia (MCC 250)
     "25001": "MTS",
     "25002": "MegaFon",
@@ -1194,7 +1177,6 @@ NETWORK_OPERATORS = {
     "25096": "+7Telecom",
     "25097": "Phoenix",
     "25099": "Beeline",
-
     # South Africa (MCC 655)
     "65501": "Vodacom",
     "65502": "Telkom",
@@ -1235,9 +1217,7 @@ NETWORK_OPERATORS = {
     "65575": "ACSA",
     "65576": "Comsol Networks (Pty) Ltd",
     "65577": "Umoja Connect",
-
     # Add more countries as needed...
-
     # Additional network codes
     "001001": "TEST",
     "00101": "TEST",
@@ -3114,10 +3094,10 @@ NETWORK_OPERATORS = {
 
 def get_network_name(network_code: str):
     """Get network operator name from MCC+MNC code.
-    
+
     Args:
         network_code: MCC+MNC code (e.g., "310260" for T-Mobile USA)
-        
+
     Returns:
         Network operator name or None if not found
     """

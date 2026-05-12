@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   rebase:
@@ -29,11 +28,15 @@ jobs:
             core.info(`Found ${dependabotPRs.length} open Dependabot PRs`);
 
             for (const pr of dependabotPRs) {
-              core.info(`Commenting @dependabot rebase on PR #${pr.number}: ${pr.title}`);
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                body: '@dependabot rebase',
-              });
+              core.info(`Updating branch for PR #${pr.number}: ${pr.title}`);
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                });
+                core.info(`Successfully updated PR #${pr.number}`);
+              } catch (error) {
+                core.warning(`Failed to update PR #${pr.number}: ${error.message}`);
+              }
             }

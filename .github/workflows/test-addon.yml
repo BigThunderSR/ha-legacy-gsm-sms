@@ -30,7 +30,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.12'  # must match Alpine Python in addon-gsm-gateway/build.yaml
+          python-version: '3.14'  # must match Alpine Python in addon-gsm-gateway/build.yaml
 
       - name: Install dependencies
         run: |
@@ -55,7 +55,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.12'  # must match Alpine Python in addon-test-current/build.yaml
+          python-version: '3.14'  # must match Alpine Python in addon-test-current/build.yaml
 
       - name: Install dependencies
         run: |

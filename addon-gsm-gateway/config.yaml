@@ -67,6 +67,7 @@ options:
   mqtt_username: ""
   mqtt_password: ""
   mqtt_topic_prefix: "homeassistant/sensor/sms_gateway"
+  mqtt_device_id: "sms_gateway"
   sms_monitoring_enabled: true
   sms_check_interval: 5
   status_update_interval: 300
@@ -100,17 +101,18 @@ options:
   incoming_call_auto_reset_seconds: 60
 schema:
   device_path: str
-  pin: str?
+  pin: password?
   port: int(1,65535)
   ssl: bool
   username: str
-  password: str
+  password: password
   mqtt_enabled: bool
   mqtt_host: str
   mqtt_port: int(1,65535)
   mqtt_username: str?
-  mqtt_password: str?
+  mqtt_password: password?
   mqtt_topic_prefix: str
+  mqtt_device_id: "match(^[a-z0-9_]+$)?"
   sms_monitoring_enabled: bool
   sms_check_interval: int(5,300)
   status_update_interval: int(30,3600)

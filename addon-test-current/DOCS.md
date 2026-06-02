@@ -129,16 +129,18 @@ curl -X POST http://192.168.1.x:5000/sms \
 
 ### MQTT Settings
 
-| Parameter                | Default          | Description                                                             |
-| ------------------------ | ---------------- | ----------------------------------------------------------------------- |
-| `mqtt_enabled`           | `true`           | Enable MQTT integration                                                 |
-| `mqtt_host`              | `core-mosquitto` | MQTT broker hostname                                                    |
-| `mqtt_port`              | `1883`           | MQTT broker port                                                        |
-| `mqtt_username`          | `""`             | MQTT username (empty for no auth)                                       |
-| `mqtt_password`          | `""`             | MQTT password (empty for no auth)                                       |
-| `sms_monitoring_enabled` | `true`           | Detect incoming SMS automatically                                       |
-| `sms_check_interval`     | `5`              | SMS check interval (5-300 seconds) (🆕 v2.1.8: min reduced to 5s)       |
-| `status_update_interval` | `300`            | Status update interval (30-3600 seconds) - signal & network (🆕 v2.1.8) |
+| Parameter                | Default                            | Description                                                                    |
+| ------------------------ | ---------------------------------- | ------------------------------------------------------------------------------ |
+| `mqtt_enabled`           | `true`                             | Enable MQTT integration                                                        |
+| `mqtt_host`              | `core-mosquitto`                   | MQTT broker hostname                                                           |
+| `mqtt_port`              | `1883`                             | MQTT broker port                                                               |
+| `mqtt_username`          | `""`                               | MQTT username (empty for no auth)                                              |
+| `mqtt_password`          | `""`                               | MQTT password (empty for no auth)                                              |
+| `mqtt_topic_prefix`      | `homeassistant/sensor/sms_gateway` | MQTT topic prefix                                                              |
+| `mqtt_device_id`         | `sms_gateway`                      | Device identifier for multi-instance support (lowercase, numbers, underscores) |
+| `sms_monitoring_enabled` | `true`                             | Detect incoming SMS automatically                                              |
+| `sms_check_interval`     | `5`                                | SMS check interval (5-300 seconds) (🆕 v2.1.8: min reduced to 5s)              |
+| `status_update_interval` | `300`                              | Status update interval (30-3600 seconds) - signal & network (🆕 v2.1.8)        |
 
 ### SMS Management Settings
 
@@ -861,14 +863,14 @@ The `sensor.sms_gateway_last_sms` and `sensor.sms_gateway_last_sms_sender` will 
 
 The addon persists critical data to `/data/` folder (survives addon restarts, MQTT broker restarts, and retained topic loss):
 
-| File | Description |
-|------|-------------|
-| `/data/sms_counter.json` | SMS sent/received counts |
-| `/data/sms_history.json` | Last 10 received SMS messages |
-| `/data/pending_sms.json` | Queued SMS awaiting modem recovery |
-| `/data/sms_delivery.json` | Delivery report tracking |
-| `/data/missed_calls.json` | Last 10 missed calls (🆕 v2.18.9) |
-| `/data/balance_data.json` | Account balance parsed from SMS |
+| File                      | Description                        |
+| ------------------------- | ---------------------------------- |
+| `/data/sms_counter.json`  | SMS sent/received counts           |
+| `/data/sms_history.json`  | Last 10 received SMS messages      |
+| `/data/pending_sms.json`  | Queued SMS awaiting modem recovery |
+| `/data/sms_delivery.json` | Delivery report tracking           |
+| `/data/missed_calls.json` | Last 10 missed calls (🆕 v2.18.9)  |
+| `/data/balance_data.json` | Account balance parsed from SMS    |
 
 All persistent data is automatically restored to MQTT on startup.
 

@@ -149,7 +149,7 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 | `mqtt_username`     | `""`                               | MQTT username (if required)                                                    |
 | `mqtt_password`     | `""`                               | MQTT password (if required)                                                    |
 | `mqtt_topic_prefix` | `homeassistant/sensor/sms_gateway` | MQTT topic prefix                                                              |
-| `mqtt_device_id`    | `sms_gateway`                      | Device identifier for multi-instance support (lowercase, numbers, underscores) |
+| `mqtt_device_id`    | `sms_gateway`                      | Device identifier for multi-instance support (lowercase, numbers, underscores) (🆕 v2.19.0) |
 
 ### SMS Settings
 

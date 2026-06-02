@@ -137,7 +137,7 @@ curl -X POST http://192.168.1.x:5000/sms \
 | `mqtt_username`          | `""`                               | MQTT username (empty for no auth)                                              |
 | `mqtt_password`          | `""`                               | MQTT password (empty for no auth)                                              |
 | `mqtt_topic_prefix`      | `homeassistant/sensor/sms_gateway` | MQTT topic prefix                                                              |
-| `mqtt_device_id`         | `sms_gateway`                      | Device identifier for multi-instance support (lowercase, numbers, underscores) |
+| `mqtt_device_id`         | `sms_gateway`                      | Device identifier for multi-instance support (lowercase, numbers, underscores) (🆕 v2.19.0) |
 | `sms_monitoring_enabled` | `true`                             | Detect incoming SMS automatically                                              |
 | `sms_check_interval`     | `5`                                | SMS check interval (5-300 seconds) (🆕 v2.1.8: min reduced to 5s)              |
 | `status_update_interval` | `300`                              | Status update interval (30-3600 seconds) - signal & network (🆕 v2.1.8)        |

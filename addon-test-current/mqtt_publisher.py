@@ -1865,7 +1865,11 @@ class MQTTPublisher:
             return
 
         # Common device config for all entities
-        device_name = "SMS Gateway" if self.device_id == "sms_gateway" else f"SMS Gateway ({self.device_id})"
+        device_name = (
+            "SMS Gateway"
+            if self.device_id == "sms_gateway"
+            else f"SMS Gateway ({self.device_id})"
+        )
         DEVICE_CONFIG = {
             "identifiers": [self.device_id],
             "name": device_name,
@@ -2368,7 +2372,10 @@ class MQTTPublisher:
         discoveries = [
             # Signal sensors
             (f"homeassistant/sensor/{self.device_id}/signal/config", signal_config),
-            (f"homeassistant/sensor/{self.device_id}/signal_dbm/config", signal_dbm_config),
+            (
+                f"homeassistant/sensor/{self.device_id}/signal_dbm/config",
+                signal_dbm_config,
+            ),
             (f"homeassistant/sensor/{self.device_id}/ber/config", ber_config),
             # Network sensors
             (f"homeassistant/sensor/{self.device_id}/network/config", network_config),
@@ -2382,7 +2389,10 @@ class MQTTPublisher:
             ),
             (f"homeassistant/sensor/{self.device_id}/cid/config", cid_config),
             (f"homeassistant/sensor/{self.device_id}/lac/config", lac_config),
-            (f"homeassistant/sensor/{self.device_id}/packet_lac/config", packet_lac_config),
+            (
+                f"homeassistant/sensor/{self.device_id}/packet_lac/config",
+                packet_lac_config,
+            ),
             (
                 f"homeassistant/sensor/{self.device_id}/network_type/config",
                 network_type_config,
@@ -2393,7 +2403,10 @@ class MQTTPublisher:
                 f"homeassistant/sensor/{self.device_id}/last_sms_sender/config",
                 sms_sender_config,
             ),
-            (f"homeassistant/sensor/{self.device_id}/send_status/config", send_status_config),
+            (
+                f"homeassistant/sensor/{self.device_id}/send_status/config",
+                send_status_config,
+            ),
             (
                 f"homeassistant/sensor/{self.device_id}/delete_status/config",
                 delete_status_config,
@@ -2402,7 +2415,10 @@ class MQTTPublisher:
                 f"homeassistant/sensor/{self.device_id}/delivery_status/config",
                 delivery_report_config,
             ),
-            (f"homeassistant/sensor/{self.device_id}/sent_count/config", sms_counter_config),
+            (
+                f"homeassistant/sensor/{self.device_id}/sent_count/config",
+                sms_counter_config,
+            ),
             (
                 f"homeassistant/sensor/{self.device_id}/received_count/config",
                 sms_received_counter_config,
@@ -2416,15 +2432,24 @@ class MQTTPublisher:
                 f"homeassistant/sensor/{self.device_id}/modem_status/config",
                 device_status_config,
             ),
-            (f"homeassistant/sensor/{self.device_id}/modem_imei/config", modem_imei_config),
-            (f"homeassistant/sensor/{self.device_id}/modem_model/config", modem_model_config),
+            (
+                f"homeassistant/sensor/{self.device_id}/modem_imei/config",
+                modem_imei_config,
+            ),
+            (
+                f"homeassistant/sensor/{self.device_id}/modem_model/config",
+                modem_model_config,
+            ),
             (
                 f"homeassistant/sensor/{self.device_id}/modem_firmware/config",
                 modem_firmware_config,
             ),
             (f"homeassistant/sensor/{self.device_id}/sim_imsi/config", sim_imsi_config),
             # Controls
-            (f"homeassistant/button/{self.device_id}/send_button/config", button_config),
+            (
+                f"homeassistant/button/{self.device_id}/send_button/config",
+                button_config,
+            ),
             (
                 f"homeassistant/button/{self.device_id}/send_flash_button/config",
                 flash_button_config,
@@ -2449,9 +2474,18 @@ class MQTTPublisher:
                 f"homeassistant/button/{self.device_id}/send_ussd_button/config",
                 ussd_button_config,
             ),
-            (f"homeassistant/text/{self.device_id}/phone_number/config", phone_text_config),
-            (f"homeassistant/text/{self.device_id}/message_text/config", message_text_config),
-            (f"homeassistant/text/{self.device_id}/ussd_code/config", ussd_code_text_config),
+            (
+                f"homeassistant/text/{self.device_id}/phone_number/config",
+                phone_text_config,
+            ),
+            (
+                f"homeassistant/text/{self.device_id}/message_text/config",
+                message_text_config,
+            ),
+            (
+                f"homeassistant/text/{self.device_id}/ussd_code/config",
+                ussd_code_text_config,
+            ),
             # USSD response sensor
             (
                 f"homeassistant/sensor/{self.device_id}/ussd_response/config",
@@ -2503,7 +2537,10 @@ class MQTTPublisher:
                 **AVAILABILITY_CONFIG,
             }
             discoveries.append(
-                (f"homeassistant/sensor/{self.device_id}/total_cost/config", sms_cost_config)
+                (
+                    f"homeassistant/sensor/{self.device_id}/total_cost/config",
+                    sms_cost_config,
+                )
             )
 
         # Add call monitoring sensors if enabled

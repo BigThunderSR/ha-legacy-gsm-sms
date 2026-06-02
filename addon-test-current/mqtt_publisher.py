@@ -898,6 +898,7 @@ class MQTTPublisher:
         self.topic_prefix = config.get(
             "mqtt_topic_prefix", "homeassistant/sensor/sms_gateway"
         )
+        self.device_id = config.get("mqtt_device_id", "sms_gateway")
         self.availability_topic = (
             f"{self.topic_prefix}/availability"  # Shared availability for all entities
         )
@@ -1005,7 +1006,7 @@ class MQTTPublisher:
             # Create client with unique ID for better connection tracking
             import socket
 
-            client_id = f"sms_gateway_{socket.gethostname()}"
+            client_id = f"{self.device_id}_{socket.gethostname()}"
             self.client = mqtt.Client(client_id=client_id, clean_session=True)
 
             # Set credentials ONLY if username is provided and not empty
@@ -1864,9 +1865,14 @@ class MQTTPublisher:
             return
 
         # Common device config for all entities
+        device_name = (
+            "SMS Gateway"
+            if self.device_id == "sms_gateway"
+            else f"SMS Gateway ({self.device_id})"
+        )
         DEVICE_CONFIG = {
-            "identifiers": ["sms_gateway"],
-            "name": "SMS Gateway",
+            "identifiers": [self.device_id],
+            "name": device_name,
             "model": "GSM Modem",
             "manufacturer": "Gammu Gateway",
         }
@@ -1881,7 +1887,7 @@ class MQTTPublisher:
         # Signal strength sensor (original from PavelVe)
         signal_config = {
             "name": "GSM Signal Strength",
-            "unique_id": "sms_gateway_signal",
+            "unique_id": f"{self.device_id}_signal",
             "state_topic": f"{self.topic_prefix}/signal/state",
             "value_template": "{{ value_json.SignalPercent }}",
             "unit_of_measurement": "%",
@@ -1894,7 +1900,7 @@ class MQTTPublisher:
         # Signal strength dBm sensor (diagnostic - shows actual dBm value, not percent)
         signal_dbm_config = {
             "name": "GSM Signal Strength (dBm)",
-            "unique_id": "sms_gateway_signal_dbm",
+            "unique_id": f"{self.device_id}_signal_dbm",
             "state_topic": f"{self.topic_prefix}/signal/state",
             "value_template": "{{ value_json.SignalStrength }}",
             "unit_of_measurement": "dBm",
@@ -1909,7 +1915,7 @@ class MQTTPublisher:
         # Bit Error Rate sensor (diagnostic)
         ber_config = {
             "name": "GSM Bit Error Rate",
-            "unique_id": "sms_gateway_ber",
+            "unique_id": f"{self.device_id}_ber",
             "state_topic": f"{self.topic_prefix}/signal/state",
             "value_template": "{{ value_json.BitErrorRate }}",
             "unit_of_measurement": "%",
@@ -1923,7 +1929,7 @@ class MQTTPublisher:
         # Network info sensor (original from PavelVe)
         network_config = {
             "name": "GSM Network",
-            "unique_id": "sms_gateway_network",
+            "unique_id": f"{self.device_id}_network",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.NetworkName }}",
             "icon": "mdi:network",
@@ -1934,7 +1940,7 @@ class MQTTPublisher:
         # Network registration state sensor (main display)
         network_state_config = {
             "name": "GSM Network State",
-            "unique_id": "sms_gateway_network_state",
+            "unique_id": f"{self.device_id}_network_state",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.State }}",
             "icon": "mdi:signal-variant",
@@ -1945,7 +1951,7 @@ class MQTTPublisher:
         # Network code (MCC+MNC) sensor (diagnostic)
         network_code_config = {
             "name": "GSM Network Code",
-            "unique_id": "sms_gateway_network_code",
+            "unique_id": f"{self.device_id}_network_code",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.NetworkCode }}",
             "icon": "mdi:network",
@@ -1957,7 +1963,7 @@ class MQTTPublisher:
         # Cell ID sensor
         cid_config = {
             "name": "GSM Cell ID",
-            "unique_id": "sms_gateway_cid",
+            "unique_id": f"{self.device_id}_cid",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.CID }}",
             "icon": "mdi:radio-tower",
@@ -1969,7 +1975,7 @@ class MQTTPublisher:
         # Location Area Code sensor
         lac_config = {
             "name": "GSM Location Area Code",
-            "unique_id": "sms_gateway_lac",
+            "unique_id": f"{self.device_id}_lac",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.LAC }}",
             "icon": "mdi:map-marker-radius",
@@ -1981,7 +1987,7 @@ class MQTTPublisher:
         # Packet Location Area Code sensor
         packet_lac_config = {
             "name": "GSM Packet Location Area Code",
-            "unique_id": "sms_gateway_packet_lac",
+            "unique_id": f"{self.device_id}_packet_lac",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.PacketLAC }}",
             "icon": "mdi:map-marker-radius",
@@ -1993,7 +1999,7 @@ class MQTTPublisher:
         # Network Type sensor (2G/3G/4G/LTE)
         network_type_config = {
             "name": "GSM Network Type",
-            "unique_id": "sms_gateway_network_type",
+            "unique_id": f"{self.device_id}_network_type",
             "state_topic": f"{self.topic_prefix}/network/state",
             "value_template": "{{ value_json.NetworkType }}",
             "icon": "mdi:network",
@@ -2005,7 +2011,7 @@ class MQTTPublisher:
         # Last SMS sensor
         sms_config = {
             "name": "Last SMS Received",
-            "unique_id": "sms_gateway_last_sms",
+            "unique_id": f"{self.device_id}_last_sms",
             "state_topic": f"{self.topic_prefix}/sms/state",
             "value_template": "{{ value_json.Text }}",
             "json_attributes_topic": f"{self.topic_prefix}/sms/state",
@@ -2018,7 +2024,7 @@ class MQTTPublisher:
         # Last SMS sender number sensor
         sms_sender_config = {
             "name": "Last SMS Sender",
-            "unique_id": "sms_gateway_last_sms_sender",
+            "unique_id": f"{self.device_id}_last_sms_sender",
             "state_topic": f"{self.topic_prefix}/sms/state",
             "value_template": "{{ value_json.Number }}",
             "icon": "mdi:phone",
@@ -2029,7 +2035,7 @@ class MQTTPublisher:
         # SMS send status sensor
         send_status_config = {
             "name": "SMS Send Status",
-            "unique_id": "sms_gateway_send_status",
+            "unique_id": f"{self.device_id}_send_status",
             "state_topic": f"{self.topic_prefix}/send_status",
             "value_template": "{{ value_json.status }}",
             "json_attributes_topic": f"{self.topic_prefix}/send_status",
@@ -2041,7 +2047,7 @@ class MQTTPublisher:
         # SMS delete status sensor
         delete_status_config = {
             "name": "SMS Delete Status",
-            "unique_id": "sms_gateway_delete_status",
+            "unique_id": f"{self.device_id}_delete_status",
             "state_topic": f"{self.topic_prefix}/delete_sms_status",
             "value_template": "{{ value_json.status }}",
             "json_attributes_topic": f"{self.topic_prefix}/delete_sms_status",
@@ -2053,7 +2059,7 @@ class MQTTPublisher:
         # SMS delivery report sensor (🆕 v2.1.0)
         delivery_report_config = {
             "name": "SMS Delivery Status",
-            "unique_id": "sms_gateway_delivery_status",
+            "unique_id": f"{self.device_id}_delivery_status",
             "state_topic": f"{self.topic_prefix}/delivery_status",
             "value_template": "{{ value_json.status }}",
             "json_attributes_topic": f"{self.topic_prefix}/delivery_status",
@@ -2065,7 +2071,7 @@ class MQTTPublisher:
         # SMS send button
         button_config = {
             "name": "Send SMS",
-            "unique_id": "sms_gateway_send_button",
+            "unique_id": f"{self.device_id}_send_button",
             "command_topic": f"{self.topic_prefix}/send_button",
             "payload_press": "PRESS",
             "icon": "mdi:message-plus",
@@ -2076,7 +2082,7 @@ class MQTTPublisher:
         # Flash SMS send button
         flash_button_config = {
             "name": "Send Flash SMS",
-            "unique_id": "sms_gateway_send_flash_button",
+            "unique_id": f"{self.device_id}_send_flash_button",
             "command_topic": f"{self.topic_prefix}/send_flash_button",
             "payload_press": "PRESS",
             "icon": "mdi:message-flash",
@@ -2087,7 +2093,7 @@ class MQTTPublisher:
         # Phone number input text
         phone_text_config = {
             "name": "Phone Number",
-            "unique_id": "sms_gateway_phone_number",
+            "unique_id": f"{self.device_id}_phone_number",
             "command_topic": f"{self.topic_prefix}/phone_number/set",
             "state_topic": f"{self.topic_prefix}/phone_number/state",
             "icon": "mdi:phone",
@@ -2100,7 +2106,7 @@ class MQTTPublisher:
         # Message input text
         message_text_config = {
             "name": "Message Text",
-            "unique_id": "sms_gateway_message_text",
+            "unique_id": f"{self.device_id}_message_text",
             "command_topic": f"{self.topic_prefix}/message_text/set",
             "state_topic": f"{self.topic_prefix}/message_text/state",
             "icon": "mdi:message-text",
@@ -2113,7 +2119,7 @@ class MQTTPublisher:
         # USSD code input text
         ussd_code_text_config = {
             "name": "USSD Code",
-            "unique_id": "sms_gateway_ussd_code",
+            "unique_id": f"{self.device_id}_ussd_code",
             "command_topic": f"{self.topic_prefix}/ussd_code/set",
             "state_topic": f"{self.topic_prefix}/ussd_code/state",
             "icon": "mdi:pound",
@@ -2126,7 +2132,7 @@ class MQTTPublisher:
         # USSD send button
         ussd_button_config = {
             "name": "Send USSD",
-            "unique_id": "sms_gateway_send_ussd_button",
+            "unique_id": f"{self.device_id}_send_ussd_button",
             "command_topic": f"{self.topic_prefix}/send_ussd_button",
             "payload_press": "PRESS",
             "icon": "mdi:dialpad",
@@ -2137,7 +2143,7 @@ class MQTTPublisher:
         # USSD response sensor
         ussd_response_config = {
             "name": "USSD Response",
-            "unique_id": "sms_gateway_ussd_response",
+            "unique_id": f"{self.device_id}_ussd_response",
             "state_topic": f"{self.topic_prefix}/ussd_response/state",
             "value_template": "{{ value_json.response }}",
             "json_attributes_topic": f"{self.topic_prefix}/ussd_response/state",
@@ -2155,7 +2161,7 @@ class MQTTPublisher:
         # Only event-driven fields that change on status transitions are included.
         device_status_config = {
             "name": "Modem Status",
-            "unique_id": "sms_gateway_modem_status",
+            "unique_id": f"{self.device_id}_modem_status",
             "state_topic": f"{self.topic_prefix}/device_status/state",
             "value_template": "{{ value_json.status }}",
             "json_attributes_topic": f"{self.topic_prefix}/device_status/state",
@@ -2168,7 +2174,7 @@ class MQTTPublisher:
         # SMS Sent Counter sensor
         sms_counter_config = {
             "name": "SMS Sent Count",
-            "unique_id": "sms_gateway_sent_count",
+            "unique_id": f"{self.device_id}_sent_count",
             "state_topic": f"{self.topic_prefix}/sms_counter/state",
             "value_template": "{{ value_json.count }}",
             "icon": "mdi:counter",
@@ -2181,7 +2187,7 @@ class MQTTPublisher:
         # SMS Received Counter sensor
         sms_received_counter_config = {
             "name": "SMS Received Count",
-            "unique_id": "sms_gateway_received_count",
+            "unique_id": f"{self.device_id}_received_count",
             "state_topic": f"{self.topic_prefix}/sms_received_counter/state",
             "value_template": "{{ value_json.count }}",
             "icon": "mdi:message-badge",
@@ -2197,7 +2203,7 @@ class MQTTPublisher:
         # Reset sent counter button
         reset_counter_button_config = {
             "name": "Reset SMS Sent Counter",
-            "unique_id": "sms_gateway_reset_counter",
+            "unique_id": f"{self.device_id}_reset_counter",
             "command_topic": f"{self.topic_prefix}/reset_counter_button",
             "payload_press": "PRESS",
             "icon": "mdi:restart",
@@ -2208,7 +2214,7 @@ class MQTTPublisher:
         # Reset received counter button
         reset_received_counter_button_config = {
             "name": "Reset SMS Received Counter",
-            "unique_id": "sms_gateway_reset_received_counter",
+            "unique_id": f"{self.device_id}_reset_received_counter",
             "command_topic": f"{self.topic_prefix}/reset_received_counter_button",
             "payload_press": "PRESS",
             "icon": "mdi:restart",
@@ -2219,7 +2225,7 @@ class MQTTPublisher:
         # Delete all SMS button
         delete_all_sms_button_config = {
             "name": "Delete All SMS",
-            "unique_id": "sms_gateway_delete_all_sms",
+            "unique_id": f"{self.device_id}_delete_all_sms",
             "command_topic": f"{self.topic_prefix}/delete_all_sms_button",
             "payload_press": "PRESS",
             "icon": "mdi:delete-sweep",
@@ -2230,7 +2236,7 @@ class MQTTPublisher:
         # Clear delivery reports button
         clear_delivery_reports_button_config = {
             "name": "Clear Delivery Reports",
-            "unique_id": "sms_gateway_clear_delivery_reports",
+            "unique_id": f"{self.device_id}_clear_delivery_reports",
             "command_topic": f"{self.topic_prefix}/clear_delivery_reports_button",
             "payload_press": "PRESS",
             "icon": "mdi:email-remove",
@@ -2241,7 +2247,7 @@ class MQTTPublisher:
         # Modem IMEI sensor
         modem_imei_config = {
             "name": "Modem IMEI",
-            "unique_id": "sms_gateway_modem_imei",
+            "unique_id": f"{self.device_id}_modem_imei",
             "state_topic": f"{self.topic_prefix}/modem_info/state",
             "value_template": "{{ value_json.IMEI }}",
             "icon": "mdi:identifier",
@@ -2252,7 +2258,7 @@ class MQTTPublisher:
         # Modem Model sensor
         modem_model_config = {
             "name": "Modem Model",
-            "unique_id": "sms_gateway_modem_model",
+            "unique_id": f"{self.device_id}_modem_model",
             "state_topic": f"{self.topic_prefix}/modem_info/state",
             "value_template": "{{ value_json.Manufacturer }} {{ value_json.Model }}",
             "icon": "mdi:cellphone",
@@ -2263,7 +2269,7 @@ class MQTTPublisher:
         # Modem Firmware sensor
         modem_firmware_config = {
             "name": "Modem Firmware",
-            "unique_id": "sms_gateway_modem_firmware",
+            "unique_id": f"{self.device_id}_modem_firmware",
             "state_topic": f"{self.topic_prefix}/modem_info/state",
             "value_template": "{{ value_json.Firmware }}",
             "icon": "mdi:chip",
@@ -2275,7 +2281,7 @@ class MQTTPublisher:
         # SIM IMSI sensor
         sim_imsi_config = {
             "name": "SIM IMSI",
-            "unique_id": "sms_gateway_sim_imsi",
+            "unique_id": f"{self.device_id}_sim_imsi",
             "state_topic": f"{self.topic_prefix}/sim_info/state",
             "value_template": "{{ value_json.IMSI }}",
             "icon": "mdi:sim",
@@ -2286,7 +2292,7 @@ class MQTTPublisher:
         # SMS Capacity sensor
         sms_capacity_config = {
             "name": "SMS Storage Used",
-            "unique_id": "sms_gateway_sms_capacity",
+            "unique_id": f"{self.device_id}_sms_capacity",
             "state_topic": f"{self.topic_prefix}/sms_capacity/state",
             "value_template": "{{ value_json.SIMUsed }}",
             "json_attributes_topic": f"{self.topic_prefix}/sms_capacity/state",
@@ -2302,7 +2308,7 @@ class MQTTPublisher:
 
         balance_account_config = {
             "name": "Account Balance",
-            "unique_id": "sms_gateway_account_balance",
+            "unique_id": f"{self.device_id}_account_balance",
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.account_balance }}",
             "device_class": "monetary",
@@ -2315,7 +2321,7 @@ class MQTTPublisher:
 
         balance_data_config = {
             "name": "Data Remaining",
-            "unique_id": "sms_gateway_data_remaining",
+            "unique_id": f"{self.device_id}_data_remaining",
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.data_remaining }}",
             "device_class": "data_size",
@@ -2328,7 +2334,7 @@ class MQTTPublisher:
 
         balance_minutes_config = {
             "name": "Minutes Remaining",
-            "unique_id": "sms_gateway_minutes_remaining",
+            "unique_id": f"{self.device_id}_minutes_remaining",
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.minutes_remaining }}",
             "unit_of_measurement": "min",
@@ -2341,7 +2347,7 @@ class MQTTPublisher:
 
         balance_messages_config = {
             "name": "Messages Remaining",
-            "unique_id": "sms_gateway_messages_remaining",
+            "unique_id": f"{self.device_id}_messages_remaining",
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.messages_remaining }}",
             "unit_of_measurement": "messages",
@@ -2353,7 +2359,7 @@ class MQTTPublisher:
 
         balance_expiry_config = {
             "name": "Plan Expiry Date",
-            "unique_id": "sms_gateway_plan_expiry",
+            "unique_id": f"{self.device_id}_plan_expiry",
             "state_topic": f"{self.topic_prefix}/balance/state",
             "value_template": "{{ value_json.plan_expiry }}",
             "device_class": "date",
@@ -2362,97 +2368,127 @@ class MQTTPublisher:
             **AVAILABILITY_CONFIG,
         }
 
-        # Publish discovery configs - all using consistent node_id "sms_gateway" for proper grouping
+        # Publish discovery configs - all using consistent node_id from device_id for proper grouping
         discoveries = [
             # Signal sensors
-            ("homeassistant/sensor/sms_gateway/signal/config", signal_config),
-            ("homeassistant/sensor/sms_gateway/signal_dbm/config", signal_dbm_config),
-            ("homeassistant/sensor/sms_gateway/ber/config", ber_config),
-            # Network sensors
-            ("homeassistant/sensor/sms_gateway/network/config", network_config),
+            (f"homeassistant/sensor/{self.device_id}/signal/config", signal_config),
             (
-                "homeassistant/sensor/sms_gateway/network_state/config",
+                f"homeassistant/sensor/{self.device_id}/signal_dbm/config",
+                signal_dbm_config,
+            ),
+            (f"homeassistant/sensor/{self.device_id}/ber/config", ber_config),
+            # Network sensors
+            (f"homeassistant/sensor/{self.device_id}/network/config", network_config),
+            (
+                f"homeassistant/sensor/{self.device_id}/network_state/config",
                 network_state_config,
             ),
             (
-                "homeassistant/sensor/sms_gateway/network_code/config",
+                f"homeassistant/sensor/{self.device_id}/network_code/config",
                 network_code_config,
             ),
-            ("homeassistant/sensor/sms_gateway/cid/config", cid_config),
-            ("homeassistant/sensor/sms_gateway/lac/config", lac_config),
-            ("homeassistant/sensor/sms_gateway/packet_lac/config", packet_lac_config),
+            (f"homeassistant/sensor/{self.device_id}/cid/config", cid_config),
+            (f"homeassistant/sensor/{self.device_id}/lac/config", lac_config),
             (
-                "homeassistant/sensor/sms_gateway/network_type/config",
+                f"homeassistant/sensor/{self.device_id}/packet_lac/config",
+                packet_lac_config,
+            ),
+            (
+                f"homeassistant/sensor/{self.device_id}/network_type/config",
                 network_type_config,
             ),
             # SMS sensors
-            ("homeassistant/sensor/sms_gateway/last_sms/config", sms_config),
+            (f"homeassistant/sensor/{self.device_id}/last_sms/config", sms_config),
             (
-                "homeassistant/sensor/sms_gateway/last_sms_sender/config",
+                f"homeassistant/sensor/{self.device_id}/last_sms_sender/config",
                 sms_sender_config,
             ),
-            ("homeassistant/sensor/sms_gateway/send_status/config", send_status_config),
             (
-                "homeassistant/sensor/sms_gateway/delete_status/config",
+                f"homeassistant/sensor/{self.device_id}/send_status/config",
+                send_status_config,
+            ),
+            (
+                f"homeassistant/sensor/{self.device_id}/delete_status/config",
                 delete_status_config,
             ),
             (
-                "homeassistant/sensor/sms_gateway/delivery_status/config",
+                f"homeassistant/sensor/{self.device_id}/delivery_status/config",
                 delivery_report_config,
             ),
-            ("homeassistant/sensor/sms_gateway/sent_count/config", sms_counter_config),
             (
-                "homeassistant/sensor/sms_gateway/received_count/config",
+                f"homeassistant/sensor/{self.device_id}/sent_count/config",
+                sms_counter_config,
+            ),
+            (
+                f"homeassistant/sensor/{self.device_id}/received_count/config",
                 sms_received_counter_config,
             ),
             (
-                "homeassistant/sensor/sms_gateway/sms_capacity/config",
+                f"homeassistant/sensor/{self.device_id}/sms_capacity/config",
                 sms_capacity_config,
             ),
             # Modem/SIM sensors
             (
-                "homeassistant/sensor/sms_gateway/modem_status/config",
+                f"homeassistant/sensor/{self.device_id}/modem_status/config",
                 device_status_config,
             ),
-            ("homeassistant/sensor/sms_gateway/modem_imei/config", modem_imei_config),
-            ("homeassistant/sensor/sms_gateway/modem_model/config", modem_model_config),
             (
-                "homeassistant/sensor/sms_gateway/modem_firmware/config",
+                f"homeassistant/sensor/{self.device_id}/modem_imei/config",
+                modem_imei_config,
+            ),
+            (
+                f"homeassistant/sensor/{self.device_id}/modem_model/config",
+                modem_model_config,
+            ),
+            (
+                f"homeassistant/sensor/{self.device_id}/modem_firmware/config",
                 modem_firmware_config,
             ),
-            ("homeassistant/sensor/sms_gateway/sim_imsi/config", sim_imsi_config),
+            (f"homeassistant/sensor/{self.device_id}/sim_imsi/config", sim_imsi_config),
             # Controls
-            ("homeassistant/button/sms_gateway/send_button/config", button_config),
             (
-                "homeassistant/button/sms_gateway/send_flash_button/config",
+                f"homeassistant/button/{self.device_id}/send_button/config",
+                button_config,
+            ),
+            (
+                f"homeassistant/button/{self.device_id}/send_flash_button/config",
                 flash_button_config,
             ),
             (
-                "homeassistant/button/sms_gateway/reset_counter/config",
+                f"homeassistant/button/{self.device_id}/reset_counter/config",
                 reset_counter_button_config,
             ),
             (
-                "homeassistant/button/sms_gateway/reset_received_counter/config",
+                f"homeassistant/button/{self.device_id}/reset_received_counter/config",
                 reset_received_counter_button_config,
             ),
             (
-                "homeassistant/button/sms_gateway/delete_all_sms/config",
+                f"homeassistant/button/{self.device_id}/delete_all_sms/config",
                 delete_all_sms_button_config,
             ),
             (
-                "homeassistant/button/sms_gateway/clear_delivery_reports/config",
+                f"homeassistant/button/{self.device_id}/clear_delivery_reports/config",
                 clear_delivery_reports_button_config,
             ),
             (
-                "homeassistant/button/sms_gateway/send_ussd_button/config",
+                f"homeassistant/button/{self.device_id}/send_ussd_button/config",
                 ussd_button_config,
             ),
-            ("homeassistant/text/sms_gateway/phone_number/config", phone_text_config),
-            ("homeassistant/text/sms_gateway/message_text/config", message_text_config),
-            ("homeassistant/text/sms_gateway/ussd_code/config", ussd_code_text_config),
+            (
+                f"homeassistant/text/{self.device_id}/phone_number/config",
+                phone_text_config,
+            ),
+            (
+                f"homeassistant/text/{self.device_id}/message_text/config",
+                message_text_config,
+            ),
+            (
+                f"homeassistant/text/{self.device_id}/ussd_code/config",
+                ussd_code_text_config,
+            ),
             # USSD response sensor
             (
-                "homeassistant/sensor/sms_gateway/ussd_response/config",
+                f"homeassistant/sensor/{self.device_id}/ussd_response/config",
                 ussd_response_config,
             ),
         ]
@@ -2462,23 +2498,23 @@ class MQTTPublisher:
             discoveries.extend(
                 [
                     (
-                        "homeassistant/sensor/sms_gateway/account_balance/config",
+                        f"homeassistant/sensor/{self.device_id}/account_balance/config",
                         balance_account_config,
                     ),
                     (
-                        "homeassistant/sensor/sms_gateway/data_remaining/config",
+                        f"homeassistant/sensor/{self.device_id}/data_remaining/config",
                         balance_data_config,
                     ),
                     (
-                        "homeassistant/sensor/sms_gateway/minutes_remaining/config",
+                        f"homeassistant/sensor/{self.device_id}/minutes_remaining/config",
                         balance_minutes_config,
                     ),
                     (
-                        "homeassistant/sensor/sms_gateway/messages_remaining/config",
+                        f"homeassistant/sensor/{self.device_id}/messages_remaining/config",
                         balance_messages_config,
                     ),
                     (
-                        "homeassistant/sensor/sms_gateway/plan_expiry/config",
+                        f"homeassistant/sensor/{self.device_id}/plan_expiry/config",
                         balance_expiry_config,
                     ),
                 ]
@@ -2490,7 +2526,7 @@ class MQTTPublisher:
             sms_cost_currency = self.config.get("sms_cost_currency", "CZK")
             sms_cost_config = {
                 "name": "SMS Total Cost",
-                "unique_id": "sms_gateway_total_cost",
+                "unique_id": f"{self.device_id}_total_cost",
                 "state_topic": f"{self.topic_prefix}/sms_counter/state",
                 "value_template": "{{ value_json.cost }}",
                 "icon": "mdi:cash",
@@ -2501,7 +2537,10 @@ class MQTTPublisher:
                 **AVAILABILITY_CONFIG,
             }
             discoveries.append(
-                ("homeassistant/sensor/sms_gateway/total_cost/config", sms_cost_config)
+                (
+                    f"homeassistant/sensor/{self.device_id}/total_cost/config",
+                    sms_cost_config,
+                )
             )
 
         # Add call monitoring sensors if enabled
@@ -2509,7 +2548,7 @@ class MQTTPublisher:
             # Binary sensor - Incoming Call (real-time ringing detection)
             incoming_call_config = {
                 "name": "Incoming Call",
-                "unique_id": "sms_gateway_incoming_call",
+                "unique_id": f"{self.device_id}_incoming_call",
                 "state_topic": f"{self.topic_prefix}/incoming_call/state",
                 "payload_on": "ON",
                 "payload_off": "OFF",
@@ -2524,7 +2563,7 @@ class MQTTPublisher:
             # Sensor - Last Missed Call (with extended attributes)
             missed_call_config = {
                 "name": "Last Missed Call",
-                "unique_id": "sms_gateway_last_missed_call",
+                "unique_id": f"{self.device_id}_last_missed_call",
                 "state_topic": f"{self.topic_prefix}/missed_call/state",
                 "value_template": "{{ value_json.Number }}",
                 "json_attributes_topic": f"{self.topic_prefix}/missed_call/state",
@@ -2536,11 +2575,11 @@ class MQTTPublisher:
             discoveries.extend(
                 [
                     (
-                        "homeassistant/binary_sensor/sms_gateway/incoming_call/config",
+                        f"homeassistant/binary_sensor/{self.device_id}/incoming_call/config",
                         incoming_call_config,
                     ),
                     (
-                        "homeassistant/sensor/sms_gateway/last_missed_call/config",
+                        f"homeassistant/sensor/{self.device_id}/last_missed_call/config",
                         missed_call_config,
                     ),
                 ]

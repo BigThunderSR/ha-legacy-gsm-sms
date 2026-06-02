@@ -321,6 +321,7 @@ def home():
     <head>
         <title>SMS Gammu Gateway</title>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
             body { 
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

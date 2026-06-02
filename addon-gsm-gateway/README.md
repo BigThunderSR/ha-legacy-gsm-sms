@@ -141,14 +141,15 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 
 ### MQTT Settings
 
-| Option              | Default                            | Description                 |
-| ------------------- | ---------------------------------- | --------------------------- |
-| `mqtt_enabled`      | `true`                             | Enable MQTT integration     |
-| `mqtt_host`         | `core-mosquitto`                   | MQTT broker hostname        |
-| `mqtt_port`         | `1883`                             | MQTT broker port            |
-| `mqtt_username`     | `""`                               | MQTT username (if required) |
-| `mqtt_password`     | `""`                               | MQTT password (if required) |
-| `mqtt_topic_prefix` | `homeassistant/sensor/sms_gateway` | MQTT topic prefix           |
+| Option              | Default                            | Description                                                                    |
+| ------------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
+| `mqtt_enabled`      | `true`                             | Enable MQTT integration                                                        |
+| `mqtt_host`         | `core-mosquitto`                   | MQTT broker hostname                                                           |
+| `mqtt_port`         | `1883`                             | MQTT broker port                                                               |
+| `mqtt_username`     | `""`                               | MQTT username (if required)                                                    |
+| `mqtt_password`     | `""`                               | MQTT password (if required)                                                    |
+| `mqtt_topic_prefix` | `homeassistant/sensor/sms_gateway` | MQTT topic prefix                                                              |
+| `mqtt_device_id`    | `sms_gateway`                      | Device identifier for multi-instance support (lowercase, numbers, underscores) |
 
 ### SMS Settings
 

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.19.0-test] - 2026-06-02
+
+### Added
+
+- **Configurable MQTT Device ID** (`mqtt_device_id` option)
+  - Allows running multiple gateway instances without entity conflicts
+  - All 42 unique IDs and discovery topics use the configured device ID
+  - Default: `sms_gateway` (backward compatible)
+- **Viewport meta tag** in web UI for improved mobile display
+
+### Changed
+
+- **Password fields** now use proper masked input types in the add-on configuration UI
+  - `pin`: `str?` → `password?`
+  - `password`: `str` → `password`
+  - `mqtt_password`: `str?` → `password?`
+
 ## [2.18.11-test] - 2026-03-03
 
 ### Fixed

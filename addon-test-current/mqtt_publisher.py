@@ -2737,14 +2737,21 @@ class MQTTPublisher:
         # Include history in published data
         sms_data["history"] = self.sms_history.get_history()
 
+        # Sanitize: bytes values (undecoded text/number) would crash
+        # json.dumps with "Object of type bytes is not JSON serializable"
+        safe_data = {
+            k: (v.decode("utf-8", errors="replace") if isinstance(v, bytes) else v)
+            for k, v in sms_data.items()
+        }
+
         topic = f"{self.topic_prefix}/sms/state"
-        self.client.publish(topic, json.dumps(sms_data), qos=1, retain=True)
+        self.client.publish(topic, json.dumps(safe_data), qos=1, retain=True)
 
         # Fire Home Assistant event for reliable automation triggering
         self.fire_ha_event(sms_data)
 
         logger.info(
-            f"📡 Published SMS to MQTT: {sms_data.get('Number', 'Unknown')} -> {sms_data.get('Text', '')}"
+            f"📡 Published SMS to MQTT: {safe_data.get('Number', 'Unknown')} -> {safe_data.get('Text', '')}"
         )
 
     def fire_ha_event(self, sms_data: Dict[str, Any]):
@@ -4475,6 +4482,15 @@ class MQTTPublisher:
             # Process all unread SMS
             for sms in all_sms:
                 if sms.get("State") == "UnRead":
+                    # Skip incomplete multipart SMS — wait for all parts to arrive
+                    if not sms.get("Complete", True):
+                        logger.info(
+                            f"⏳ Incomplete multipart SMS from {sms.get('Number', 'Unknown')} "
+                            f"({sms.get('PartsReceived')}/{sms.get('PartsExpected')} parts) "
+                            f"- waiting for the rest"
+                        )
+                        continue
+
                     sms_copy = sms.copy()
                     sms_copy.pop("Locations", None)
 

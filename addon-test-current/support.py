@@ -113,11 +113,26 @@ def retrieveAllSms(machine):
         for sms in allSms:
             smsPart = sms[0]
 
+            # Multipart completeness check: each part carries UDH info with
+            # AllParts = total expected parts.  If not all parts have arrived
+            # yet, mark the message as incomplete so callers can decide to
+            # wait rather than publishing/deleting a truncated message.
+            all_parts = 0
+            for part in sms:
+                udh = part.get("UDH") or {}
+                part_total = udh.get("AllParts", 0) or 0
+                if part_total > all_parts:
+                    all_parts = part_total
+            complete = (all_parts <= 1) or (len(sms) >= all_parts)
+
             result = {
                 "Date": str(smsPart["DateTime"]),
                 "Number": smsPart["Number"],
                 "State": smsPart["State"],
                 "Locations": [smsPart["Location"] for smsPart in sms],
+                "Complete": complete,
+                "PartsReceived": len(sms),
+                "PartsExpected": all_parts if all_parts > 1 else 1,
             }
 
             # Try to decode SMS - this may fail for MMS notifications or corrupted messages

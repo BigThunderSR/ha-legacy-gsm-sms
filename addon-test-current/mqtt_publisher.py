@@ -3879,6 +3879,19 @@ class MQTTPublisher:
                     # deleting completed multipart SMS from the modem.
                     current_count -= recheck_deleted
 
+                    # Clean up stale entries for SMS no longer on the modem
+                    # (e.g., externally deleted, SIM cleared, modem reset)
+                    if pending_incomplete and all_sms:
+                        current_keys = {
+                            (s.get("Number"), s.get("Date")) for s in all_sms
+                        }
+                        stale = [k for k in pending_incomplete if k not in current_keys]
+                        for k in stale:
+                            pending_incomplete.pop(k)
+                            logger.debug(
+                                f"🧹 Cleared stale pending multipart entry: {k[0]}"
+                            )
+
                     if first_run:
                         # On first run, publish only unread SMS and process delivery reports
                         logger.info(

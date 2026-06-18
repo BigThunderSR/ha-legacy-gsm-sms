@@ -2,8 +2,8 @@ pre-commit>=4.6.0
 black>=26.5.1
 flake8>=7.3.0
 isort>=8.0.1
-pytest>=9.0.3
-pytest-homeassistant-custom-component>=0.13.334
+pytest>=9.1.0
+pytest-homeassistant-custom-component>=0.13.339
 python-gammu==3.2.6
-beautifulsoup4>=4.14.3
+beautifulsoup4>=4.15.0
 requests>=2.34.2

@@ -2701,6 +2701,12 @@ class MQTTPublisher:
         if not self.connected:
             return
 
+        # Sanitize early: bytes values (undecoded text/number) would crash
+        # json.dumps and break string operations like keyword matching.
+        for k, v in sms_data.items():
+            if isinstance(v, bytes):
+                sms_data[k] = v.decode("utf-8", errors="replace")
+
         # Add timestamp
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
         sms_data["timestamp"] = timestamp
@@ -3555,6 +3561,15 @@ class MQTTPublisher:
 
             # Process each SMS
             for sms in all_sms:
+                # Skip incomplete multipart SMS — wait for all parts to arrive
+                if not sms.get("Complete", True):
+                    logger.info(
+                        f"⏳ Incomplete multipart SMS from {sms.get('Number', 'Unknown')} "
+                        f"({sms.get('PartsReceived')}/{sms.get('PartsExpected')} parts) "
+                        f"- waiting for the rest"
+                    )
+                    continue
+
                 self.publish_sms_received(sms)
 
                 # Auto-delete if enabled

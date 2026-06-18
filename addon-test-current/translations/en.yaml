@@ -80,6 +80,9 @@ configuration:
   sms_delivery_reports:
     name: Enable SMS Delivery Reports
     description: Request delivery reports for sent SMS (may incur carrier charges)
+  multipart_timeout_seconds:
+    name: Multipart SMS Timeout
+    description: Seconds to wait for remaining parts of a multipart SMS before publishing partial text (0 = wait forever). Helps with modems that stop delivering parts when unread SMS sit on the SIM.
   balance_sms_enabled:
     name: Enable Balance SMS Parsing
     description: Automatically parse account balance information from provider SMS messages

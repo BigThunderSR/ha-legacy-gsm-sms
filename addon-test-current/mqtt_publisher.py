@@ -3722,8 +3722,10 @@ class MQTTPublisher:
             last_sms_count = 0
             first_run = True
             # Track incomplete multipart SMS waiting for remaining parts.
-            # Key: (Number, Date) tuple, Value: parts seen so far.
+            # Key: (Number, Date) tuple
+            # Value: {"parts": count, "first_seen": time.time()}
             pending_incomplete = {}
+            multipart_timeout = int(self.config.get("multipart_timeout_seconds", 30))
 
             while self.connected and not self.disconnecting:
                 from support import deleteSms, retrieveAllSms
@@ -3843,25 +3845,50 @@ class MQTTPublisher:
                     continue
 
                 try:
-                    # Re-check previously incomplete multipart SMS for completeness.
-                    # Parts may arrive between polls without changing len(all_sms).
+                    # Re-check previously incomplete multipart SMS for completeness
+                    # or timeout. Parts may arrive between polls without changing
+                    # len(all_sms).
                     just_completed_keys = set()
                     recheck_deleted = 0
                     if pending_incomplete and all_sms:
                         for sms in all_sms:
                             key = (sms.get("Number"), sms.get("Date"))
-                            if key in pending_incomplete and sms.get("Complete", True):
-                                # Previously incomplete, now all parts arrived
+                            if key not in pending_incomplete:
+                                continue
+
+                            now_complete = sms.get("Complete", True)
+                            elapsed = (
+                                time.time() - pending_incomplete[key]["first_seen"]
+                            )
+                            timed_out = (
+                                multipart_timeout > 0 and elapsed >= multipart_timeout
+                            )
+
+                            if now_complete or timed_out:
+                                # Publish: either all parts arrived, or timeout
                                 pending_incomplete.pop(key, None)
                                 just_completed_keys.add(key)
                                 sms_copy = sms.copy()
                                 sms_copy.pop("Locations", None)
+                                if timed_out and not now_complete:
+                                    sms_copy["Text"] = (
+                                        f"[partial {sms.get('PartsReceived', '?')}"
+                                        f"/{sms.get('PartsExpected', '?')}] "
+                                        + sms_copy.get("Text", "")
+                                    )
+                                    logger.warning(
+                                        f"⏰ Multipart SMS from {sms.get('Number', 'Unknown')} "
+                                        f"timed out after {int(elapsed)}s "
+                                        f"({sms.get('PartsReceived')}/{sms.get('PartsExpected')} parts) "
+                                        f"- publishing partial text"
+                                    )
+                                else:
+                                    logger.info(
+                                        f"✅ Multipart SMS from {sms.get('Number', 'Unknown')} "
+                                        f"now complete ({sms.get('PartsExpected', '?')} parts), published"
+                                    )
                                 self.publish_sms_received(sms_copy)
-                                logger.info(
-                                    f"✅ Multipart SMS from {sms.get('Number', 'Unknown')} "
-                                    f"now complete ({sms.get('PartsExpected', '?')} parts), published"
-                                )
-                                # Auto-delete if enabled
+                                # Auto-delete if enabled (frees modem for next delivery)
                                 if self.config.get("auto_delete_read_sms", False):
                                     try:
                                         self.track_gammu_operation(
@@ -3872,11 +3899,12 @@ class MQTTPublisher:
                                         )
                                         recheck_deleted += 1
                                         logger.info(
-                                            f"🗑️ Auto-deleted completed multipart SMS from {sms.get('Number', 'Unknown')}"
+                                            f"🗑️ Auto-deleted {'partial' if timed_out else 'completed'} "
+                                            f"multipart SMS from {sms.get('Number', 'Unknown')}"
                                         )
                                     except Exception as e:
                                         logger.error(
-                                            f"Error auto-deleting completed multipart SMS: {e}"
+                                            f"Error auto-deleting multipart SMS: {e}"
                                         )
 
                     # After re-check deletes, current_count is stale (based on
@@ -3973,9 +4001,10 @@ class MQTTPublisher:
                                 # Skip incomplete multipart SMS — track and wait
                                 if not sms.get("Complete", True):
                                     key = (sms.get("Number"), sms.get("Date"))
-                                    pending_incomplete[key] = sms.get(
-                                        "PartsReceived", 1
-                                    )
+                                    pending_incomplete[key] = {
+                                        "parts": sms.get("PartsReceived", 1),
+                                        "first_seen": time.time(),
+                                    }
                                     logger.info(
                                         f"⏳ Incomplete multipart SMS from "
                                         f"{sms.get('Number', 'Unknown')} "
@@ -4089,9 +4118,10 @@ class MQTTPublisher:
                                         all_sms[i].get("Date"),
                                     )
                                     if key not in just_completed_keys:
-                                        pending_incomplete[key] = all_sms[i].get(
-                                            "PartsReceived", 1
-                                        )
+                                        pending_incomplete[key] = {
+                                            "parts": all_sms[i].get("PartsReceived", 1),
+                                            "first_seen": time.time(),
+                                        }
                                         logger.info(
                                             f"⏳ Incomplete multipart SMS from "
                                             f"{all_sms[i].get('Number', 'Unknown')} "

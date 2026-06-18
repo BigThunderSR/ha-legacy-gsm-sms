@@ -4211,6 +4211,7 @@ class MQTTPublisher:
                     # Re-check previously incomplete multipart SMS for completeness.
                     # Parts may arrive between polls without changing len(all_sms).
                     just_completed_keys = set()
+                    recheck_deleted = 0
                     if pending_incomplete and all_sms:
                         for sms in all_sms:
                             key = (sms.get("Number"), sms.get("Date"))
@@ -4234,6 +4235,7 @@ class MQTTPublisher:
                                             self.gammu_machine,
                                             sms,
                                         )
+                                        recheck_deleted += 1
                                         logger.info(
                                             f"🗑️ Auto-deleted completed multipart SMS from {sms.get('Number', 'Unknown')}"
                                         )
@@ -4242,18 +4244,47 @@ class MQTTPublisher:
                                             f"Error auto-deleting completed multipart SMS: {e}"
                                         )
 
+                    # After re-check deletes, current_count is stale (based on
+                    # pre-delete all_sms snapshot). Refresh from modem so
+                    # last_sms_count is set correctly at end of this cycle.
+                    if recheck_deleted > 0:
+                        try:
+                            capacity = self.track_gammu_operation(
+                                "GetSMSStatus",
+                                self.gammu_machine.GetSMSStatus,
+                            )
+                            current_count = capacity.get("SIMUsed", 0) + capacity.get(
+                                "PhoneUsed", 0
+                            )
+                            self.publish_sms_capacity(capacity)
+                            logger.info(
+                                f"📡 Refreshed SMS count after re-check delete: {current_count}"
+                            )
+                        except Exception as e:
+                            logger.warning(
+                                f"Could not refresh SMS count after re-check delete: {e}"
+                            )
+
                     # Clean up stale entries for SMS no longer on the modem
                     # (e.g., externally deleted, SIM cleared, modem reset)
-                    if pending_incomplete and all_sms:
-                        current_keys = {
-                            (s.get("Number"), s.get("Date")) for s in all_sms
-                        }
-                        stale = [k for k in pending_incomplete if k not in current_keys]
-                        for k in stale:
-                            pending_incomplete.pop(k)
+                    if pending_incomplete:
+                        if not all_sms:
+                            pending_incomplete.clear()
                             logger.debug(
-                                f"🧹 Cleared stale pending multipart entry: {k[0]}"
+                                "🧹 Modem empty; cleared all pending multipart entries"
                             )
+                        else:
+                            current_keys = {
+                                (s.get("Number"), s.get("Date")) for s in all_sms
+                            }
+                            stale = [
+                                k for k in pending_incomplete if k not in current_keys
+                            ]
+                            for k in stale:
+                                pending_incomplete.pop(k)
+                                logger.debug(
+                                    f"🧹 Cleared stale pending multipart entry: {k[0]}"
+                                )
 
                     if first_run:
                         # On first run, publish only unread SMS and process delivery reports

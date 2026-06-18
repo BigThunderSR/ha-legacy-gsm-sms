@@ -3846,10 +3846,7 @@ class MQTTPublisher:
                     if pending_incomplete and all_sms:
                         for sms in all_sms:
                             key = (sms.get("Number"), sms.get("Date"))
-                            if (
-                                key in pending_incomplete
-                                and sms.get("Complete", True)
-                            ):
+                            if key in pending_incomplete and sms.get("Complete", True):
                                 # Previously incomplete, now all parts arrived
                                 pending_incomplete.pop(key, None)
                                 just_completed_keys.add(key)

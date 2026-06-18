@@ -4089,6 +4089,9 @@ class MQTTPublisher:
             # Initial setup: Get all SMS and publish only unread ones
             last_sms_count = 0
             first_run = True
+            # Track incomplete multipart SMS waiting for remaining parts.
+            # Key: (Number, Date) tuple, Value: parts seen so far.
+            pending_incomplete = {}
 
             while self.connected and not self.disconnecting:
                 from support import deleteSms, retrieveAllSms
@@ -4154,6 +4157,9 @@ class MQTTPublisher:
                         "retrieveAllSms", retrieveAllSms, self.gammu_machine
                     )
                     current_count = len(all_sms)
+                    # snapshot_count: index bound for iterating all_sms (never
+                    # changes even if current_count is refreshed after deletes).
+                    snapshot_count = current_count
                     # Only log routine polling in debug mode to reduce log spam
                     if self.log_level == "debug":
                         logger.info(
@@ -4205,6 +4211,86 @@ class MQTTPublisher:
                     continue
 
                 try:
+                    # Re-check previously incomplete multipart SMS for completeness.
+                    # Parts may arrive between polls without changing len(all_sms).
+                    just_completed_keys = set()
+                    recheck_deleted = 0
+                    if pending_incomplete and all_sms:
+                        for sms in all_sms:
+                            key = (sms.get("Number"), sms.get("Date"))
+                            if key in pending_incomplete and sms.get("Complete", True):
+                                # Previously incomplete, now all parts arrived
+                                pending_incomplete.pop(key, None)
+                                just_completed_keys.add(key)
+                                sms_copy = sms.copy()
+                                sms_copy.pop("Locations", None)
+                                self.publish_sms_received(sms_copy)
+                                logger.info(
+                                    f"✅ Multipart SMS from {sms.get('Number', 'Unknown')} "
+                                    f"now complete ({sms.get('PartsExpected', '?')} parts), published"
+                                )
+                                # Auto-delete if enabled
+                                if self.config.get("auto_delete_read_sms", False):
+                                    try:
+                                        self.track_gammu_operation(
+                                            "deleteSms",
+                                            deleteSms,
+                                            self.gammu_machine,
+                                            sms,
+                                        )
+                                        recheck_deleted += 1
+                                        logger.info(
+                                            f"🗑️ Auto-deleted completed multipart SMS from {sms.get('Number', 'Unknown')}"
+                                        )
+                                    except Exception as e:
+                                        logger.error(
+                                            f"Error auto-deleting completed multipart SMS: {e}"
+                                        )
+
+                    # After re-check deletes, current_count is stale (based on
+                    # pre-delete all_sms snapshot). Refresh from modem so
+                    # last_sms_count is set correctly at end of this cycle.
+                    if recheck_deleted > 0:
+                        try:
+                            capacity = self.track_gammu_operation(
+                                "GetSMSStatus",
+                                self.gammu_machine.GetSMSStatus,
+                            )
+                            current_count = capacity.get("SIMUsed", 0) + capacity.get(
+                                "PhoneUsed", 0
+                            )
+                            self.publish_sms_capacity(capacity)
+                            logger.info(
+                                f"📡 Refreshed SMS count after re-check delete: {current_count}"
+                            )
+                        except Exception as e:
+                            # Best-effort fallback: subtract deleted count
+                            current_count = max(0, current_count - recheck_deleted)
+                            logger.warning(
+                                f"Could not refresh SMS count after re-check delete: {e}"
+                            )
+
+                    # Clean up stale entries for SMS no longer on the modem
+                    # (e.g., externally deleted, SIM cleared, modem reset)
+                    if pending_incomplete:
+                        if not all_sms:
+                            pending_incomplete.clear()
+                            logger.debug(
+                                "🧹 Modem empty; cleared all pending multipart entries"
+                            )
+                        else:
+                            current_keys = {
+                                (s.get("Number"), s.get("Date")) for s in all_sms
+                            }
+                            stale = [
+                                k for k in pending_incomplete if k not in current_keys
+                            ]
+                            for k in stale:
+                                pending_incomplete.pop(k)
+                                logger.debug(
+                                    f"🧹 Cleared stale pending multipart entry: {k[0]}"
+                                )
+
                     if first_run:
                         # On first run, publish only unread SMS and process delivery reports
                         logger.info(
@@ -4252,6 +4338,20 @@ class MQTTPublisher:
 
                             # Publish unread regular SMS
                             if sms.get("State") == "UnRead":
+                                # Skip incomplete multipart SMS — track and wait
+                                if not sms.get("Complete", True):
+                                    key = (sms.get("Number"), sms.get("Date"))
+                                    pending_incomplete[key] = sms.get(
+                                        "PartsReceived", 1
+                                    )
+                                    logger.info(
+                                        f"⏳ Incomplete multipart SMS from "
+                                        f"{sms.get('Number', 'Unknown')} "
+                                        f"({sms.get('PartsReceived')}/{sms.get('PartsExpected')} parts) "
+                                        f"- waiting for the rest"
+                                    )
+                                    continue
+
                                 sms_copy = sms.copy()
                                 sms_copy.pop("Locations", None)
                                 self.publish_sms_received(sms_copy)
@@ -4293,17 +4393,17 @@ class MQTTPublisher:
 
                         last_sms_count = current_count
                         first_run = False
-                    elif current_count > last_sms_count:
+                    elif snapshot_count > last_sms_count:
                         # On subsequent runs, publish all new SMS
                         logger.info(
-                            f"📱 Detected {current_count - last_sms_count} new SMS messages"
+                            f"📱 Detected {snapshot_count - last_sms_count} new SMS messages"
                         )
 
                         deleted_count = 0
                         auto_delete = self.config.get("auto_delete_read_sms", False)
 
                         # Process new SMS (from the end, newest first)
-                        for i in range(last_sms_count, current_count):
+                        for i in range(last_sms_count, snapshot_count):
                             if i < len(all_sms):
                                 sms = all_sms[i].copy()
                                 sms.pop("Locations", None)
@@ -4349,6 +4449,29 @@ class MQTTPublisher:
                                                 f"Error deleting delivery report: {e}"
                                             )
                                         continue  # Skip regular SMS processing
+
+                                # Skip incomplete multipart SMS — track and wait
+                                if not all_sms[i].get("Complete", True):
+                                    key = (
+                                        all_sms[i].get("Number"),
+                                        all_sms[i].get("Date"),
+                                    )
+                                    if key not in just_completed_keys:
+                                        pending_incomplete[key] = all_sms[i].get(
+                                            "PartsReceived", 1
+                                        )
+                                        logger.info(
+                                            f"⏳ Incomplete multipart SMS from "
+                                            f"{all_sms[i].get('Number', 'Unknown')} "
+                                            f"({all_sms[i].get('PartsReceived')}/{all_sms[i].get('PartsExpected')} parts) "
+                                            f"- waiting for the rest"
+                                        )
+                                    continue
+
+                                # Skip if already published via re-check above
+                                key = (sms.get("Number"), sms.get("Date"))
+                                if key in just_completed_keys:
+                                    continue
 
                                 # Publish regular SMS to MQTT
                                 self.publish_sms_received(sms)

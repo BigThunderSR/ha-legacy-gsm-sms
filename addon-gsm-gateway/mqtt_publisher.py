@@ -4294,6 +4294,20 @@ class MQTTPublisher:
 
                             # Publish unread regular SMS
                             if sms.get("State") == "UnRead":
+                                # Skip incomplete multipart SMS — track and wait
+                                if not sms.get("Complete", True):
+                                    key = (sms.get("Number"), sms.get("Date"))
+                                    pending_incomplete[key] = sms.get(
+                                        "PartsReceived", 1
+                                    )
+                                    logger.info(
+                                        f"⏳ Incomplete multipart SMS from "
+                                        f"{sms.get('Number', 'Unknown')} "
+                                        f"({sms.get('PartsReceived')}/{sms.get('PartsExpected')} parts) "
+                                        f"- waiting for the rest"
+                                    )
+                                    continue
+
                                 sms_copy = sms.copy()
                                 sms_copy.pop("Locations", None)
                                 self.publish_sms_received(sms_copy)

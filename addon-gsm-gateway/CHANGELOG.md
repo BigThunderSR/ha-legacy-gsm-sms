@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.19.1] - 2026-06-18
+
+### Fixed
+
+- **Multipart SMS monitor loop** — split `snapshot_count` from `current_count` to prevent same-poll SMS loss; refresh `current_count` from modem after re-check deletes; clean up stale `pending_incomplete` entries (#119)
+- **Incomplete multipart SMS handling** — added completeness check to `first_run` path; adjust `current_count` after re-check auto-delete (#116)
+- **Bytes crash in SMS events** — move bytes sanitization earlier in `publish_sms_received`; pass sanitized data to `fire_ha_event` to prevent `bytes` serialization crash (#111)
+
 ## [2.19.0] - 2026-06-02
 
 ### Added

@@ -2749,7 +2749,7 @@ class MQTTPublisher:
         self.client.publish(topic, json.dumps(safe_data), qos=1, retain=True)
 
         # Fire Home Assistant event for reliable automation triggering
-        self.fire_ha_event(sms_data)
+        self.fire_ha_event(safe_data)
 
         logger.info(
             f"📡 Published SMS to MQTT: {safe_data.get('Number', 'Unknown')} -> {safe_data.get('Text', '')}"

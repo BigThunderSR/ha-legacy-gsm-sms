@@ -3843,7 +3843,6 @@ class MQTTPublisher:
                     # Re-check previously incomplete multipart SMS for completeness.
                     # Parts may arrive between polls without changing len(all_sms).
                     just_completed_keys = set()
-                    recheck_deleted = 0
                     if pending_incomplete and all_sms:
                         for sms in all_sms:
                             key = (sms.get("Number"), sms.get("Date"))
@@ -3867,7 +3866,6 @@ class MQTTPublisher:
                                             self.gammu_machine,
                                             sms,
                                         )
-                                        recheck_deleted += 1
                                         logger.info(
                                             f"🗑️ Auto-deleted completed multipart SMS from {sms.get('Number', 'Unknown')}"
                                         )
@@ -3875,9 +3873,6 @@ class MQTTPublisher:
                                         logger.error(
                                             f"Error auto-deleting completed multipart SMS: {e}"
                                         )
-                    # Adjust count so last_sms_count stays in sync after
-                    # deleting completed multipart SMS from the modem.
-                    current_count -= recheck_deleted
 
                     # Clean up stale entries for SMS no longer on the modem
                     # (e.g., externally deleted, SIM cleared, modem reset)

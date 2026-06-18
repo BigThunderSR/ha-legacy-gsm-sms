@@ -3789,6 +3789,9 @@ class MQTTPublisher:
                         "retrieveAllSms", retrieveAllSms, self.gammu_machine
                     )
                     current_count = len(all_sms)
+                    # snapshot_count: index bound for iterating all_sms (never
+                    # changes even if current_count is refreshed after deletes).
+                    snapshot_count = current_count
                     # Only log routine polling in debug mode to reduce log spam
                     if self.log_level == "debug":
                         logger.info(
@@ -3893,6 +3896,8 @@ class MQTTPublisher:
                                 f"📡 Refreshed SMS count after re-check delete: {current_count}"
                             )
                         except Exception as e:
+                            # Best-effort fallback: subtract deleted count
+                            current_count = max(0, current_count - recheck_deleted)
                             logger.warning(
                                 f"Could not refresh SMS count after re-check delete: {e}"
                             )
@@ -4020,17 +4025,17 @@ class MQTTPublisher:
 
                         last_sms_count = current_count
                         first_run = False
-                    elif current_count > last_sms_count:
+                    elif snapshot_count > last_sms_count:
                         # On subsequent runs, publish all new SMS
                         logger.info(
-                            f"📱 Detected {current_count - last_sms_count} new SMS messages"
+                            f"📱 Detected {snapshot_count - last_sms_count} new SMS messages"
                         )
 
                         deleted_count = 0
                         auto_delete = self.config.get("auto_delete_read_sms", False)
 
                         # Process new SMS (from the end, newest first)
-                        for i in range(last_sms_count, current_count):
+                        for i in range(last_sms_count, snapshot_count):
                             if i < len(all_sms):
                                 sms = all_sms[i].copy()
                                 sms.pop("Locations", None)

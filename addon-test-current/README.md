@@ -141,27 +141,28 @@ This add-on provides an enhanced SMS gateway solution for Home Assistant with ad
 
 ### MQTT Settings
 
-| Option              | Default                            | Description                                                                    |
-| ------------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
-| `mqtt_enabled`      | `true`                             | Enable MQTT integration                                                        |
-| `mqtt_host`         | `core-mosquitto`                   | MQTT broker hostname                                                           |
-| `mqtt_port`         | `1883`                             | MQTT broker port                                                               |
-| `mqtt_username`     | `""`                               | MQTT username (if required)                                                    |
-| `mqtt_password`     | `""`                               | MQTT password (if required)                                                    |
-| `mqtt_topic_prefix` | `homeassistant/sensor/sms_gateway` | MQTT topic prefix                                                              |
+| Option              | Default                            | Description                                                                                 |
+| ------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| `mqtt_enabled`      | `true`                             | Enable MQTT integration                                                                     |
+| `mqtt_host`         | `core-mosquitto`                   | MQTT broker hostname                                                                        |
+| `mqtt_port`         | `1883`                             | MQTT broker port                                                                            |
+| `mqtt_username`     | `""`                               | MQTT username (if required)                                                                 |
+| `mqtt_password`     | `""`                               | MQTT password (if required)                                                                 |
+| `mqtt_topic_prefix` | `homeassistant/sensor/sms_gateway` | MQTT topic prefix                                                                           |
 | `mqtt_device_id`    | `sms_gateway`                      | Device identifier for multi-instance support (lowercase, numbers, underscores) (🆕 v2.19.0) |
 
 ### SMS Settings
 
-| Option                     | Default | Description                                             |
-| -------------------------- | ------- | ------------------------------------------------------- |
-| `sms_monitoring_enabled`   | `true`  | Enable SMS monitoring                                   |
-| `sms_check_interval`       | `10`    | Check for new SMS every X seconds                       |
-| `auto_delete_read_sms`     | `true`  | Auto-delete SMS after reading                           |
-| `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100)                |
-| `sms_delivery_reports`     | `false` | Enable SMS delivery reports (may incur carrier charges) |
-| `sms_cost_per_message`     | `0.0`   | Cost per SMS (0 = disabled)                             |
-| `sms_cost_currency`        | `USD`   | Currency for cost tracking                              |
+| Option                      | Default | Description                                             |
+| --------------------------- | ------- | ------------------------------------------------------- |
+| `sms_monitoring_enabled`    | `true`  | Enable SMS monitoring                                   |
+| `sms_check_interval`        | `10`    | Check for new SMS every X seconds                       |
+| `auto_delete_read_sms`      | `true`  | Auto-delete SMS after reading                           |
+| `sms_history_max_messages`  | `10`    | Number of SMS to keep in history (1-100)                |
+| `sms_delivery_reports`      | `false` | Enable SMS delivery reports (may incur carrier charges) |
+| `multipart_timeout_seconds` | `30`    | Timeout for incomplete multipart SMS (0 = wait forever) |
+| `sms_cost_per_message`      | `0.0`   | Cost per SMS (0 = disabled)                             |
+| `sms_cost_currency`         | `USD`   | Currency for cost tracking                              |
 
 ### Device Path Options
 

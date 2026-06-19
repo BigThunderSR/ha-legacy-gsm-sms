@@ -74,6 +74,9 @@ configuration:
   sms_delivery_reports:
     name: Bezorgingsrapporten inschakelen
     description: Bezorgingsrapporten aanvragen voor verzonden SMS (kan kosten met zich meebrengen)
+  multipart_timeout_seconds:
+    name: Multipart SMS Timeout
+    description: Seconds to wait for remaining parts of a multipart SMS before publishing partial text (0 = wait forever).
   balance_sms_enabled:
     name: Saldo SMS-analyse inschakelen
     description: Rekeningsaldo-informatie automatisch analyseren uit provider SMS-berichten

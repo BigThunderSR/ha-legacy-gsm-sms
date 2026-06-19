@@ -74,6 +74,9 @@ configuration:
   sms_delivery_reports:
     name: Povoliť potvrdenia o doručení
     description: Požadovať potvrdenia o doručení pre odoslané SMS (môže spôsobiť poplatky operátora)
+  multipart_timeout_seconds:
+    name: Multipart SMS Timeout
+    description: Seconds to wait for remaining parts of a multipart SMS before publishing partial text (0 = wait forever).
   balance_sms_enabled:
     name: Povoliť analýzu SMS zostatku
     description: Automaticky analyzovať informácie o zostatku účtu zo SMS poskytovateľa

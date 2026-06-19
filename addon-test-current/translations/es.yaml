@@ -74,6 +74,9 @@ configuration:
   sms_delivery_reports:
     name: Habilitar informes de entrega
     description: Solicitar informes de entrega para SMS enviados (puede generar cargos del operador)
+  multipart_timeout_seconds:
+    name: Multipart SMS Timeout
+    description: Seconds to wait for remaining parts of a multipart SMS before publishing partial text (0 = wait forever).
   balance_sms_enabled:
     name: Habilitar análisis de SMS de saldo
     description: Analizar automáticamente información de saldo de cuenta desde SMS del proveedor

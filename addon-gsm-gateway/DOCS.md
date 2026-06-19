@@ -129,32 +129,33 @@ curl -X POST http://192.168.1.x:5000/sms \
 
 ### MQTT Settings
 
-| Parameter                | Default                            | Description                                                                    |
-| ------------------------ | ---------------------------------- | ------------------------------------------------------------------------------ |
-| `mqtt_enabled`           | `true`                             | Enable MQTT integration                                                        |
-| `mqtt_host`              | `core-mosquitto`                   | MQTT broker hostname                                                           |
-| `mqtt_port`              | `1883`                             | MQTT broker port                                                               |
-| `mqtt_username`          | `""`                               | MQTT username (empty for no auth)                                              |
-| `mqtt_password`          | `""`                               | MQTT password (empty for no auth)                                              |
-| `mqtt_topic_prefix`      | `homeassistant/sensor/sms_gateway` | MQTT topic prefix                                                              |
+| Parameter                | Default                            | Description                                                                                 |
+| ------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| `mqtt_enabled`           | `true`                             | Enable MQTT integration                                                                     |
+| `mqtt_host`              | `core-mosquitto`                   | MQTT broker hostname                                                                        |
+| `mqtt_port`              | `1883`                             | MQTT broker port                                                                            |
+| `mqtt_username`          | `""`                               | MQTT username (empty for no auth)                                                           |
+| `mqtt_password`          | `""`                               | MQTT password (empty for no auth)                                                           |
+| `mqtt_topic_prefix`      | `homeassistant/sensor/sms_gateway` | MQTT topic prefix                                                                           |
 | `mqtt_device_id`         | `sms_gateway`                      | Device identifier for multi-instance support (lowercase, numbers, underscores) (🆕 v2.19.0) |
-| `sms_monitoring_enabled` | `true`                             | Detect incoming SMS automatically                                              |
-| `sms_check_interval`     | `5`                                | SMS check interval (5-300 seconds) (🆕 v2.1.8: min reduced to 5s)              |
-| `status_update_interval` | `300`                              | Status update interval (30-3600 seconds) - signal & network (🆕 v2.1.8)        |
+| `sms_monitoring_enabled` | `true`                             | Detect incoming SMS automatically                                                           |
+| `sms_check_interval`     | `5`                                | SMS check interval (5-300 seconds) (🆕 v2.1.8: min reduced to 5s)                           |
+| `status_update_interval` | `300`                              | Status update interval (30-3600 seconds) - signal & network (🆕 v2.1.8)                     |
 
 ### SMS Management Settings
 
-| Parameter                  | Default | Description                                                         |
-| -------------------------- | ------- | ------------------------------------------------------------------- |
-| `sms_cost_per_message`     | `0.0`   | Price per SMS (0 = cost tracking disabled)                          |
-| `sms_cost_currency`        | `USD`   | Currency code (EUR, USD, CZK, GBP, etc.)                            |
-| `auto_delete_read_sms`     | `true`  | Auto-delete SMS after reading (frees SIM space)                     |
-| `sms_history_max_messages` | `10`    | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                |
-| `sms_delivery_reports`     | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0) |
-| `log_level`                | `info`  | Logging level: `warning`, `info`, or `debug` (🆕 v2.1.8)            |
-| `auto_recovery`            | `true`  | Automatically recover from modem failures (🆕 v2.4.0)               |
-| `auto_restart_on_failure`  | `true`  | Auto-restart addon after 2 min of persistent failure (🆕 v2.10.0)   |
-| `modem_operation_delay`    | `0.3`   | Delay between modem commands in seconds (0.1-5.0) (🆕 v2.12.0)      |
+| Parameter                   | Default | Description                                                                                                     |
+| --------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| `sms_cost_per_message`      | `0.0`   | Price per SMS (0 = cost tracking disabled)                                                                      |
+| `sms_cost_currency`         | `USD`   | Currency code (EUR, USD, CZK, GBP, etc.)                                                                        |
+| `auto_delete_read_sms`      | `true`  | Auto-delete SMS after reading (frees SIM space)                                                                 |
+| `sms_history_max_messages`  | `10`    | Number of SMS to keep in history (1-100) (🆕 v2.1.0)                                                            |
+| `sms_delivery_reports`      | `false` | Enable SMS delivery reports - may incur carrier charges (🆕 v2.1.0)                                             |
+| `multipart_timeout_seconds` | `30`    | Seconds to wait for remaining multipart SMS parts before publishing partial text; 0 = wait forever (🆕 v2.20.0) |
+| `log_level`                 | `info`  | Logging level: `warning`, `info`, or `debug` (🆕 v2.1.8)                                                        |
+| `auto_recovery`             | `true`  | Automatically recover from modem failures (🆕 v2.4.0)                                                           |
+| `auto_restart_on_failure`   | `true`  | Auto-restart addon after 2 min of persistent failure (🆕 v2.10.0)                                               |
+| `modem_operation_delay`     | `0.3`   | Delay between modem commands in seconds (0.1-5.0) (🆕 v2.12.0)                                                  |
 
 ### Logging Levels (🆕 v2.1.8, Enhanced v2.2.1)
 

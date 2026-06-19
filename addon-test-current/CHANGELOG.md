@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.20.0-test] - 2026-06-18
+
+### Added
+
+- **`multipart_timeout_seconds` option** (default: 30, range: 0–300)
+  - Publishes partial multipart SMS with `[partial X/Y]` prefix after timeout
+  - Auto-deletes timed-out parts from modem (if auto_delete_read_sms enabled)
+  - Unblocks modems that stop accepting new SMS while incomplete parts sit on the SIM
+  - Set to `0` to wait forever (previous behavior)
+
 ## [2.19.1-test] - 2026-06-18
 
 ### Fixed

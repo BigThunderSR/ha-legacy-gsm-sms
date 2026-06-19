@@ -74,6 +74,9 @@ configuration:
   sms_delivery_reports:
     name: SMS-Zustellberichte aktivieren
     description: Zustellberichte für gesendete SMS anfordern (kann Gebühren verursachen)
+  multipart_timeout_seconds:
+    name: Multipart SMS Timeout
+    description: Seconds to wait for remaining parts of a multipart SMS before publishing partial text (0 = wait forever).
   balance_sms_enabled:
     name: Balance SMS-Analyse aktivieren
     description: Kontoguthaben-Informationen aus Provider-SMS automatisch analysieren

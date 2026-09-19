@@ -4,6 +4,6 @@ flake8>=7.3.0
 isort>=8.0.1
 pytest>=9.1.1
 pytest-homeassistant-custom-component>=0.13.357
-python-gammu==3.4.1
+python-gammu==3.5.0
 beautifulsoup4>=4.15.0
 requests>=2.34.2

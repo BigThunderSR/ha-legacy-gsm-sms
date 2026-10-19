@@ -80,6 +80,19 @@
         "javascript",
         "nvm"
       ]
+    },
+    {
+      "description": "Test Python must match the add-on's Alpine base image; bump manually with build.yaml",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchFileNames": [
+        ".github/workflows/test-addon.yml"
+      ],
+      "matchDepNames": [
+        "python"
+      ],
+      "enabled": false
     }
   ]
 }

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.0] - 2026-10-18
+
+### Changed
+
+- **Gammu 1.42.0 → 1.45.0 and python-gammu 3.2.4 → 3.5.0**, built from source in the image (Alpine and the HA wheel index only provide the older versions). Gammu 1.43–1.45 include many AT modem, SMS PDU and serial handling fixes.
+- ⚠️ The SMS date now includes the UTC offset reported by the SMS center, e.g. `2026-01-15 14:03:22+02:00` instead of `2026-01-15 14:03:22`. This affects the `date` field of the `sms_gateway_message_received` event, `Date` in the MQTT SMS payload, and the REST API. Update any templates or automations that parse it. The `timestamp` field is unchanged.
+
 ## [2.20.1] - 2026-10-18
 
 ### Changed

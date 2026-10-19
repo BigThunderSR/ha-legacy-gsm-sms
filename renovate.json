@@ -20,7 +20,35 @@
     ],
     "rangeStrategy": "bump"
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Gammu / python-gammu versions built from source in add-on Dockerfiles",
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+ARG \\w+_VERSION=(?<currentValue>\\S+)"
+      ]
+    }
+  ],
   "packageRules": [
+    {
+      "description": "Hashes can't be updated by Renovate; the build fails until they are",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "gammu/gammu",
+        "python-gammu"
+      ],
+      "addLabels": [
+        "gammu"
+      ],
+      "prBodyNotes": [
+        "\u26a0\ufe0f Update the matching `*_SHA256` ARG in both add-on Dockerfiles (`addon-gsm-gateway`, `addon-test-current`) before merging \u2014 the build fails on a hash mismatch. Get it with `curl -fsSL <url> | sha256sum` (Gammu: GitHub release tarball; python-gammu: sdist hash on PyPI)."
+      ]
+    },
     {
       "matchManagers": [
         "pip_requirements",

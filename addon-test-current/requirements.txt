@@ -1,4 +1,4 @@
-python-gammu==3.5.0
+# python-gammu is built in the Dockerfile (pinned version + sha256)
 flask
 flask-restx
 Flask-HTTPAuth

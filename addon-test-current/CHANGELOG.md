@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.0-test] - 2026-10-18
+
+### Changed
+
+- **Gammu 1.42.0 → 1.45.0 and python-gammu 3.2.4 → 3.5.0**, built from source in the image (Alpine only ships Gammu 1.42.0)
+- ⚠️ SMS `Date` now includes the UTC offset, e.g. `2026-10-18 14:03:22+02:00` instead of `2026-10-18 14:03:22`
+- First install/update builds Gammu on-device, so it takes longer than usual
+
 ## [2.20.0-test] - 2026-06-18
 
 ### Added

@@ -1,4 +1,4 @@
-python-gammu
+python-gammu==3.5.0
 flask
 flask-restx
 Flask-HTTPAuth

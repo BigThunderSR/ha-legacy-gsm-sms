@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.20.1] - 2026-10-18
+
+### Changed
+
+- **python-gammu 3.2.6 → 3.5.0** (rebuild picks up latest dependencies)
+  - Memory leak and memory-ownership fixes, stricter validation of malformed or oversized SMS data, better async worker error handling
+  - ⚠️ SMS `Date` (MQTT `date` attribute, HA event, REST API) now includes the UTC offset reported by the network, e.g. `2026-10-18 14:03:22+02:00` instead of `2026-10-18 14:03:22`. Update any templates or automations that parse this string.
+
 ## [2.20.0] - 2026-06-18
 
 ### Added

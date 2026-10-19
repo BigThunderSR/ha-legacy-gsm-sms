@@ -1,8 +1,34 @@
 # POC: Self-Hosted python-gammu Wheels for HACS Integration
 
 > **Status:** Internal proof-of-concept — NOT shipped to users.
-> **Date:** March 2026
+> **Date:** March 2026 (updated October 2026 — see [October 2026 Update](#october-2026-update))
 > **Decision:** Shelved. The add-on approach is the supported path forward. This document preserves the technical findings in case the decision is revisited.
+
+---
+
+## October 2026 Update
+
+The decision stays **shelved**. The original March findings below are kept unchanged as the historical record; this table shows what has changed since.
+
+| Topic                                                          | Before (March 2026)                                                      | After (October 2026)                                                                                                                                                                                                           |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Upstream activity                                              | "Project has minimal activity"                                           | Active: python-gammu 3.3.0 → 3.5.0 and Gammu 1.43.3 → 1.45.0 released Jul–Sep 2026                                                                                                                                             |
+| Latest versions                                                | python-gammu 3.2.6, Gammu 1.43.2                                         | python-gammu 3.5.0, Gammu 1.45.0                                                                                                                                                                                               |
+| Minimum Gammu for python-gammu                                 | ≥ 1.43.0 (3.2.6)                                                         | ≥ 1.44.0 (3.5.0, `GAMMU_REQUIRED` in `setup.py`)                                                                                                                                                                               |
+| Upstream binary wheels                                         | None for Linux                                                           | Since 3.3.0: `manylinux_2_28` x86_64/aarch64 wheels for cp310–cp314 with Gammu bundled. **No musllinux** — upstream's cibuildwheel config builds `cp3{10..14}-manylinux*` only, and its Gammu build script uses `dnf` only     |
+| Who can install from PyPI without building                     | Nobody on Linux                                                          | glibc installs (e.g. HA Core on Debian/Ubuntu/Raspberry Pi OS). HA OS / HA Container (Alpine, musl) still cannot                                                                                                               |
+| HA wheel index (`wheels.home-assistant.io/musllinux-index`)    | No longer maintained                                                     | Still only python-gammu 3.2.4 (cp311–cp313)                                                                                                                                                                                    |
+| Alpine `gammu-dev`                                             | 1.42.0                                                                   | Still 1.42.0 on Alpine 3.22, 3.23 and 3.24                                                                                                                                                                                     |
+| GCC 15 `-Wreturn-mismatch` error                               | Required a `setup.py` patch (3.2.6)                                      | **Not needed for 3.5.0** — builds cleanly with GCC 15.2.0 on Alpine 3.23 and 3.24 (verified Oct 2026)                                                                                                                          |
+| Python 3.14 musllinux wheel                                    | Built from 3.2.6 with patch                                              | python-gammu 3.5.0 + Gammu 1.45.0 build to `cp314-musllinux_1_2` on Alpine 3.24 (Python 3.14.8), imports and reports versions correctly (verified Oct 2026, x86_64)                                                            |
+| Build recipe maintenance                                       | Only in `build-gammu-wheels.yml` (manual, defaults still 3.2.6 / 1.43.2) | Same recipe now runs on every add-on build: `gammu-wheel` stage in `addon-gsm-gateway/Dockerfile` (add-on 2.21.0, PR #175). Downloads are SHA-256 pinned, and Renovate updates versions **and** hashes automatically (PR #176) |
+| Upstream musllinux wheels (would remove the need to self-host) | Not considered                                                           | Considered and set aside — an upstream contribution is not expected to be accepted                                                                                                                                             |
+
+**What this means if the decision is revisited:**
+
+- The build no longer needs the GCC 15 patch, and the Dockerfile `gammu-wheel` stage is a tested, maintained reference for the wheel build (it only lacks the `python-gammu-ha` rename and PyPI publish steps).
+- Any revival would target python-gammu ≥ 3.5.0 with Gammu ≥ 1.44, not the 3.2.6 / 1.43.2 versions in the steps below.
+- The main reason for shelving is unchanged: owning a PyPI package that every HACS user installs on each restart.
 
 ---
 

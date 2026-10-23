@@ -6,8 +6,8 @@ FROM $BUILD_FROM AS gammu-wheel
 ARG GAMMU_VERSION=1.45.0
 ARG GAMMU_SHA256=f6ff599c79e800cb49831cb015389c453c4382263bb7a1e0b5f417acc4b75d30
 # renovate: datasource=github-release-attachments depName=gammu/python-gammu
-ARG PYTHON_GAMMU_VERSION=3.5.0
-ARG PYTHON_GAMMU_SHA256=5d8a3e38a0a0fb13103dedb24a5d695f6fb3b3dd6ff16d3bb55bf4dec71bdcfe
+ARG PYTHON_GAMMU_VERSION=3.5.1
+ARG PYTHON_GAMMU_SHA256=d6082d685983d898f9ab6b401b96a620857bf337bf07e38b80f6b8ab08fe459a
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apk add --no-cache \
         python3 python3-dev py3-pip cmake make gcc g++ musl-dev pkgconf \

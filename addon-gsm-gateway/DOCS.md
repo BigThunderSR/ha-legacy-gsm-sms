@@ -119,13 +119,13 @@ curl -X POST http://192.168.1.x:5000/sms \
 
 ### Basic Settings
 
-| Parameter     | Default        | Description                                                                |
-| ------------- | -------------- | -------------------------------------------------------------------------- |
-| `device_path` | `/dev/ttyUSB0` | Path to GSM modem (supported: ttyUSB0-9, ttyACM0-3, ttyS0-3, serial/by-id) |
-| `pin`         | `""`           | SIM card PIN (empty = no PIN)                                              |
-| `port`        | `5000`         | API port                                                                   |
-| `username`    | `admin`        | API username                                                               |
-| `password`    | `password`     | **⚠️ CHANGE THIS!**                                                        |
+| Parameter     | Default        | Description                                                                               |
+| ------------- | -------------- | ----------------------------------------------------------------------------------------- |
+| `device_path` | `/dev/ttyUSB0` | Path to GSM modem (supported: ttyUSB0-9, ttyACM0-3, ttyS0-3, serial/by-id)                |
+| `pin`         | `""`           | SIM card PIN (empty = no PIN)                                                             |
+| `port`        | `5000`         | API port (keep at `5000`; see [API / Swagger Not Reachable](#api--swagger-not-reachable)) |
+| `username`    | `admin`        | API username                                                                              |
+| `password`    | `password`     | **⚠️ CHANGE THIS!**                                                                       |
 
 ### MQTT Settings
 
@@ -786,6 +786,25 @@ print(response.json())
 ```
 
 ## 🔴 Troubleshooting
+
+### API / Swagger Not Reachable
+
+Symptom: `http://<ha-host>:5000/docs/` or `/status/signal` gives "connection refused", while the sidebar panel (Ingress) still works.
+
+Cause: the host port is not published. In the add-on's **Configuration** tab, open the **Network** section and make sure the `5000/tcp` field is set to `5000` (an empty field means "don't publish"). Save and restart the add-on.
+
+Verify on the HA host:
+
+```bash
+docker ps | grep gsm   # should show 0.0.0.0:5000->5000/tcp
+curl -i http://<ha-host>:5000/docs/
+```
+
+Notes:
+
+- Keep the `port` option at `5000`; the Network mapping and Ingress both target 5000.
+- The Swagger button on the Ingress page links to `http://<ha-host>:5000/docs/`, so it needs the published port.
+- With `ssl: true`, use `https://` for direct access.
 
 ### Modem Not Detected
 

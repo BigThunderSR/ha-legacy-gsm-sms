@@ -53,7 +53,7 @@ privileged:
 ports:
   5000/tcp: 5000
 ports_description:
-  5000/tcp: "SMS Gateway API port"
+  5000/tcp: "SMS Gateway API port. Must be set (e.g. 5000) to reach the API and Swagger UI (/docs/) outside Ingress; leave empty to disable direct access"
 options:
   device_path: "/dev/ttyUSB0"
   pin: ""

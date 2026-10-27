@@ -7,7 +7,7 @@ configuration:
     description: SIM card PIN code (leave empty if no PIN required)
   port:
     name: API Port
-    description: Port for the SMS Gateway REST API
+    description: Port the SMS Gateway REST API listens on inside the add-on (keep at 5000 unless you also change the Network section). Direct access to the API and Swagger UI (/docs/) also requires setting 5000/tcp under Network.
   ssl:
     name: Enable SSL
     description: Enable HTTPS for secure connections (requires SSL certificates)
